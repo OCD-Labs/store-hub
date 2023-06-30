@@ -4,9 +4,15 @@ import "github.com/spf13/viper"
 
 // A Configs defines the expected config values.
 type Configs struct {
-	Env string `mapstructure:"ENVIRONMENT"`
-	ServerAddr string `mapstructure:"SERVER_ADDRESS"`
-	CorsTrustedOrigins []string `mapstructure:"CORS_TRUSTED_ORIGINS"`
+	Env                 string   `mapstructure:"ENVIRONMENT"`
+	ServerAddr          string   `mapstructure:"SERVER_ADDRESS"`
+	CorsTrustedOrigins  []string `mapstructure:"CORS_TRUSTED_ORIGINS"`
+	DBDriver            string   `mapstructure:"DB_DRIVER"`
+	DBSource            string   `mapstructure:"DB_SOURCE"`
+	EmailSenderAddress  string   `mapstructure:"EMAIL_SENDER_ADDRESS"`
+	EmailSenderName     string   `mapstructure:"EMAIL_SENDER_NAME"`
+	EmailSenderPassword string   `mapstructure:"EMAIL_SENDER_PASSWORD"`
+	TokenSymmetricKey   string   `mapstructure:"TOKEN_SYMMETRIC_KEY"`
 }
 
 // ParseConfigs parses the configuration files.

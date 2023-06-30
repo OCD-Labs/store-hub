@@ -1,12 +1,13 @@
 -- SQL dump generated using DBML (dbml-lang.org)
 -- Database: PostgreSQL
--- Generated at: 2023-06-11T02:22:14.700Z
+-- Generated at: 2023-06-30T21:40:27.410Z
 
 CREATE TABLE "users" (
   "id" bigserial PRIMARY KEY,
   "first_name" varchar NOT NULL,
   "last_name" varchar NOT NULL,
-  "role" varchar NOT NULL,
+  "account_id" varchar UNIQUE NOT NULL,
+  "status" varchar NOT NULL,
   "about" varchar NOT NULL,
   "email" varchar UNIQUE NOT NULL,
   "socials" jsonb NOT NULL,
@@ -37,13 +38,15 @@ CREATE TABLE "stores" (
   "profile_image_url" varchar NOT NULL,
   "is_verified" boolean NOT NULL DEFAULT false,
   "category" varchar NOT NULL,
+  "is_frozen" bool NOT NULL DEFAULT false,
   "created_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE "store_owners" (
   "user_id" bigint NOT NULL,
   "store_id" bigint NOT NULL,
-  "created_at" timestamptz NOT NULL DEFAULT (now())
+  "access_level" smallint NOT NULL,
+  "added_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE "items" (
@@ -56,13 +59,15 @@ CREATE TABLE "items" (
   "discount_percentage" NUMERIC(6, 4) NOT NULL,
   "supply_quantity" bigint NOT NULL,
   "extra" jsonb NOT NULL,
-  "created_at" timestamptz NOT NULL DEFAULT (now())
+  "is_frozen" bool NOT NULL DEFAULT false,
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE "item_ratings" (
   "user_id" bigint NOT NULL,
   "item_id" bigint NOT NULL,
-  "rating" char NOT NULL,
+  "rating" smallint NOT NULL,
   "comment" varchar,
   "created_at" timestamptz NOT NULL DEFAULT (now())
 );
