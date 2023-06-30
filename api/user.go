@@ -44,7 +44,9 @@ func (s *StoreHub) discoverStoreByOwner(w http.ResponseWriter, r *http.Request) 
 		"status": "success",
 		"data": envelop{
 			"message": "found your stores",
-			"stores": stores,
+			"result":  envelop{
+				"stores": stores,
+			},
 		},
 	}, nil)
 }
