@@ -7,4 +7,3 @@
 *.so
 *.dylib
 *.log
-doc/schema.sql
