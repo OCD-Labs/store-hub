@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -10,17 +11,38 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/OCD-Labs/store-hub/cache"
+	db "github.com/OCD-Labs/store-hub/db/sqlc"
+	"github.com/OCD-Labs/store-hub/token"
 	"github.com/OCD-Labs/store-hub/util"
 	"github.com/rs/zerolog"
 )
 
 type StoreHub struct {
-	configs util.Configs
-	logger  zerolog.Logger
+	configs    util.Configs
+	logger     zerolog.Logger
+	cache      cache.Cache
+	tokenMaker token.Maker
+	dbStore    db.StoreTx
 }
 
-func NewStoreHub(configs util.Configs, logger zerolog.Logger) *StoreHub {
-	return &StoreHub{configs, logger}
+func NewStoreHub(
+	configs util.Configs,
+	logger zerolog.Logger,
+	cache cache.Cache,
+	store db.StoreTx,
+) (*StoreHub, error) {
+	tokenMaker, err := token.NewPasetoMaker(configs.TokenSymmetricKey)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create token maker: %w", err)
+	}
+	return &StoreHub{
+		configs:    configs,
+		logger:     logger,
+		cache:      cache,
+		tokenMaker: tokenMaker,
+		dbStore: store,
+	}, nil
 }
 
 func (s *StoreHub) Start() error {
