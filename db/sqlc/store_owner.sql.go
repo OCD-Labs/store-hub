@@ -53,7 +53,7 @@ func (q *Queries) DeleteStoreOwner(ctx context.Context, arg DeleteStoreOwnerPara
 }
 
 const isStoreOwner = `-- name: IsStoreOwner :one
-SELECT COUNT(*) AS ownership_count
+SELECT COUNT(*) AS ownership_count, access_level
 FROM store_owners
 WHERE user_id = $1
   AND store_id = $2
@@ -64,9 +64,14 @@ type IsStoreOwnerParams struct {
 	StoreID int64 `json:"store_id"`
 }
 
-func (q *Queries) IsStoreOwner(ctx context.Context, arg IsStoreOwnerParams) (int64, error) {
+type IsStoreOwnerRow struct {
+	OwnershipCount int64 `json:"ownership_count"`
+	AccessLevel    int16 `json:"access_level"`
+}
+
+func (q *Queries) IsStoreOwner(ctx context.Context, arg IsStoreOwnerParams) (IsStoreOwnerRow, error) {
 	row := q.db.QueryRowContext(ctx, isStoreOwner, arg.UserID, arg.StoreID)
-	var ownership_count int64
-	err := row.Scan(&ownership_count)
-	return ownership_count, err
+	var i IsStoreOwnerRow
+	err := row.Scan(&i.OwnershipCount, &i.AccessLevel)
+	return i, err
 }

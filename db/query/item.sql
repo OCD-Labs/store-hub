@@ -36,4 +36,4 @@ RETURNING *;
 
 -- name: DeleteItem :exec
 DELETE FROM items
-WHERE id = sqlc.arg(item_id);
+WHERE store_id = sqlc.arg(store_id) AND id = sqlc.arg(item_id);

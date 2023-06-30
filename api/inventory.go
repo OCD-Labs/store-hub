@@ -6,9 +6,104 @@ import (
 
 	db "github.com/OCD-Labs/store-hub/db/sqlc"
 	"github.com/OCD-Labs/store-hub/pagination"
+	"github.com/OCD-Labs/store-hub/util"
 	"github.com/go-playground/validator"
 	"github.com/rs/zerolog/log"
 )
+
+type createStoreRequestBody struct {
+	Name            string `json:"name" validate:"required"`
+	Description     string `json:"description" validate:"required"`
+	ProfileImageUrl string `json:"profile_image_url" validate:"required"`
+	Category        string `json:"category" validate:"required"`
+}
+
+type createStorePathVar struct {
+	UserID int64 `json:"id" validate:"required,min=1"`
+}
+
+// createStore maps to endpoint "POST /users/{id}/stores".
+func (s *StoreHub) createStore(w http.ResponseWriter, r *http.Request) {
+	var pathVar createStorePathVar
+	var err error
+
+	// parse path variables
+	pathVar.UserID, err = s.retrieveIDParam(r, "id")
+	if err != nil || pathVar.UserID == 0 {
+		s.errorResponse(w, r, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	// validate path variables
+	if err := s.bindJSONWithValidation(w, r, &pathVar, validator.New()); err != nil {
+		return
+	}
+
+	var reqBody createStoreRequestBody
+	if err := s.readJSON(w, r, &reqBody); err != nil {
+		s.errorResponse(w, r, http.StatusBadRequest, "failed to parse request")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	// verify request
+	if err := s.bindJSONWithValidation(w, r, &reqBody, validator.New()); err != nil {
+		return
+	}
+
+	// authorise
+	authPayload := s.contextGetToken(r)
+	if pathVar.UserID != authPayload.UserID {
+		s.errorResponse(w, r, http.StatusUnauthorized, "mismatch user")
+		return
+	}
+
+	// db query
+	arg := db.CreateStoreTxParams{
+		CreateStoreParams: db.CreateStoreParams{
+			Name:            reqBody.Name,
+			Description:     reqBody.Description,
+			ProfileImageUrl: reqBody.ProfileImageUrl,
+			Category:        reqBody.Category,
+		},
+		OwnerID:     authPayload.UserID,
+		AccessLevel: 1,
+	}
+	_, err = s.dbStore.CreateStoreTx(r.Context(), arg)
+	if err != nil { // TODO: Handle error due to Postgres constraints
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to create new store")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	// check if user is a previous store owner
+	if authPayload.UserRole != util.STOREOWNER {
+		arg := db.UpdateUserParams{
+			ID: sql.NullInt64{
+				Int64: authPayload.UserID,
+				Valid: true,
+			},
+			Status: sql.NullString{
+				String: util.STOREOWNER,
+				Valid:  true,
+			},
+		}
+		_, err := s.dbStore.UpdateUser(r.Context(), arg)
+		if err != nil {
+			s.errorResponse(w, r, http.StatusInternalServerError, "failed to upgrade user to a store owner")
+			log.Error().Err(err).Msg("error occurred")
+			return
+		}
+	}
+
+	// return response
+	s.writeJSON(w, http.StatusCreated, envelop{
+		"status": "success",
+		"data": envelop{
+			"message": "created a new store",
+		},
+	}, nil)
+}
 
 type addStoreItemRequestBody struct {
 	Name               string   `json:"name" validate:"required"`
@@ -21,18 +116,26 @@ type addStoreItemRequestBody struct {
 }
 
 type addStoreItemPathVar struct {
-	StoreID int64 `json:"id" validate:"required,min=1"`
+	StoreID int64 `json:"store_id" validate:"required,min=1"`
+	UserID int64 `json:"user_id" validate:"required,min=1"`
 }
 
-// discoverStoreByOwner maps to endpoint "POST /stores/{id}/items"
+// discoverStoreByOwner maps to endpoint "POST /users/{user_id}/stores/{store_id}/items"
 func (s *StoreHub) addStoreItem(w http.ResponseWriter, r *http.Request) {
 	var pathVar addStoreItemPathVar
 	var err error
 
 	// parse path variables
-	pathVar.StoreID, err = s.retrieveIDParam(r, "id")
+	pathVar.StoreID, err = s.retrieveIDParam(r, "store_id")
 	if err != nil || pathVar.StoreID == 0 {
 		s.errorResponse(w, r, http.StatusBadRequest, "invalid store id")
+		return
+	}
+
+	// parse path variables
+	pathVar.UserID, err = s.retrieveIDParam(r, "user_id")
+	if err != nil || pathVar.UserID == 0 {
+		s.errorResponse(w, r, http.StatusBadRequest, "invalid user id")
 		return
 	}
 
@@ -55,13 +158,17 @@ func (s *StoreHub) addStoreItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	authPayload := s.contextGetToken(r) // authorize
+	if pathVar.UserID != authPayload.UserID {
+		s.errorResponse(w, r, http.StatusUnauthorized, "mismatch user")
+		return
+	}
 
 	// check ownership
 	check, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
 		StoreID: pathVar.StoreID,
 		UserID:  authPayload.UserID,
 	})
-	if check != 1 {
+	if check.OwnershipCount != 1 {
 		s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
 		log.Error().Err(err).Msg("error occurred")
 		return
@@ -107,6 +214,7 @@ type listOwnedStoreItemsQueryStr struct {
 
 type listOwnedStoreItemsPathVar struct {
 	StoreID int64 `json:"store_id" validate:"required,min=1"`
+	UserID int64 `json:"user_id" validate:"required,min=1"`
 }
 
 // listOwnedStoreItems maps to endpoint "GET /users/{user_id}/stores/{store_id}/items"
@@ -118,6 +226,13 @@ func (s *StoreHub) listOwnedStoreItems(w http.ResponseWriter, r *http.Request) {
 	pathVar.StoreID, err = s.retrieveIDParam(r, "store_id")
 	if err != nil || pathVar.StoreID == 0 {
 		s.errorResponse(w, r, http.StatusBadRequest, "invalid store id")
+		return
+	}
+
+	// parse path variables
+	pathVar.UserID, err = s.retrieveIDParam(r, "user_id")
+	if err != nil || pathVar.UserID == 0 {
+		s.errorResponse(w, r, http.StatusBadRequest, "invalid user id")
 		return
 	}
 
@@ -142,13 +257,17 @@ func (s *StoreHub) listOwnedStoreItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	authPayload := s.contextGetToken(r) // authorize
+	if pathVar.UserID != authPayload.UserID {
+		s.errorResponse(w, r, http.StatusUnauthorized, "mismatch user")
+		return
+	}
 
 	// check ownership
 	check, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
 		StoreID: pathVar.StoreID,
 		UserID:  authPayload.UserID,
 	})
-	if check != 1 {
+	if check.OwnershipCount != 1 {
 		s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
 		log.Error().Err(err).Msg("error occurred")
 		return
@@ -173,7 +292,7 @@ func (s *StoreHub) listOwnedStoreItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// return response
-	s.writeJSON(w, http.StatusCreated, envelop{
+	s.writeJSON(w, http.StatusOK, envelop{
 		"status": "success",
 		"data": envelop{
 			"message": "found some store items",
@@ -199,9 +318,10 @@ type updateStoreItemsRequestBody struct {
 type updateStoreItemsPathVar struct {
 	StoreID int64 `json:"store_id" validate:"required,min=1"`
 	ItemID int64 `json:"item_id" validate:"required,min=1"`
+	UserID int64 `json:"user_id" validate:"required,min=1"`
 }
 
-// updateStoreItems maps to endpoint "PATCH /stores/{store_id}/items/{item_id}/update"
+// updateStoreItems maps to endpoint "PATCH /users/{user_id}/stores/{store_id}/items/{item_id}"
 func (s *StoreHub) updateStoreItems(w http.ResponseWriter, r *http.Request) {
 	var pathVar updateStoreItemsPathVar
 	var err error
@@ -216,6 +336,12 @@ func (s *StoreHub) updateStoreItems(w http.ResponseWriter, r *http.Request) {
 	pathVar.ItemID, err = s.retrieveIDParam(r, "item_id")
 	if err != nil || pathVar.ItemID == 0 {
 		s.errorResponse(w, r, http.StatusBadRequest, "invalid item id")
+		return
+	}
+
+	pathVar.UserID, err = s.retrieveIDParam(r, "user_id")
+	if err != nil || pathVar.UserID == 0 {
+		s.errorResponse(w, r, http.StatusBadRequest, "invalid user id")
 		return
 	}
 
@@ -238,13 +364,17 @@ func (s *StoreHub) updateStoreItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	authPayload := s.contextGetToken(r) // authorize
+	if pathVar.UserID != authPayload.UserID {
+		s.errorResponse(w, r, http.StatusUnauthorized, "mismatch user")
+		return
+	}
 
 	// check ownership
 	check, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
 		StoreID: pathVar.StoreID,
 		UserID:  authPayload.UserID,
 	})
-	if check != 1 {
+	if check.OwnershipCount != 1 {
 		s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
 		log.Error().Err(err).Msg("error occurred")
 		return
@@ -302,7 +432,7 @@ func (s *StoreHub) updateStoreItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// return response
-	s.writeJSON(w, http.StatusCreated, envelop{
+	s.writeJSON(w, http.StatusOK, envelop{
 		"status": "success",
 		"data": envelop{
 			"message": "updated item's details",
@@ -313,8 +443,331 @@ func (s *StoreHub) updateStoreItems(w http.ResponseWriter, r *http.Request) {
 	}, nil)
 }
 
-func (s *StoreHub) buyStoreItems(w http.ResponseWriter, r *http.Request) {
+type addNewOwnerRequestBody struct {
+	AccountID string `json:"account_id" validate:"required,len=2|len=64"`
+}
 
+type addNewOwnerPathVar struct {
+	StoreID int64 `json:"store_id" validate:"required,min=1"`
+	UserID int64 `json:"user_id" validate:"required,min=1"`
+}
+
+// addNewOwner maps to endpoint "POST /users/{user_id}/store/{store_id}/owners"
+func (s *StoreHub) addNewOwner(w http.ResponseWriter, r *http.Request) {
+	// parse path variables
+	var pathVar addNewOwnerPathVar
+	var err error
+
+	// parse path variables
+	pathVar.StoreID, err = s.retrieveIDParam(r, "store_id")
+	if err != nil || pathVar.StoreID == 0 {
+		s.errorResponse(w, r, http.StatusBadRequest, "invalid store id")
+		return
+	}
+
+	// parse path variables
+	pathVar.UserID, err = s.retrieveIDParam(r, "user_id")
+	if err != nil || pathVar.UserID == 0 {
+		s.errorResponse(w, r, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	// validate path variables
+	if err := s.bindJSONWithValidation(w, r, &pathVar, validator.New()); err != nil {
+		return
+	}
+
+	// parse request body
+	var reqBody addNewOwnerRequestBody
+	if err := s.readJSON(w, r, &reqBody); err != nil {
+		s.errorResponse(w, r, http.StatusBadRequest, "failed to parse request")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	// validate request body
+	if err := s.bindJSONWithValidation(w, r, &reqBody, validator.New()); err != nil {
+		return
+	}
+
+	authPayload := s.contextGetToken(r) // authorize
+	if pathVar.UserID != authPayload.UserID {
+		s.errorResponse(w, r, http.StatusUnauthorized, "mismatch user")
+		return
+	}
+
+	// check ownership
+	check, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
+		StoreID: pathVar.StoreID,
+		UserID:  authPayload.UserID,
+	})
+	if check.OwnershipCount != 1 {
+		s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	if check.AccessLevel != 1 {
+		s.errorResponse(w, r, http.StatusForbidden, "higher access level needed for this action")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	// db query
+	user, err := s.dbStore.GetUserByAccountID(r.Context(), reqBody.AccountID)
+	if err != nil {
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to retrieve user details")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	arg := db.CreateStoreOwnerParams{
+		AccessLevel: check.AccessLevel + 1,
+		StoreID: pathVar.StoreID,
+		UserID: user.ID,
+	}
+	newOwner, err := s.dbStore.CreateStoreOwner(r.Context(), arg)
+	if err != nil {
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to add owner")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	// return response
+	s.writeJSON(w, http.StatusCreated, envelop{
+		"status": "success",
+		"data": envelop{
+			"message": "add a new owner",
+			"result":  envelop{
+				"owner": newOwner,
+			},
+		},
+	}, nil)
+}
+
+type deleteStoreItemsPathVar struct {
+	StoreID int64 `json:"store_id" validate:"required"`
+	ItemID int64 `json:"item_id" validate:"required"`
+	UserID int64 `json:"user_id" validate:"required"`
+}
+
+// deleteStoreItems maps to endpoint "DELETE /users/{user_id}/stores/{store_id}/items/{item_id}"
+func (s *StoreHub) deleteStoreItems(w http.ResponseWriter, r *http.Request) {
+	var pathVar deleteStoreItemsPathVar
+	var err error
+
+	// parse path variables
+	pathVar.StoreID, err = s.retrieveIDParam(r, "store_id")
+	if err != nil || pathVar.StoreID == 0 {
+		s.errorResponse(w, r, http.StatusBadRequest, "invalid store id")
+		return
+	}
+
+	// parse path variables
+	pathVar.ItemID, err = s.retrieveIDParam(r, "item_id")
+	if err != nil || pathVar.ItemID == 0 {
+		s.errorResponse(w, r, http.StatusBadRequest, "invalid item id")
+		return
+	}
+
+	// parse path variables
+	pathVar.UserID, err = s.retrieveIDParam(r, "user_id")
+	if err != nil || pathVar.UserID == 0 {
+		s.errorResponse(w, r, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	// validate path variables
+	if err := s.bindJSONWithValidation(w, r, &pathVar, validator.New()); err != nil {
+		return
+	}
+
+	authPayload := s.contextGetToken(r) // authorize
+	if pathVar.UserID != authPayload.UserID {
+		s.errorResponse(w, r, http.StatusUnauthorized, "mismatch user")
+		return
+	}
+
+	// check ownership
+	check, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
+		StoreID: pathVar.StoreID,
+		UserID:  authPayload.UserID,
+	})
+	if check.OwnershipCount != 1 {
+		s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	err = s.dbStore.DeleteItem(r.Context(), db.DeleteItemParams{
+		StoreID: pathVar.StoreID,
+		ItemID: pathVar.ItemID,
+	})
+	if err != nil {
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to delete item")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	// return response
+	s.writeJSON(w, http.StatusNoContent, envelop{
+		"status": "success",
+		"data": envelop{
+			"message": "deleted item and its details",
+		},
+	}, nil)
+}
+
+type deleteOwnerPathVar struct {
+	StoreID int64 `json:"store_id" validate:"required,min=1"`
+	UserID int64 `json:"user_id" validate:"required,min=1"`
+}
+
+type deleteOwnerRequestBody struct {
+	AccountID string `json:"account_id" validate:"required,len=2|len=64"`
+}
+
+// deleteOwner maps to endpoint "DELETE /users/{user_id}/store/{store_id}/owners"
+func (s *StoreHub) deleteOwner(w http.ResponseWriter, r *http.Request) {
+	var pathVar deleteOwnerPathVar
+	var err error
+
+	// parse path variables
+	pathVar.StoreID, err = s.retrieveIDParam(r, "store_id")
+	if err != nil || pathVar.StoreID == 0 {
+		s.errorResponse(w, r, http.StatusBadRequest, "invalid store id")
+		return
+	}
+
+	pathVar.UserID, err = s.retrieveIDParam(r, "user_id")
+	if err != nil || pathVar.UserID == 0 {
+		s.errorResponse(w, r, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	// validate path variables
+	if err := s.bindJSONWithValidation(w, r, &pathVar, validator.New()); err != nil {
+		return
+	}
+
+	// parse request body
+	var reqBody deleteOwnerRequestBody
+	if err := s.readJSON(w, r, &reqBody); err != nil {
+		s.errorResponse(w, r, http.StatusBadRequest, "failed to parse request")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	// validate request body
+	if err := s.bindJSONWithValidation(w, r, &reqBody, validator.New()); err != nil {
+		return
+	}
+
+	authPayload := s.contextGetToken(r) // authorize
+	if pathVar.UserID != authPayload.UserID {
+		s.errorResponse(w, r, http.StatusUnauthorized, "mismatch user")
+		return
+	}
+
+	// check ownership
+	check, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
+		StoreID: pathVar.StoreID,
+		UserID:  authPayload.UserID,
+	})
+	if check.OwnershipCount != 1 {
+		s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	if check.AccessLevel != 1 {
+		s.errorResponse(w, r, http.StatusForbidden, "higher access level needed for this action")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	// db query
+	user, err := s.dbStore.GetUserByAccountID(r.Context(), reqBody.AccountID)
+	if err != nil {
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to retrieve user details")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	err = s.dbStore.DeleteStoreOwner(r.Context(), db.DeleteStoreOwnerParams{
+		UserID: user.ID,
+		StoreID: pathVar.StoreID,
+	})
+	if err != nil {
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to delete owner")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	// return response
+	s.writeJSON(w, http.StatusNoContent, envelop{
+		"status": "success",
+		"data": envelop{
+			"message": "remove user from store ownership",
+		},
+	}, nil)
+}
+
+type deleteStorePathVar struct {
+	StoreID int64 `json:"store_id" validate:"required,min=1"`
+	UserID int64 `json:"user_id" validate:"required,min=1"`
+}
+
+// deleteStore maps to endpoint "DELETE /users/{user_id}/stores/{store_id}"
+func (s *StoreHub) deleteStore(w http.ResponseWriter, r *http.Request) {
+	var pathVar deleteStorePathVar
+	var err error
+
+	// parse path variables
+	pathVar.StoreID, err = s.retrieveIDParam(r, "store_id")
+	if err != nil || pathVar.StoreID == 0 {
+		s.errorResponse(w, r, http.StatusBadRequest, "invalid store id")
+		return
+	}
+
+	pathVar.UserID, err = s.retrieveIDParam(r, "user_id")
+	if err != nil || pathVar.UserID == 0 {
+		s.errorResponse(w, r, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	// validate path variables
+	if err := s.bindJSONWithValidation(w, r, &pathVar, validator.New()); err != nil {
+		return
+	}
+
+	authPayload := s.contextGetToken(r) // authorize
+	if pathVar.UserID != authPayload.UserID {
+		s.errorResponse(w, r, http.StatusUnauthorized, "mismatch user")
+		return
+	}
+
+	// check ownership
+	check, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
+		StoreID: pathVar.StoreID,
+		UserID:  authPayload.UserID,
+	})
+	if check.OwnershipCount != 1 {
+		s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	if check.AccessLevel != 1 {
+		s.errorResponse(w, r, http.StatusForbidden, "higher access level needed for this action")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	// TODO:
+	// 	1. Delete all its items
+	// 	2. Delete all its owners' records
+	// 	3. then delete the store
 }
 
 func (s *StoreHub) freezeStoreItems(w http.ResponseWriter, r *http.Request) {
@@ -322,9 +775,5 @@ func (s *StoreHub) freezeStoreItems(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *StoreHub) unfreezeStoreItems(w http.ResponseWriter, r *http.Request) {
-
-}
-
-func (s *StoreHub) deleteStoreItems(w http.ResponseWriter, r *http.Request) {
 
 }

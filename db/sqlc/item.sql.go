@@ -75,11 +75,16 @@ func (q *Queries) CreateStoreItem(ctx context.Context, arg CreateStoreItemParams
 
 const deleteItem = `-- name: DeleteItem :exec
 DELETE FROM items
-WHERE id = $1
+WHERE store_id = $1 AND id = $2
 `
 
-func (q *Queries) DeleteItem(ctx context.Context, itemID int64) error {
-	_, err := q.db.ExecContext(ctx, deleteItem, itemID)
+type DeleteItemParams struct {
+	StoreID int64 `json:"store_id"`
+	ItemID  int64 `json:"item_id"`
+}
+
+func (q *Queries) DeleteItem(ctx context.Context, arg DeleteItemParams) error {
+	_, err := q.db.ExecContext(ctx, deleteItem, arg.StoreID, arg.ItemID)
 	return err
 }
 
