@@ -1,6 +1,6 @@
 -- SQL dump generated using DBML (dbml-lang.org)
 -- Database: PostgreSQL
--- Generated at: 2023-06-30T22:23:38.470Z
+-- Generated at: 2023-06-30T23:24:53.675Z
 
 CREATE TABLE "users" (
   "id" bigserial PRIMARY KEY,
@@ -15,7 +15,7 @@ CREATE TABLE "users" (
   "hashed_password" varchar NOT NULL,
   "password_changed_at" timestamptz NOT NULL DEFAULT '0001-01-01 00:00:00Z',
   "created_at" timestamptz NOT NULL DEFAULT (now()),
-  "is_active" boolean NOT NULL DEFAULT false,
+  "is_active" boolean NOT NULL DEFAULT true,
   "is_email_verified" boolean NOT NULL DEFAULT false
 );
 

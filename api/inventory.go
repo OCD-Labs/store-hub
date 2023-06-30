@@ -6,7 +6,6 @@ import (
 
 	db "github.com/OCD-Labs/store-hub/db/sqlc"
 	"github.com/OCD-Labs/store-hub/pagination"
-	"github.com/OCD-Labs/store-hub/util"
 	"github.com/go-playground/validator"
 	"github.com/rs/zerolog/log"
 )
@@ -66,34 +65,13 @@ func (s *StoreHub) createStore(w http.ResponseWriter, r *http.Request) {
 			ProfileImageUrl: reqBody.ProfileImageUrl,
 			Category:        reqBody.Category,
 		},
-		OwnerID:     authPayload.UserID,
-		AccessLevel: 1,
+		OwnerID: authPayload.UserID,
 	}
-	_, err = s.dbStore.CreateStoreTx(r.Context(), arg)
+	result, err := s.dbStore.CreateStoreTx(r.Context(), arg)
 	if err != nil { // TODO: Handle error due to Postgres constraints
 		s.errorResponse(w, r, http.StatusInternalServerError, "failed to create new store")
 		log.Error().Err(err).Msg("error occurred")
 		return
-	}
-
-	// check if user is a previous store owner
-	if authPayload.UserRole != util.STOREOWNER {
-		arg := db.UpdateUserParams{
-			ID: sql.NullInt64{
-				Int64: authPayload.UserID,
-				Valid: true,
-			},
-			Status: sql.NullString{
-				String: util.STOREOWNER,
-				Valid:  true,
-			},
-		}
-		_, err := s.dbStore.UpdateUser(r.Context(), arg)
-		if err != nil {
-			s.errorResponse(w, r, http.StatusInternalServerError, "failed to upgrade user to a store owner")
-			log.Error().Err(err).Msg("error occurred")
-			return
-		}
 	}
 
 	// return response
@@ -101,6 +79,7 @@ func (s *StoreHub) createStore(w http.ResponseWriter, r *http.Request) {
 		"status": "success",
 		"data": envelop{
 			"message": "created a new store",
+			"result":  result,
 		},
 	}, nil)
 }
@@ -117,7 +96,7 @@ type addStoreItemRequestBody struct {
 
 type addStoreItemPathVar struct {
 	StoreID int64 `json:"store_id" validate:"required,min=1"`
-	UserID int64 `json:"user_id" validate:"required,min=1"`
+	UserID  int64 `json:"user_id" validate:"required,min=1"`
 }
 
 // discoverStoreByOwner maps to endpoint "POST /users/{user_id}/stores/{store_id}/items"
@@ -198,7 +177,7 @@ func (s *StoreHub) addStoreItem(w http.ResponseWriter, r *http.Request) {
 		"status": "success",
 		"data": envelop{
 			"message": "add a new item",
-			"result":  envelop{
+			"result": envelop{
 				"item": item,
 			},
 		},
@@ -214,7 +193,7 @@ type listOwnedStoreItemsQueryStr struct {
 
 type listOwnedStoreItemsPathVar struct {
 	StoreID int64 `json:"store_id" validate:"required,min=1"`
-	UserID int64 `json:"user_id" validate:"required,min=1"`
+	UserID  int64 `json:"user_id" validate:"required,min=1"`
 }
 
 // listOwnedStoreItems maps to endpoint "GET /users/{user_id}/stores/{store_id}/items"
@@ -297,7 +276,7 @@ func (s *StoreHub) listOwnedStoreItems(w http.ResponseWriter, r *http.Request) {
 		"data": envelop{
 			"message": "found some store items",
 			"result": envelop{
-				"items":   items,
+				"items":    items,
 				"metadata": pagination,
 			},
 		},
@@ -317,8 +296,8 @@ type updateStoreItemsRequestBody struct {
 
 type updateStoreItemsPathVar struct {
 	StoreID int64 `json:"store_id" validate:"required,min=1"`
-	ItemID int64 `json:"item_id" validate:"required,min=1"`
-	UserID int64 `json:"user_id" validate:"required,min=1"`
+	ItemID  int64 `json:"item_id" validate:"required,min=1"`
+	UserID  int64 `json:"user_id" validate:"required,min=1"`
 }
 
 // updateStoreItems maps to endpoint "PATCH /users/{user_id}/stores/{store_id}/items/{item_id}"
@@ -387,19 +366,19 @@ func (s *StoreHub) updateStoreItems(w http.ResponseWriter, r *http.Request) {
 	if reqBody.Name != nil {
 		arg.Name = sql.NullString{
 			String: *reqBody.Name,
-			Valid: true,
+			Valid:  true,
 		}
 	}
 	if reqBody.Description != nil {
 		arg.Name = sql.NullString{
 			String: *reqBody.Description,
-			Valid: true,
+			Valid:  true,
 		}
 	}
 	if reqBody.Price != nil {
 		arg.Name = sql.NullString{
 			String: *reqBody.Price,
-			Valid: true,
+			Valid:  true,
 		}
 	}
 	if reqBody.ImageURLs != nil {
@@ -408,13 +387,13 @@ func (s *StoreHub) updateStoreItems(w http.ResponseWriter, r *http.Request) {
 	if reqBody.Category != nil {
 		arg.Category = sql.NullString{
 			String: *reqBody.Category,
-			Valid: true,
+			Valid:  true,
 		}
 	}
 	if reqBody.DiscountPercentage != nil {
 		arg.DiscountPercentage = sql.NullString{
 			String: *reqBody.DiscountPercentage,
-			Valid: true,
+			Valid:  true,
 		}
 	}
 	if reqBody.SupplyQuantity != nil {
@@ -437,7 +416,7 @@ func (s *StoreHub) updateStoreItems(w http.ResponseWriter, r *http.Request) {
 		"data": envelop{
 			"message": "updated item's details",
 			"result": envelop{
-				"item":   item,
+				"item": item,
 			},
 		},
 	}, nil)
@@ -449,7 +428,7 @@ type addNewOwnerRequestBody struct {
 
 type addNewOwnerPathVar struct {
 	StoreID int64 `json:"store_id" validate:"required,min=1"`
-	UserID int64 `json:"user_id" validate:"required,min=1"`
+	UserID  int64 `json:"user_id" validate:"required,min=1"`
 }
 
 // addNewOwner maps to endpoint "POST /users/{user_id}/store/{store_id}/owners"
@@ -523,8 +502,8 @@ func (s *StoreHub) addNewOwner(w http.ResponseWriter, r *http.Request) {
 
 	arg := db.CreateStoreOwnerParams{
 		AccessLevel: check.AccessLevel + 1,
-		StoreID: pathVar.StoreID,
-		UserID: user.ID,
+		StoreID:     pathVar.StoreID,
+		UserID:      user.ID,
 	}
 	newOwner, err := s.dbStore.CreateStoreOwner(r.Context(), arg)
 	if err != nil {
@@ -538,7 +517,7 @@ func (s *StoreHub) addNewOwner(w http.ResponseWriter, r *http.Request) {
 		"status": "success",
 		"data": envelop{
 			"message": "add a new owner",
-			"result":  envelop{
+			"result": envelop{
 				"owner": newOwner,
 			},
 		},
@@ -547,8 +526,8 @@ func (s *StoreHub) addNewOwner(w http.ResponseWriter, r *http.Request) {
 
 type deleteStoreItemsPathVar struct {
 	StoreID int64 `json:"store_id" validate:"required"`
-	ItemID int64 `json:"item_id" validate:"required"`
-	UserID int64 `json:"user_id" validate:"required"`
+	ItemID  int64 `json:"item_id" validate:"required"`
+	UserID  int64 `json:"user_id" validate:"required"`
 }
 
 // deleteStoreItems maps to endpoint "DELETE /users/{user_id}/stores/{store_id}/items/{item_id}"
@@ -601,7 +580,7 @@ func (s *StoreHub) deleteStoreItems(w http.ResponseWriter, r *http.Request) {
 
 	err = s.dbStore.DeleteItem(r.Context(), db.DeleteItemParams{
 		StoreID: pathVar.StoreID,
-		ItemID: pathVar.ItemID,
+		ItemID:  pathVar.ItemID,
 	})
 	if err != nil {
 		s.errorResponse(w, r, http.StatusInternalServerError, "failed to delete item")
@@ -620,7 +599,7 @@ func (s *StoreHub) deleteStoreItems(w http.ResponseWriter, r *http.Request) {
 
 type deleteOwnerPathVar struct {
 	StoreID int64 `json:"store_id" validate:"required,min=1"`
-	UserID int64 `json:"user_id" validate:"required,min=1"`
+	UserID  int64 `json:"user_id" validate:"required,min=1"`
 }
 
 type deleteOwnerRequestBody struct {
@@ -695,7 +674,7 @@ func (s *StoreHub) deleteOwner(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = s.dbStore.DeleteStoreOwner(r.Context(), db.DeleteStoreOwnerParams{
-		UserID: user.ID,
+		UserID:  user.ID,
 		StoreID: pathVar.StoreID,
 	})
 	if err != nil {
@@ -715,7 +694,7 @@ func (s *StoreHub) deleteOwner(w http.ResponseWriter, r *http.Request) {
 
 type deleteStorePathVar struct {
 	StoreID int64 `json:"store_id" validate:"required,min=1"`
-	UserID int64 `json:"user_id" validate:"required,min=1"`
+	UserID  int64 `json:"user_id" validate:"required,min=1"`
 }
 
 // deleteStore maps to endpoint "DELETE /users/{user_id}/stores/{store_id}"

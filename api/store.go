@@ -131,7 +131,7 @@ func (s *StoreHub) listStoreItems(w http.ResponseWriter, r *http.Request) {
 		"data": envelop{
 			"message": "found some store items",
 			"result": envelop{
-				"items":   items,
+				"items":    items,
 				"metadata": pagination,
 			},
 		},

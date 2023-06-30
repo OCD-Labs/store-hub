@@ -6,17 +6,23 @@ package db
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 type Querier interface {
+	CheckSessionExistence(ctx context.Context, token string) (bool, error)
+	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateStore(ctx context.Context, arg CreateStoreParams) (Store, error)
 	CreateStoreItem(ctx context.Context, arg CreateStoreItemParams) (Item, error)
 	CreateStoreOwner(ctx context.Context, arg CreateStoreOwnerParams) (StoreOwner, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteExpiredSession(ctx context.Context) error
 	DeleteItem(ctx context.Context, arg DeleteItemParams) error
 	DeleteStore(ctx context.Context, storeID int64) error
 	DeleteStoreOwner(ctx context.Context, arg DeleteStoreOwnerParams) error
 	GetItem(ctx context.Context, itemID int64) (Item, error)
+	GetSession(ctx context.Context, id uuid.UUID) (Session, error)
 	GetStoreByID(ctx context.Context, storeID int64) (GetStoreByIDRow, error)
 	GetStoreByOwner(ctx context.Context, userID int64) ([]Store, error)
 	GetUserByAccountID(ctx context.Context, accountID string) (User, error)

@@ -15,7 +15,7 @@ CREATE TABLE "users" (
   "hashed_password" varchar NOT NULL,
   "password_changed_at" timestamptz NOT NULL DEFAULT '0001-01-01 00:00:00Z',
   "created_at" timestamptz NOT NULL DEFAULT (now()),
-  "is_active" boolean NOT NULL DEFAULT false,
+  "is_active" boolean NOT NULL DEFAULT true,
   "is_email_verified" boolean NOT NULL DEFAULT false
 );
 
@@ -86,3 +86,10 @@ ALTER TABLE "items" ADD FOREIGN KEY ("store_id") REFERENCES "stores" ("id");
 ALTER TABLE "item_ratings" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
 
 ALTER TABLE "item_ratings" ADD FOREIGN KEY ("item_id") REFERENCES "items" ("id");
+
+CREATE OR REPLACE FUNCTION delete_expired_sessions()
+RETURNS void AS $$
+BEGIN
+  DELETE FROM sessions WHERE expires_at < NOW();
+END;
+$$ LANGUAGE plpgsql;
