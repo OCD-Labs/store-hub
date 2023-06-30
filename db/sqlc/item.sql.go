@@ -75,11 +75,16 @@ func (q *Queries) CreateStoreItem(ctx context.Context, arg CreateStoreItemParams
 
 const deleteItem = `-- name: DeleteItem :exec
 DELETE FROM items
-WHERE id = $1
+WHERE store_id = $1 AND id = $2
 `
 
-func (q *Queries) DeleteItem(ctx context.Context, itemID int64) error {
-	_, err := q.db.ExecContext(ctx, deleteItem, itemID)
+type DeleteItemParams struct {
+	StoreID int64 `json:"store_id"`
+	ItemID  int64 `json:"item_id"`
+}
+
+func (q *Queries) DeleteItem(ctx context.Context, arg DeleteItemParams) error {
+	_, err := q.db.ExecContext(ctx, deleteItem, arg.StoreID, arg.ItemID)
 	return err
 }
 
@@ -113,21 +118,23 @@ const updateItem = `-- name: UpdateItem :one
 UPDATE items 
 SET 
   description = COALESCE($1, description),
-  price = COALESCE($2, price),
-  image_urls = COALESCE($3, image_urls),
-  category = COALESCE($4, category),
-  discount_percentage = COALESCE($5, discount_percentage),
-  supply_quantity = COALESCE($6, supply_quantity),
-  extra = COALESCE($7, extra),
-  is_frozen = COALESCE($8, is_frozen),
-  updated_at = COALESCE($9, updated_at)
+  name = COALESCE($2, name),
+  price = COALESCE($3, price),
+  image_urls = COALESCE($4, image_urls),
+  category = COALESCE($5, category),
+  discount_percentage = COALESCE($6, discount_percentage),
+  supply_quantity = COALESCE($7, supply_quantity),
+  extra = COALESCE($8, extra),
+  is_frozen = COALESCE($9, is_frozen),
+  updated_at = COALESCE($10, updated_at)
 WHERE
-  id = $10
+  id = $11
 RETURNING id, name, description, price, store_id, image_urls, category, discount_percentage, supply_quantity, extra, is_frozen, created_at, updated_at
 `
 
 type UpdateItemParams struct {
 	Description        sql.NullString        `json:"description"`
+	Name               sql.NullString        `json:"name"`
 	Price              sql.NullString        `json:"price"`
 	ImageUrls          []string              `json:"image_urls"`
 	Category           sql.NullString        `json:"category"`
@@ -142,6 +149,7 @@ type UpdateItemParams struct {
 func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, error) {
 	row := q.db.QueryRowContext(ctx, updateItem,
 		arg.Description,
+		arg.Name,
 		arg.Price,
 		pq.Array(arg.ImageUrls),
 		arg.Category,

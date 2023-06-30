@@ -21,6 +21,7 @@ WHERE id = sqlc.arg(item_id) AND supply_quantity > 0;
 UPDATE items 
 SET 
   description = COALESCE(sqlc.narg(description), description),
+  name = COALESCE(sqlc.narg(name), name),
   price = COALESCE(sqlc.narg(price), price),
   image_urls = COALESCE(sqlc.narg(image_urls), image_urls),
   category = COALESCE(sqlc.narg(category), category),
@@ -35,4 +36,4 @@ RETURNING *;
 
 -- name: DeleteItem :exec
 DELETE FROM items
-WHERE id = sqlc.arg(item_id);
+WHERE store_id = sqlc.arg(store_id) AND id = sqlc.arg(item_id);

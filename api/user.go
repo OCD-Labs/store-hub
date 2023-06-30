@@ -8,26 +8,31 @@ import (
 )
 
 type discoverStoreByOwnerPathVar struct {
-	UserID int `json:"user_id" validate:"required"`
+	UserID int64 `json:"user_id" validate:"required,min=1"`
 }
 
-// discoverStoreByOwner maps to endpoint "GET /users/{id}/stores"
-func (s *StoreHub) discoverStoreByOwner(w http.ResponseWriter, r *http.Request) {
-	// parse request
-	queryStr := r.URL.Query()
-	var reqQueryStr discoverStoreByOwnerPathVar
+// listUserStores maps to endpoint "GET /users/{id}/stores"
+func (s *StoreHub) listUserStores(w http.ResponseWriter, r *http.Request) {
+	// parse path variables
+	var pathVar discoverStoreByOwnerPathVar
+	var err error
 
-	reqQueryStr.UserID, _ = s.readInt(queryStr, "id", 0)
+	// parse path variables
+	pathVar.UserID, err = s.retrieveIDParam(r, "id")
+	if err != nil || pathVar.UserID == 0 {
+		s.errorResponse(w, r, http.StatusBadRequest, "invalid store id")
+		return
+	}
 
-	// validate query string
-	if err := s.bindJSONWithValidation(w, r, &reqQueryStr, validator.New()); err != nil {
+	// validate path variables
+	if err := s.bindJSONWithValidation(w, r, &pathVar, validator.New()); err != nil {
 		return
 	}
 
 	// authorise
 	authPayload := s.contextGetToken(r)
-	if int(authPayload.UserID) != reqQueryStr.UserID {
-		s.errorResponse(w, r, http.StatusUnauthorized, "access denied")
+	if authPayload.UserID != pathVar.UserID {
+		s.errorResponse(w, r, http.StatusUnauthorized, "mismatch user")
 		return
 	}
 
@@ -40,11 +45,13 @@ func (s *StoreHub) discoverStoreByOwner(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// return response
-	s.writeJSON(w, http.StatusCreated, envelop{
+	s.writeJSON(w, http.StatusOK, envelop{
 		"status": "success",
 		"data": envelop{
 			"message": "found your stores",
-			"stores": stores,
+			"result":  envelop{
+				"stores": stores,
+			},
 		},
 	}, nil)
 }

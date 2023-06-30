@@ -21,6 +21,10 @@ WHERE id = sqlc.arg(user_id) LIMIT 1;
 SELECT * FROM users
 WHERE email = sqlc.arg(user_email) LIMIT 1;
 
+-- name: GetUserByAccountID :one
+SELECT * FROM users
+WHERE account_id = sqlc.arg(account_id) LIMIT 1;
+
 -- name: UpdateUser :one
 UPDATE users
 SET
