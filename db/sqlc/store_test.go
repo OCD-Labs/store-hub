@@ -11,18 +11,17 @@ import (
 
 type Data struct {
 	StoreOwners struct {
-		AddedAt  time.Time `json:"added_at"`
-		StoreID  int64    `json:"store_id"`
-		UserID   int64    `json:"user_id"`
+		AddedAt time.Time `json:"added_at"`
+		StoreID int64     `json:"store_id"`
+		UserID  int64     `json:"user_id"`
 	} `json:"store_owners"`
 	User struct {
 		Email     string `json:"email"`
 		FirstName string `json:"first_name"`
-		ID        int64    `json:"id"`
+		ID        int64  `json:"id"`
 		LastName  string `json:"last_name"`
 	} `json:"user"`
 }
-
 
 func TestGetStoreByID(t *testing.T) {
 	res, user := createStoreAndOwners(t)
@@ -37,7 +36,7 @@ func TestGetStoreByID(t *testing.T) {
 	require.Equal(t, res.Store.IsVerified, store.IsVerified)
 	require.Equal(t, res.Store.Category, store.Category)
 	require.WithinDuration(t, res.Store.CreatedAt, store.CreatedAt, time.Second)
-	
+
 	buf, err := store.Owners.MarshalJSON()
 	require.NoError(t, err)
 

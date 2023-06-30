@@ -13,13 +13,13 @@ func createStoreAndOwners(t *testing.T) (CreateStoreTxResult, User) {
 	user := createRandomUser(t)
 	arg := CreateStoreTxParams{
 		CreateStoreParams: CreateStoreParams{
-			Name: util.RandomString(8),
-			Description: util.RandomString(20),
+			Name:            util.RandomString(8),
+			Description:     util.RandomString(20),
 			ProfileImageUrl: fmt.Sprintf("https://%s.com", util.RandomString(15)),
-			Category: util.RandomString(5),
+			Category:        util.RandomString(5),
 		},
-		OwnerID: user.ID,
-		PermissionLevel: 1,
+		OwnerID:     user.ID,
+		AccessLevel: 1,
 	}
 
 	res, err := testQueries.CreateStoreTx(context.Background(), arg)

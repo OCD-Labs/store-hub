@@ -15,13 +15,14 @@ import (
 type Item struct {
 	ID                 int64           `json:"id"`
 	Description        string          `json:"description"`
-	Price              interface{}     `json:"price"`
+	Price              string          `json:"price"`
 	StoreID            int64           `json:"store_id"`
 	ImageUrls          []string        `json:"image_urls"`
 	Category           string          `json:"category"`
-	DiscountPercentage interface{}     `json:"discount_percentage"`
+	DiscountPercentage string          `json:"discount_percentage"`
 	SupplyQuantity     int64           `json:"supply_quantity"`
 	Extra              json.RawMessage `json:"extra"`
+	IsFrozen           bool            `json:"is_frozen"`
 	CreatedAt          time.Time       `json:"created_at"`
 	UpdatedAt          time.Time       `json:"updated_at"`
 }
@@ -29,7 +30,7 @@ type Item struct {
 type ItemRating struct {
 	UserID    int64          `json:"user_id"`
 	ItemID    int64          `json:"item_id"`
-	Rating    string         `json:"rating"`
+	Rating    int16          `json:"rating"`
 	Comment   sql.NullString `json:"comment"`
 	CreatedAt time.Time      `json:"created_at"`
 }
@@ -53,21 +54,23 @@ type Store struct {
 	ProfileImageUrl string    `json:"profile_image_url"`
 	IsVerified      bool      `json:"is_verified"`
 	Category        string    `json:"category"`
+	IsFrozen        bool      `json:"is_frozen"`
 	CreatedAt       time.Time `json:"created_at"`
 }
 
 type StoreOwner struct {
-	UserID          int64     `json:"user_id"`
-	StoreID         int64     `json:"store_id"`
-	PermissionLevel int16     `json:"permission_level"`
-	AddedAt         time.Time `json:"added_at"`
+	UserID      int64     `json:"user_id"`
+	StoreID     int64     `json:"store_id"`
+	AccessLevel int16     `json:"access_level"`
+	AddedAt     time.Time `json:"added_at"`
 }
 
 type User struct {
 	ID                int64           `json:"id"`
 	FirstName         string          `json:"first_name"`
 	LastName          string          `json:"last_name"`
-	Permission        string          `json:"permission"`
+	AccountID         string          `json:"account_id"`
+	Status            string          `json:"status"`
 	About             string          `json:"about"`
 	Email             string          `json:"email"`
 	Socials           json.RawMessage `json:"socials"`

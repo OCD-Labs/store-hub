@@ -25,3 +25,20 @@ WHERE
   s.id = sqlc.arg(store_id)
 GROUP BY 
   s.id;
+
+-- name: UpdateStore :one
+UPDATE stores
+SET
+  name = COALESCE(sqlc.narg(name), name),
+  description = COALESCE(sqlc.narg(description), description),
+  profile_image_url = COALESCE(sqlc.narg(profile_image_url), profile_image_url),
+  is_verified = COALESCE(sqlc.narg(is_verified), is_verified),
+  category = COALESCE(sqlc.narg(category), category),
+  is_frozen = COALESCE(sqlc.narg(is_frozen), is_frozen)
+WHERE 
+  id = sqlc.arg(store_id)
+RETURNING *;
+
+-- name: DeleteStore :exec
+DELETE FROM stores
+WHERE id = sqlc.arg(store_id);

@@ -2,14 +2,15 @@
 INSERT INTO users (
   first_name,
   last_name,
-  permission,
+  account_id,
+  status,
   hashed_password,
   about,
   email,
   socials,
   profile_image_url
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8
+  $1, $2, $3, $4, $5, $6, $7, $8, $9
 ) RETURNING *;
 
 -- name: GetUserByID :one
@@ -32,7 +33,7 @@ SET
   is_active = COALESCE(sqlc.narg(is_active), is_active),
   profile_image_url = COALESCE(sqlc.narg(profile_image_url), profile_image_url),
   socials = COALESCE(sqlc.narg(socials), socials),
-  permission = COALESCE(sqlc.narg(permission), permission),
+  status = COALESCE(sqlc.narg(status), status),
   about = COALESCE(sqlc.narg(about), about)
 WHERE 
   id = sqlc.narg(id) OR email = sqlc.narg(email)

@@ -2,7 +2,7 @@
 INSERT INTO store_owners (
   user_id,
   store_id,
-  permission_level
+  access_level
 ) VALUES (
   $1, $2, $3
 ) RETURNING *;

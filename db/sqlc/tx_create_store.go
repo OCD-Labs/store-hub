@@ -8,13 +8,13 @@ import (
 // the create store transaction.
 type CreateStoreTxParams struct {
 	CreateStoreParams
-	OwnerID int64 `json:"user_id"`
-	PermissionLevel int16 `json:"permission_level"`
+	OwnerID     int64 `json:"user_id"`
+	AccessLevel int16 `json:"access_level"`
 }
 
 // A CreateStoreTxResult contains the result of the create store transaction.
 type CreateStoreTxResult struct {
-	Store Store
+	Store  Store
 	Owners []StoreOwner
 }
 
@@ -31,9 +31,9 @@ func (store *SQLTx) CreateStoreTx(ctx context.Context, arg CreateStoreTxParams) 
 		}
 
 		owner, err := q.CreateStoreOwner(ctx, CreateStoreOwnerParams{
-			UserID: arg.OwnerID,
-			StoreID: result.Store.ID,
-			PermissionLevel: arg.PermissionLevel,
+			UserID:      arg.OwnerID,
+			StoreID:     result.Store.ID,
+			AccessLevel: arg.AccessLevel,
 		})
 		if err != nil {
 			return err

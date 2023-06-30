@@ -28,6 +28,6 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	mux.Add(http.MethodPost, "/store/{id}/owners", http.HandlerFunc(s.addNewOwner))
 	mux.Add(http.MethodGet, "/store/{id}/owners", http.HandlerFunc(s.listOwners))
 	mux.Add(http.MethodDelete, "/store/{id}/owners", http.HandlerFunc(s.deleteOwner))
-	
+
 	return mux
 }

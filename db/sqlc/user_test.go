@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
@@ -18,15 +19,16 @@ func createRandomUser(t *testing.T) User {
 	arg := CreateUserParams{
 		FirstName:      util.RandomOwner(),
 		LastName:       util.RandomOwner(),
-		Permission: util.RandomPermission(),
+		Status:         util.RandomPermission(),
 		HashedPassword: hashedPassword,
 		Email:          util.RandomEmail(),
 		ProfileImageUrl: sql.NullString{
 			String: "",
-			Valid: false,
+			Valid:  false,
 		},
-		About: "",
-		Socials: json.RawMessage([]byte("{}")),
+		About:     "",
+		Socials:   json.RawMessage([]byte("{}")),
+		AccountID: fmt.Sprintf("%s.testnet", util.RandomOwner()),
 	}
 
 	user, err := testQueries.CreateUser(context.Background(), arg)
@@ -35,7 +37,7 @@ func createRandomUser(t *testing.T) User {
 
 	require.Equal(t, arg.FirstName, user.FirstName)
 	require.Equal(t, arg.LastName, user.LastName)
-	require.Equal(t, arg.Permission, user.Permission)
+	require.Equal(t, arg.Status, user.Status)
 	require.Equal(t, arg.Email, user.Email)
 	require.Equal(t, arg.HashedPassword, user.HashedPassword)
 	require.Equal(t, arg.ProfileImageUrl.String, user.ProfileImageUrl.String)
@@ -57,7 +59,7 @@ func TestCreateUser(t *testing.T) {
 func compareUsers(t *testing.T, user1 User, user2 User) {
 	require.Equal(t, user1.FirstName, user2.FirstName)
 	require.Equal(t, user1.LastName, user2.LastName)
-	require.Equal(t, user1.Permission, user2.Permission)
+	require.Equal(t, user1.Status, user2.Status)
 	require.Equal(t, user1.Email, user2.Email)
 	require.Equal(t, user1.HashedPassword, user2.HashedPassword)
 	require.Equal(t, user1.ProfileImageUrl.String, user2.ProfileImageUrl.String)
@@ -104,7 +106,7 @@ func TestUpdateUserFullNameOnly(t *testing.T) {
 		},
 		FirstName: sql.NullString{
 			String: newFirstName,
-			Valid: true,
+			Valid:  true,
 		},
 		LastName: sql.NullString{
 			String: newLastName,

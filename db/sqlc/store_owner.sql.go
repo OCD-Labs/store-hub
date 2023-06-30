@@ -13,25 +13,25 @@ const createStoreOwner = `-- name: CreateStoreOwner :one
 INSERT INTO store_owners (
   user_id,
   store_id,
-  permission_level
+  access_level
 ) VALUES (
   $1, $2, $3
-) RETURNING user_id, store_id, permission_level, added_at
+) RETURNING user_id, store_id, access_level, added_at
 `
 
 type CreateStoreOwnerParams struct {
-	UserID          int64 `json:"user_id"`
-	StoreID         int64 `json:"store_id"`
-	PermissionLevel int16 `json:"permission_level"`
+	UserID      int64 `json:"user_id"`
+	StoreID     int64 `json:"store_id"`
+	AccessLevel int16 `json:"access_level"`
 }
 
 func (q *Queries) CreateStoreOwner(ctx context.Context, arg CreateStoreOwnerParams) (StoreOwner, error) {
-	row := q.db.QueryRowContext(ctx, createStoreOwner, arg.UserID, arg.StoreID, arg.PermissionLevel)
+	row := q.db.QueryRowContext(ctx, createStoreOwner, arg.UserID, arg.StoreID, arg.AccessLevel)
 	var i StoreOwner
 	err := row.Scan(
 		&i.UserID,
 		&i.StoreID,
-		&i.PermissionLevel,
+		&i.AccessLevel,
 		&i.AddedAt,
 	)
 	return i, err

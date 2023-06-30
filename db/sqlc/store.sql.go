@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"time"
 )
@@ -19,7 +20,7 @@ INSERT INTO stores (
   category
 ) VALUES (
   $1, $2, $3, $4
-) RETURNING id, name, description, profile_image_url, is_verified, category, created_at
+) RETURNING id, name, description, profile_image_url, is_verified, category, is_frozen, created_at
 `
 
 type CreateStoreParams struct {
@@ -44,14 +45,25 @@ func (q *Queries) CreateStore(ctx context.Context, arg CreateStoreParams) (Store
 		&i.ProfileImageUrl,
 		&i.IsVerified,
 		&i.Category,
+		&i.IsFrozen,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
+const deleteStore = `-- name: DeleteStore :exec
+DELETE FROM stores
+WHERE id = $1
+`
+
+func (q *Queries) DeleteStore(ctx context.Context, storeID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteStore, storeID)
+	return err
+}
+
 const getStoreByID = `-- name: GetStoreByID :one
 SELECT 
-  s.id, s.name, s.description, s.profile_image_url, s.is_verified, s.category, s.created_at, 
+  s.id, s.name, s.description, s.profile_image_url, s.is_verified, s.category, s.is_frozen, s.created_at, 
   json_agg(json_build_object(
       'user', json_build_object('id', u.id, 'first_name', u.first_name, 'last_name', u.last_name, 'email', u.email),
       'store_owners', json_build_object('user_id', so.user_id, 'store_id', so.store_id, 'added_at', so.added_at)
@@ -75,6 +87,7 @@ type GetStoreByIDRow struct {
 	ProfileImageUrl string          `json:"profile_image_url"`
 	IsVerified      bool            `json:"is_verified"`
 	Category        string          `json:"category"`
+	IsFrozen        bool            `json:"is_frozen"`
 	CreatedAt       time.Time       `json:"created_at"`
 	Owners          json.RawMessage `json:"owners"`
 }
@@ -89,8 +102,57 @@ func (q *Queries) GetStoreByID(ctx context.Context, storeID int64) (GetStoreByID
 		&i.ProfileImageUrl,
 		&i.IsVerified,
 		&i.Category,
+		&i.IsFrozen,
 		&i.CreatedAt,
 		&i.Owners,
+	)
+	return i, err
+}
+
+const updateStore = `-- name: UpdateStore :one
+UPDATE stores
+SET
+  name = COALESCE($1, name),
+  description = COALESCE($2, description),
+  profile_image_url = COALESCE($3, profile_image_url),
+  is_verified = COALESCE($4, is_verified),
+  category = COALESCE($5, category),
+  is_frozen = COALESCE($6, is_frozen)
+WHERE 
+  id = $7
+RETURNING id, name, description, profile_image_url, is_verified, category, is_frozen, created_at
+`
+
+type UpdateStoreParams struct {
+	Name            sql.NullString `json:"name"`
+	Description     sql.NullString `json:"description"`
+	ProfileImageUrl sql.NullString `json:"profile_image_url"`
+	IsVerified      sql.NullBool   `json:"is_verified"`
+	Category        sql.NullString `json:"category"`
+	IsFrozen        sql.NullBool   `json:"is_frozen"`
+	StoreID         int64          `json:"store_id"`
+}
+
+func (q *Queries) UpdateStore(ctx context.Context, arg UpdateStoreParams) (Store, error) {
+	row := q.db.QueryRowContext(ctx, updateStore,
+		arg.Name,
+		arg.Description,
+		arg.ProfileImageUrl,
+		arg.IsVerified,
+		arg.Category,
+		arg.IsFrozen,
+		arg.StoreID,
+	)
+	var i Store
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.ProfileImageUrl,
+		&i.IsVerified,
+		&i.Category,
+		&i.IsFrozen,
+		&i.CreatedAt,
 	)
 	return i, err
 }

@@ -1,0 +1,59 @@
+package token
+
+import (
+	"fmt"
+	"time"
+
+	"golang.org/x/crypto/chacha20poly1305"
+
+	"github.com/o1egl/paseto"
+)
+
+// PasetoMaker is a PASETO token maker
+type PasetoMaker struct {
+	paseto       *paseto.V2
+	symmetricKey []byte
+}
+
+// NewPasetoMaker instantiates a PasetoMaker object.
+func NewPasetoMaker(symmetricKey string) (Maker, error) {
+	if len(symmetricKey) != chacha20poly1305.KeySize {
+		return nil, fmt.Errorf("invalid key size: must be exactly %d characters", chacha20poly1305.KeySize)
+	}
+
+	maker := &PasetoMaker{
+		paseto:       paseto.NewV2(),
+		symmetricKey: []byte(symmetricKey),
+	}
+
+	return maker, nil
+}
+
+// CreateToken creates a new PASETO token for a specific username and duration.
+func (maker *PasetoMaker) CreateToken(userID, userRole string, permissionLevel *int16, duration time.Duration) (string, *Payload, error) {
+	payload, err := NewPayload(userID, userRole, permissionLevel, duration)
+	if err != nil {
+		return "", payload, nil
+	}
+
+	token, err := maker.paseto.Encrypt(maker.symmetricKey, payload, nil)
+
+	return token, payload, err
+}
+
+// VerifyToken checks if the PASETO token is valid or not
+func (maker *PasetoMaker) VerifyToken(token string) (*Payload, error) {
+	payload := &Payload{}
+
+	err := maker.paseto.Decrypt(token, maker.symmetricKey, payload, nil)
+	if err != nil {
+		return nil, ErrInvalidToken
+	}
+
+	err = payload.Valid()
+	if err != nil {
+		return nil, ErrExpiredToken
+	}
+
+	return payload, nil
+}

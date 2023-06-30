@@ -17,21 +17,23 @@ const createUser = `-- name: CreateUser :one
 INSERT INTO users (
   first_name,
   last_name,
-  permission,
+  account_id,
+  status,
   hashed_password,
   about,
   email,
   socials,
   profile_image_url
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8
-) RETURNING id, first_name, last_name, permission, about, email, socials, profile_image_url, hashed_password, password_changed_at, created_at, is_active, is_email_verified
+  $1, $2, $3, $4, $5, $6, $7, $8, $9
+) RETURNING id, first_name, last_name, account_id, status, about, email, socials, profile_image_url, hashed_password, password_changed_at, created_at, is_active, is_email_verified
 `
 
 type CreateUserParams struct {
 	FirstName       string          `json:"first_name"`
 	LastName        string          `json:"last_name"`
-	Permission      string          `json:"permission"`
+	AccountID       string          `json:"account_id"`
+	Status          string          `json:"status"`
 	HashedPassword  string          `json:"hashed_password"`
 	About           string          `json:"about"`
 	Email           string          `json:"email"`
@@ -43,7 +45,8 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	row := q.db.QueryRowContext(ctx, createUser,
 		arg.FirstName,
 		arg.LastName,
-		arg.Permission,
+		arg.AccountID,
+		arg.Status,
 		arg.HashedPassword,
 		arg.About,
 		arg.Email,
@@ -55,7 +58,8 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.ID,
 		&i.FirstName,
 		&i.LastName,
-		&i.Permission,
+		&i.AccountID,
+		&i.Status,
 		&i.About,
 		&i.Email,
 		&i.Socials,
@@ -70,7 +74,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, first_name, last_name, permission, about, email, socials, profile_image_url, hashed_password, password_changed_at, created_at, is_active, is_email_verified FROM users
+SELECT id, first_name, last_name, account_id, status, about, email, socials, profile_image_url, hashed_password, password_changed_at, created_at, is_active, is_email_verified FROM users
 WHERE email = $1 LIMIT 1
 `
 
@@ -81,7 +85,8 @@ func (q *Queries) GetUserByEmail(ctx context.Context, userEmail string) (User, e
 		&i.ID,
 		&i.FirstName,
 		&i.LastName,
-		&i.Permission,
+		&i.AccountID,
+		&i.Status,
 		&i.About,
 		&i.Email,
 		&i.Socials,
@@ -96,7 +101,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, userEmail string) (User, e
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, first_name, last_name, permission, about, email, socials, profile_image_url, hashed_password, password_changed_at, created_at, is_active, is_email_verified FROM users
+SELECT id, first_name, last_name, account_id, status, about, email, socials, profile_image_url, hashed_password, password_changed_at, created_at, is_active, is_email_verified FROM users
 WHERE id = $1 LIMIT 1
 `
 
@@ -107,7 +112,8 @@ func (q *Queries) GetUserByID(ctx context.Context, userID int64) (User, error) {
 		&i.ID,
 		&i.FirstName,
 		&i.LastName,
-		&i.Permission,
+		&i.AccountID,
+		&i.Status,
 		&i.About,
 		&i.Email,
 		&i.Socials,
@@ -133,11 +139,11 @@ SET
   is_active = COALESCE($7, is_active),
   profile_image_url = COALESCE($8, profile_image_url),
   socials = COALESCE($9, socials),
-  permission = COALESCE($10, permission),
+  status = COALESCE($10, status),
   about = COALESCE($11, about)
 WHERE 
   id = $12 OR email = $5
-RETURNING id, first_name, last_name, permission, about, email, socials, profile_image_url, hashed_password, password_changed_at, created_at, is_active, is_email_verified
+RETURNING id, first_name, last_name, account_id, status, about, email, socials, profile_image_url, hashed_password, password_changed_at, created_at, is_active, is_email_verified
 `
 
 type UpdateUserParams struct {
@@ -150,7 +156,7 @@ type UpdateUserParams struct {
 	IsActive          sql.NullBool          `json:"is_active"`
 	ProfileImageUrl   sql.NullString        `json:"profile_image_url"`
 	Socials           pqtype.NullRawMessage `json:"socials"`
-	Permission        sql.NullString        `json:"permission"`
+	Status            sql.NullString        `json:"status"`
 	About             sql.NullString        `json:"about"`
 	ID                sql.NullInt64         `json:"id"`
 }
@@ -166,7 +172,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		arg.IsActive,
 		arg.ProfileImageUrl,
 		arg.Socials,
-		arg.Permission,
+		arg.Status,
 		arg.About,
 		arg.ID,
 	)
@@ -175,7 +181,8 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.ID,
 		&i.FirstName,
 		&i.LastName,
-		&i.Permission,
+		&i.AccountID,
+		&i.Status,
 		&i.About,
 		&i.Email,
 		&i.Socials,
