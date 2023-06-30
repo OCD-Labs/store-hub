@@ -24,7 +24,9 @@ type StoreTx interface {
 
 	// CreateStoreTx creates a store and its ownership data
 	CreateStoreTx(ctx context.Context, arg CreateStoreTxParams) (CreateStoreTxResult, error)
-	ListStoresX(ctx context.Context, arg ListRemindersParamsX) ([]Store, pagination.Metadata, error)
+	
+	// ListAllStores do a fulltext search to list stores, and paginates accordingly.
+	ListAllStores(ctx context.Context, arg ListAllStoresParams) ([]Store, pagination.Metadata, error)
 }
 
 // A SQLTx provides all functions to execute SQL queries and transactions.

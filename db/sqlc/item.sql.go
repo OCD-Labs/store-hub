@@ -16,6 +16,7 @@ import (
 
 const createStoreItem = `-- name: CreateStoreItem :one
 INSERT INTO items (
+  name,
   description,
   price,
   store_id,
@@ -25,11 +26,12 @@ INSERT INTO items (
   supply_quantity,
   extra
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8
-) RETURNING id, description, price, store_id, image_urls, category, discount_percentage, supply_quantity, extra, is_frozen, created_at, updated_at
+  $1, $2, $3, $4, $5, $6, $7, $8, $9
+) RETURNING id, name, description, price, store_id, image_urls, category, discount_percentage, supply_quantity, extra, is_frozen, created_at, updated_at
 `
 
 type CreateStoreItemParams struct {
+	Name               string          `json:"name"`
 	Description        string          `json:"description"`
 	Price              string          `json:"price"`
 	StoreID            int64           `json:"store_id"`
@@ -42,6 +44,7 @@ type CreateStoreItemParams struct {
 
 func (q *Queries) CreateStoreItem(ctx context.Context, arg CreateStoreItemParams) (Item, error) {
 	row := q.db.QueryRowContext(ctx, createStoreItem,
+		arg.Name,
 		arg.Description,
 		arg.Price,
 		arg.StoreID,
@@ -54,6 +57,7 @@ func (q *Queries) CreateStoreItem(ctx context.Context, arg CreateStoreItemParams
 	var i Item
 	err := row.Scan(
 		&i.ID,
+		&i.Name,
 		&i.Description,
 		&i.Price,
 		&i.StoreID,
@@ -80,7 +84,7 @@ func (q *Queries) DeleteItem(ctx context.Context, itemID int64) error {
 }
 
 const getItem = `-- name: GetItem :one
-SELECT id, description, price, store_id, image_urls, category, discount_percentage, supply_quantity, extra, is_frozen, created_at, updated_at FROM items
+SELECT id, name, description, price, store_id, image_urls, category, discount_percentage, supply_quantity, extra, is_frozen, created_at, updated_at FROM items
 WHERE id = $1 AND supply_quantity > 0
 `
 
@@ -89,6 +93,7 @@ func (q *Queries) GetItem(ctx context.Context, itemID int64) (Item, error) {
 	var i Item
 	err := row.Scan(
 		&i.ID,
+		&i.Name,
 		&i.Description,
 		&i.Price,
 		&i.StoreID,
@@ -118,7 +123,7 @@ SET
   updated_at = COALESCE($9, updated_at)
 WHERE
   id = $10
-RETURNING id, description, price, store_id, image_urls, category, discount_percentage, supply_quantity, extra, is_frozen, created_at, updated_at
+RETURNING id, name, description, price, store_id, image_urls, category, discount_percentage, supply_quantity, extra, is_frozen, created_at, updated_at
 `
 
 type UpdateItemParams struct {
@@ -150,6 +155,7 @@ func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, e
 	var i Item
 	err := row.Scan(
 		&i.ID,
+		&i.Name,
 		&i.Description,
 		&i.Price,
 		&i.StoreID,

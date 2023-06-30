@@ -7,13 +7,13 @@ import (
 	"github.com/OCD-Labs/store-hub/pagination"
 )
 
-type ListRemindersParamsX struct {
+type ListAllStoresParams struct {
 	StoreName string
 	Filters   pagination.Filters
 }
 
-// ListStoresX do a fulltext search to list stores, and paginates accordingly.
-func (q *SQLTx) ListStoresX(ctx context.Context, arg ListRemindersParamsX) ([]Store, pagination.Metadata, error) {
+// ListAllStores do a fulltext search to list stores, and paginates accordingly.
+func (q *SQLTx) ListAllStores(ctx context.Context, arg ListAllStoresParams) ([]Store, pagination.Metadata, error) {
 	stmt := fmt.Sprintf(`
 		SELECT count(*) OVER() AS total_count, id, name, description, "profile_image_url", is_verified, category, is_frozen, created_at
 		FROM stores

@@ -41,7 +41,7 @@ func NewStoreHub(
 		logger:     logger,
 		cache:      cache,
 		tokenMaker: tokenMaker,
-		dbStore: store,
+		dbStore:    store,
 	}, nil
 }
 
