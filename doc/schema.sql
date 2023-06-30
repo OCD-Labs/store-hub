@@ -1,6 +1,6 @@
 -- SQL dump generated using DBML (dbml-lang.org)
 -- Database: PostgreSQL
--- Generated at: 2023-06-30T20:20:25.938Z
+-- Generated at: 2023-06-30T21:28:33.335Z
 
 CREATE TABLE "users" (
   "id" bigserial PRIMARY KEY,
@@ -43,7 +43,7 @@ CREATE TABLE "stores" (
 CREATE TABLE "store_owners" (
   "user_id" bigint NOT NULL,
   "store_id" bigint NOT NULL,
-  "created_at" timestamptz NOT NULL DEFAULT (now())
+  "added_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE "items" (
@@ -56,7 +56,8 @@ CREATE TABLE "items" (
   "discount_percentage" "NUMERIC(6, 4)" NOT NULL,
   "supply_quantity" bigint NOT NULL,
   "extra" jsonb NOT NULL,
-  "created_at" timestamptz NOT NULL DEFAULT (now())
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE "item_ratings" (

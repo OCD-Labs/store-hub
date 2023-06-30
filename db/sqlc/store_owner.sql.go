@@ -12,20 +12,42 @@ import (
 const createStoreOwner = `-- name: CreateStoreOwner :one
 INSERT INTO store_owners (
   user_id,
-  store_id
+  store_id,
+  permission_level
 ) VALUES (
-  $1, $2
-) RETURNING user_id, store_id, added_at
+  $1, $2, $3
+) RETURNING user_id, store_id, permission_level, added_at
 `
 
 type CreateStoreOwnerParams struct {
+	UserID          int64 `json:"user_id"`
+	StoreID         int64 `json:"store_id"`
+	PermissionLevel int16 `json:"permission_level"`
+}
+
+func (q *Queries) CreateStoreOwner(ctx context.Context, arg CreateStoreOwnerParams) (StoreOwner, error) {
+	row := q.db.QueryRowContext(ctx, createStoreOwner, arg.UserID, arg.StoreID, arg.PermissionLevel)
+	var i StoreOwner
+	err := row.Scan(
+		&i.UserID,
+		&i.StoreID,
+		&i.PermissionLevel,
+		&i.AddedAt,
+	)
+	return i, err
+}
+
+const deleteStoreOwner = `-- name: DeleteStoreOwner :exec
+DELETE FROM store_owners
+WHERE user_id = $1 AND store_id = $2
+`
+
+type DeleteStoreOwnerParams struct {
 	UserID  int64 `json:"user_id"`
 	StoreID int64 `json:"store_id"`
 }
 
-func (q *Queries) CreateStoreOwner(ctx context.Context, arg CreateStoreOwnerParams) (StoreOwner, error) {
-	row := q.db.QueryRowContext(ctx, createStoreOwner, arg.UserID, arg.StoreID)
-	var i StoreOwner
-	err := row.Scan(&i.UserID, &i.StoreID, &i.AddedAt)
-	return i, err
+func (q *Queries) DeleteStoreOwner(ctx context.Context, arg DeleteStoreOwnerParams) error {
+	_, err := q.db.ExecContext(ctx, deleteStoreOwner, arg.UserID, arg.StoreID)
+	return err
 }

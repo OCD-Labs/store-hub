@@ -15,14 +15,15 @@ import (
 type Item struct {
 	ID                 int64           `json:"id"`
 	Description        string          `json:"description"`
-	Price              string          `json:"price"`
+	Price              interface{}     `json:"price"`
 	StoreID            int64           `json:"store_id"`
 	ImageUrls          []string        `json:"image_urls"`
 	Category           string          `json:"category"`
-	DiscountPercentage string          `json:"discount_percentage"`
+	DiscountPercentage interface{}     `json:"discount_percentage"`
 	SupplyQuantity     int64           `json:"supply_quantity"`
 	Extra              json.RawMessage `json:"extra"`
 	CreatedAt          time.Time       `json:"created_at"`
+	UpdatedAt          time.Time       `json:"updated_at"`
 }
 
 type ItemRating struct {
@@ -56,9 +57,10 @@ type Store struct {
 }
 
 type StoreOwner struct {
-	UserID  int64     `json:"user_id"`
-	StoreID int64     `json:"store_id"`
-	AddedAt time.Time `json:"added_at"`
+	UserID          int64     `json:"user_id"`
+	StoreID         int64     `json:"store_id"`
+	PermissionLevel int16     `json:"permission_level"`
+	AddedAt         time.Time `json:"added_at"`
 }
 
 type User struct {

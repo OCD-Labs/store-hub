@@ -19,6 +19,7 @@ func createStoreAndOwners(t *testing.T) (CreateStoreTxResult, User) {
 			Category: util.RandomString(5),
 		},
 		OwnerID: user.ID,
+		PermissionLevel: 1,
 	}
 
 	res, err := testQueries.CreateStoreTx(context.Background(), arg)
