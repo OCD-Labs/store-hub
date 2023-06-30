@@ -58,6 +58,7 @@ Table store_owners {
 
 Table items as I {
   id bigserial [pk]
+  name varchar [not null]
   description varchar [not null]
   price NUMERIC(10, 2) [not null]
   store_id bigint [not null, ref: > S.id]

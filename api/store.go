@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	db "github.com/OCD-Labs/store-hub/db/sqlc"
+	"github.com/OCD-Labs/store-hub/pagination"
 	"github.com/OCD-Labs/store-hub/util"
 	"github.com/go-playground/validator"
 	"github.com/rs/zerolog/log"
@@ -73,7 +74,7 @@ func (s *StoreHub) createStore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// return response
-	s.writeJSON(w, http.StatusOK, envelop{
+	s.writeJSON(w, http.StatusCreated, envelop{
 		"status": "success",
 		"data": envelop{
 			"message": "created a new store",
@@ -82,13 +83,58 @@ func (s *StoreHub) createStore(w http.ResponseWriter, r *http.Request) {
 }
 
 type discoverStoreQueryStr struct {
+	StoreName     string `json:"store_name" validate:"required"`
 	Page     int    `json:"page" validate:"min=1,max=10000000"`
 	PageSize int    `json:"page_size" validate:"min=1,max=20"`
 	Sort     string `json:"sort"`
 }
 
+// discoverStoreByOwner maps to endpoint "GET /stores?<query_string>"
 func (s *StoreHub) discoverStore(w http.ResponseWriter, r *http.Request) {
+	// parse request
+	queryStr := r.URL.Query()
+	var reqQueryStr discoverStoreQueryStr
 
+	reqQueryStr.StoreName = s.readStr(queryStr, "store_name", "")
+	reqQueryStr.Sort = s.readStr(queryStr, "sort", "")
+
+	reqQueryStr.Page, _ = s.readInt(queryStr, "page", 1)
+	reqQueryStr.PageSize, _ = s.readInt(queryStr, "page_size", 15)
+
+	// validate query string
+	if err := s.bindJSONWithValidation(w, r, &reqQueryStr, validator.New()); err != nil {
+		return
+	}
+
+	// db query
+	arg := db.ListAllStoresParams{
+		StoreName: reqQueryStr.StoreName,
+		Filters: pagination.Filters{
+			Page:         reqQueryStr.Page,
+			PageSize:     reqQueryStr.PageSize,
+			Sort:         reqQueryStr.Sort,
+			SortSafelist: []string{"id", "store_name", "-id", "-store_name"},
+		},
+	}
+
+	stores, pagination, err := s.dbStore.ListAllStores(r.Context(), arg)
+	if err != nil {
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to retrieve stores")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	// return response
+	s.writeJSON(w, http.StatusCreated, envelop{
+		"status": "success",
+		"data": envelop{
+			"message": "found some stores",
+			"result": envelop{
+				"stores": stores,
+				"metadata": pagination,
+			},
+		},
+	}, nil)
 }
 
 func (s *StoreHub) freezeStore(w http.ResponseWriter, r *http.Request) {

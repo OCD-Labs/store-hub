@@ -9,4 +9,10 @@ INSERT INTO store_owners (
 
 -- name: DeleteStoreOwner :exec
 DELETE FROM store_owners
-WHERE user_id = $1 AND store_id = $2; 
+WHERE user_id = $1 AND store_id = $2;
+
+-- name: IsStoreOwner :one
+SELECT COUNT(*) AS ownership_count
+FROM store_owners
+WHERE user_id = sqlc.arg(user_id)
+  AND store_id = sqlc.arg(store_id);

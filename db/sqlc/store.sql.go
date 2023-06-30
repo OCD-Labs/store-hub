@@ -65,7 +65,7 @@ const getStoreByID = `-- name: GetStoreByID :one
 SELECT 
   s.id, s.name, s.description, s.profile_image_url, s.is_verified, s.category, s.is_frozen, s.created_at, 
   json_agg(json_build_object(
-      'user', json_build_object('id', u.id, 'first_name', u.first_name, 'last_name', u.last_name, 'email', u.email),
+      'user', json_build_object('id', u.id, 'account_id', u.account_id, 'first_name', u.first_name, 'last_name', u.last_name, 'email', u.email),
       'store_owners', json_build_object('user_id', so.user_id, 'store_id', so.store_id, 'added_at', so.added_at)
   )) AS owners
 FROM 
@@ -107,6 +107,45 @@ func (q *Queries) GetStoreByID(ctx context.Context, storeID int64) (GetStoreByID
 		&i.Owners,
 	)
 	return i, err
+}
+
+const getStoreByOwner = `-- name: GetStoreByOwner :many
+SELECT s.id, s.name, s.description, s.profile_image_url, s.is_verified, s.category, s.is_frozen, s.created_at
+FROM stores s
+JOIN store_owners so ON s.id = so.store_id
+WHERE so.user_id = $1
+`
+
+func (q *Queries) GetStoreByOwner(ctx context.Context, userID int64) ([]Store, error) {
+	rows, err := q.db.QueryContext(ctx, getStoreByOwner, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Store{}
+	for rows.Next() {
+		var i Store
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.ProfileImageUrl,
+			&i.IsVerified,
+			&i.Category,
+			&i.IsFrozen,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateStore = `-- name: UpdateStore :one

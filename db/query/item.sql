@@ -1,5 +1,6 @@
 -- name: CreateStoreItem :one
 INSERT INTO items (
+  name,
   description,
   price,
   store_id,
@@ -9,7 +10,7 @@ INSERT INTO items (
   supply_quantity,
   extra
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8
+  $1, $2, $3, $4, $5, $6, $7, $8, $9
 ) RETURNING *;
 
 -- name: GetItem :one

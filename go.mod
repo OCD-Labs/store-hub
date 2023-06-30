@@ -3,11 +3,11 @@ module github.com/OCD-Labs/store-hub
 go 1.20
 
 require (
-	github.com/bmizerany/pat v0.0.0-20210406213842-e4b6760bdd6f
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.1.2
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
+	github.com/julienschmidt/httprouter v1.3.0
 	github.com/lib/pq v1.10.9
 	github.com/o1egl/paseto v1.0.0
 	github.com/rs/zerolog v1.29.1

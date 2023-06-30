@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/go-playground/validator"
+	"github.com/julienschmidt/httprouter"
 	"github.com/rs/zerolog/log"
 )
 
@@ -143,4 +146,40 @@ func (s *StoreHub) errorResponse(
 			Msg("failed to write response body")
 		w.WriteHeader(500)
 	}
+}
+
+// retrieveIDParam returns a path variable URL parameter from the current request context,
+func (s *StoreHub) retrieveIDParam(r *http.Request, pathVariable string) (int64, error) {
+	params := httprouter.ParamsFromContext(r.Context())
+
+	id, err := strconv.ParseInt(params.ByName(pathVariable), 10, 64)
+
+	if err != nil || id < 1 {
+		return 0, errors.New("invalid id parameter")
+	}
+
+	return id, nil
+}
+
+// readInt parses string values provided through the query string
+func (s *StoreHub) readStr(fields url.Values, key string, defaultVal string) string {
+	val := fields.Get(key)
+	if val == "" {
+		return defaultVal
+	}
+	return val
+}
+
+// readInt parses integer values provided through the query string
+func (s *StoreHub) readInt(queryStr url.Values, key string, defaultValue int) (int, error) {
+	str := queryStr.Get(key)
+	if str == "" {
+		return defaultValue, nil
+	}
+	intValue, err := strconv.Atoi(str)
+	if err != nil {
+		return defaultValue, err
+	}
+
+	return intValue, nil
 }

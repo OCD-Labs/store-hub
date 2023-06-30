@@ -18,8 +18,10 @@ type Querier interface {
 	DeleteStoreOwner(ctx context.Context, arg DeleteStoreOwnerParams) error
 	GetItem(ctx context.Context, itemID int64) (Item, error)
 	GetStoreByID(ctx context.Context, storeID int64) (GetStoreByIDRow, error)
+	GetStoreByOwner(ctx context.Context, userID int64) ([]Store, error)
 	GetUserByEmail(ctx context.Context, userEmail string) (User, error)
 	GetUserByID(ctx context.Context, userID int64) (User, error)
+	IsStoreOwner(ctx context.Context, arg IsStoreOwnerParams) (int64, error)
 	UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, error)
 	UpdateStore(ctx context.Context, arg UpdateStoreParams) (Store, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
