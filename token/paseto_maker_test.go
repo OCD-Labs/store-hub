@@ -17,7 +17,8 @@ func TestPasetoMaker(t *testing.T) {
 	maker, err := NewPasetoMaker(config.TokenSymmetricKey)
 	require.NoError(t, err)
 
-	userID := "643a7dedbc8c7b338e50bd0f"
+	var userID int64 = 1
+	accountID := "643a7dedbc8c7b338e50bd0f"
 
 	userRole := util.RandomPermission()
 	duration := 15 * time.Minute
@@ -27,7 +28,7 @@ func TestPasetoMaker(t *testing.T) {
 	issuedAt := time.Now()
 	expiredAt := time.Now().Add(duration)
 
-	token, payload, err := maker.CreateToken(userID, userRole, &perlvl, duration)
+	token, payload, err := maker.CreateToken(userID, accountID, userRole, &perlvl, duration)
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
 	require.NotEmpty(t, payload)
@@ -41,7 +42,9 @@ func TestPasetoMaker(t *testing.T) {
 
 	require.NotZero(t, payload.ID)
 	require.Equal(t, userID, payload.UserID)
+	require.Equal(t, accountID, payload.AccountID)
 	require.Equal(t, userRole, payload.UserRole)
+	require.Equal(t, perlvl, *payload.PermissionLevel)
 	require.WithinDuration(t, issuedAt, payload.IssuedAt, time.Second)
 	require.WithinDuration(t, expiredAt, payload.ExpiredAt, time.Second)
 }
@@ -57,6 +60,7 @@ func TestExpiredPasetoToken(t *testing.T) {
 	var perlvl int16 = 1
 
 	token, payload, err := maker.CreateToken(
+		1,
 		"643a7dedbc8c7b338e50bd0f",
 		util.RandomPermission(),
 		&perlvl,

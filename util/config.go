@@ -13,6 +13,7 @@ type Configs struct {
 	EmailSenderName     string   `mapstructure:"EMAIL_SENDER_NAME"`
 	EmailSenderPassword string   `mapstructure:"EMAIL_SENDER_PASSWORD"`
 	TokenSymmetricKey   string   `mapstructure:"TOKEN_SYMMETRIC_KEY"`
+	RedisAddress        string   `mapstructure:"REDIS_ADDRESS"`
 }
 
 // ParseConfigs parses the configuration files.

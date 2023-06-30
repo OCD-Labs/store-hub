@@ -11,7 +11,7 @@ func (s *StoreHub) setupRoutes() http.Handler {
 
 	mux.Add(http.MethodGet, "/ping", http.HandlerFunc(s.healthcheck))
 
-	mux.Add(http.MethodPost, "/stores", http.HandlerFunc(s.createStore))
+	mux.Add(http.MethodPost, "/stores", s.authenticate(http.HandlerFunc(s.createStore)))
 	mux.Add(http.MethodGet, "/stores", http.HandlerFunc(s.discoverStore))
 	mux.Add(http.MethodPatch, "/stores/{id}/freeze", http.HandlerFunc(s.freezeStore))
 	mux.Add(http.MethodPatch, "/stores/{id}/unfreeze", http.HandlerFunc(s.unfreezeStore))
@@ -29,5 +29,7 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	mux.Add(http.MethodGet, "/store/{id}/owners", http.HandlerFunc(s.listOwners))
 	mux.Add(http.MethodDelete, "/store/{id}/owners", http.HandlerFunc(s.deleteOwner))
 
-	return mux
+	mux.Add(http.MethodGet, "/users/{id}/stores", http.HandlerFunc(s.discoverStoreByOwner))
+
+	return s.recoverPanic(s.enableCORS(s.httpLogger(mux)))
 }

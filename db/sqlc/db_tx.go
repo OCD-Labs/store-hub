@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
+	"github.com/OCD-Labs/store-hub/pagination"
 )
 
 var (
@@ -22,6 +24,7 @@ type StoreTx interface {
 
 	// CreateStoreTx creates a store and its ownership data
 	CreateStoreTx(ctx context.Context, arg CreateStoreTxParams) (CreateStoreTxResult, error)
+	ListStoresX(ctx context.Context, arg ListRemindersParamsX) ([]Store, pagination.Metadata, error)
 }
 
 // A SQLTx provides all functions to execute SQL queries and transactions.

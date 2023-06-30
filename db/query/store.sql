@@ -12,7 +12,7 @@ INSERT INTO stores (
 SELECT 
   s.*, 
   json_agg(json_build_object(
-      'user', json_build_object('id', u.id, 'first_name', u.first_name, 'last_name', u.last_name, 'email', u.email),
+      'user', json_build_object('id', u.id, 'account_id', u.account_id, 'first_name', u.first_name, 'last_name', u.last_name, 'email', u.email),
       'store_owners', json_build_object('user_id', so.user_id, 'store_id', so.store_id, 'added_at', so.added_at)
   )) AS owners
 FROM 
@@ -25,6 +25,13 @@ WHERE
   s.id = sqlc.arg(store_id)
 GROUP BY 
   s.id;
+
+-- name: GetStoreByOwner :many
+SELECT s.*
+FROM stores s
+JOIN store_owners so ON s.id = so.store_id
+WHERE so.user_id = sqlc.arg(user_id);
+
 
 -- name: UpdateStore :one
 UPDATE stores
