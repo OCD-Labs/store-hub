@@ -1,1 +1,1 @@
-# store-hub
+# Store Hub — Server
