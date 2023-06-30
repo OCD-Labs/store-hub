@@ -52,3 +52,23 @@ func RandomPermission() string {
 func RandomEmail() string {
 	return fmt.Sprintf("%s@gmail.com", RandomString(6))
 }
+
+// Extract retrieve a substring of the PASETO token string value.
+func Extract(s string) string {
+	start := "v2.local."
+	end := ".bnVsbA"
+	startIndex := strings.Index(s, start)
+	endIndex := strings.Index(s, end)
+
+	if startIndex == -1 || endIndex == -1 {
+		return ""
+	}
+
+	startIndex += len(start)
+	return s[startIndex:endIndex]
+}
+
+// Concat concatenates the substring of the PASETO token string value.
+func Concat(s string) string {
+	return fmt.Sprintf("v2.local.%s.bnVsbA", s)
+}

@@ -13,3 +13,4 @@ DROP TABLE IF EXISTS "store_owners";
 DROP TABLE IF EXISTS "stores";
 DROP TABLE IF EXISTS "sessions";
 DROP TABLE IF EXISTS "users";
+DROP FUNCTION IF EXISTS delete_expired_sessions();

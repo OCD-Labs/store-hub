@@ -18,8 +18,7 @@ func createStoreAndOwners(t *testing.T) (CreateStoreTxResult, User) {
 			ProfileImageUrl: fmt.Sprintf("https://%s.com", util.RandomString(15)),
 			Category:        util.RandomString(5),
 		},
-		OwnerID:     user.ID,
-		AccessLevel: 1,
+		OwnerID: user.ID,
 	}
 
 	res, err := testQueries.CreateStoreTx(context.Background(), arg)

@@ -30,6 +30,9 @@ type StoreTx interface {
 
 	// ListStoreItems do a fulltext search to list store items, and paginates accordingly.
 	ListStoreItems(ctx context.Context, arg ListStoreItemsParams) ([]Item, pagination.Metadata, error)
+
+	// CreateUserTx creates a user row and schedules a verify email task on redis.
+	CreateUserTx(ctx context.Context, arg CreateUserTxParams) (CreateUserTxResult, error)
 }
 
 // A SQLTx provides all functions to execute SQL queries and transactions.
