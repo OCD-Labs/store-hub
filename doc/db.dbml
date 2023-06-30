@@ -5,14 +5,11 @@ Project store_hub {
   '''
 }
 
-
-
-
 Table users as U {
   id bigserial [pk]
   first_name varchar [not null]
   last_name varchar [not null]
-  role varchar [not null]
+  permission varchar [not null]
   about varchar [not null]
   email varchar [unique, not null]
   socials jsonb [not null]
@@ -23,9 +20,6 @@ Table users as U {
   is_active boolean [not null, default: false]
   is_email_verified boolean [not null, default: false]
 }
-
-
-
 
 Table sessions {
   id uuid [pk]
@@ -39,9 +33,6 @@ Table sessions {
   created_at timestamptz [not null, default: `now()`]
 }
 
-
-
-
 Table stores as S {
   id bigserial [pk]
   name varchar [not null]
@@ -52,21 +43,15 @@ Table stores as S {
   created_at timestamptz [not null, default: `now()`]
 }
 
-
-
-
 Table store_owners {
   user_id bigint [ref: > U.id, not null]
   store_id bigint [ref: > S.id, not null]
   created_at timestamptz [not null, default: `now()`]
-
+  
   Indexes {
     (user_id, store_id)
   }
 }
-
-
-
 
 Table items as I {
   id bigserial [pk]
@@ -80,9 +65,6 @@ Table items as I {
   extra jsonb [not null]
   created_at timestamptz [not null, default: `now()`]
 }
-
-
-
 
 Table item_ratings {
   user_id bigint [ref: > U.id, not null]

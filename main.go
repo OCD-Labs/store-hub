@@ -11,7 +11,7 @@ import (
 	"github.com/OCD-Labs/store-hub/util"
 )
 
-func main()  {
+func main() {
 	configs, err := util.ParseConfigs(".")
 	if err != nil {
 		log.Fatal().Err(err).Msg("error occurred parsing configs")

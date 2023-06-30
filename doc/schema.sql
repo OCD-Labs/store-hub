@@ -1,12 +1,12 @@
 -- SQL dump generated using DBML (dbml-lang.org)
 -- Database: PostgreSQL
--- Generated at: 2023-06-30T19:55:56.694Z
+-- Generated at: 2023-06-30T20:20:25.938Z
 
 CREATE TABLE "users" (
   "id" bigserial PRIMARY KEY,
   "first_name" varchar NOT NULL,
   "last_name" varchar NOT NULL,
-  "role" varchar NOT NULL,
+  "permission" varchar NOT NULL,
   "about" varchar NOT NULL,
   "email" varchar UNIQUE NOT NULL,
   "socials" jsonb NOT NULL,

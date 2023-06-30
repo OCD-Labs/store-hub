@@ -20,7 +20,7 @@ type StoreHub struct {
 }
 
 func NewStoreHub(configs util.Configs, logger zerolog.Logger) *StoreHub {
-	return &StoreHub{ configs, logger }
+	return &StoreHub{configs, logger}
 }
 
 func (s *StoreHub) Start() error {
@@ -65,7 +65,7 @@ func (s *StoreHub) Start() error {
 		return err
 	}
 
-	err = <- recvErr
+	err = <-recvErr
 	if err != nil {
 		return err
 	}
