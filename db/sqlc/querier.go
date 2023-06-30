@@ -9,7 +9,10 @@ import (
 )
 
 type Querier interface {
+	CreateStore(ctx context.Context, arg CreateStoreParams) (Store, error)
+	CreateStoreOwner(ctx context.Context, arg CreateStoreOwnerParams) (StoreOwner, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	GetStoreByID(ctx context.Context, storeID int64) (GetStoreByIDRow, error)
 	GetUserByEmail(ctx context.Context, userEmail string) (User, error)
 	GetUserByID(ctx context.Context, userID int64) (User, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)

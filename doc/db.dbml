@@ -46,7 +46,7 @@ Table stores as S {
 Table store_owners {
   user_id bigint [ref: > U.id, not null]
   store_id bigint [ref: > S.id, not null]
-  created_at timestamptz [not null, default: `now()`]
+  added_at timestamptz [not null, default: `now()`]
   
   Indexes {
     (user_id, store_id)

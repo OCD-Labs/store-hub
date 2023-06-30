@@ -11,7 +11,7 @@ import (
 	"github.com/OCD-Labs/store-hub/util"
 )
 
-var testQueries *Queries
+var testQueries StoreTx
 var testDB *sql.DB
 
 func TestMain(m *testing.M) {
@@ -25,7 +25,7 @@ func TestMain(m *testing.M) {
 		log.Fatal("cannot connect to db: ", err)
 	}
 
-	testQueries = New(testDB)
+	testQueries = NewSQLTx(testDB)
 
 	os.Exit(m.Run())
 }

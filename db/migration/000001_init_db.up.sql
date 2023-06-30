@@ -43,7 +43,7 @@ CREATE TABLE "stores" (
 CREATE TABLE "store_owners" (
   "user_id" bigint NOT NULL,
   "store_id" bigint NOT NULL,
-  "created_at" timestamptz NOT NULL DEFAULT (now())
+  "added_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE "items" (

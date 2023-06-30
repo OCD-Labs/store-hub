@@ -56,9 +56,9 @@ type Store struct {
 }
 
 type StoreOwner struct {
-	UserID    int64     `json:"user_id"`
-	StoreID   int64     `json:"store_id"`
-	CreatedAt time.Time `json:"created_at"`
+	UserID  int64     `json:"user_id"`
+	StoreID int64     `json:"store_id"`
+	AddedAt time.Time `json:"added_at"`
 }
 
 type User struct {
