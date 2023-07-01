@@ -18,7 +18,7 @@ type createStoreRequestBody struct {
 }
 
 type createStorePathVar struct {
-	UserID int64 `json:"id" validate:"required,min=1"`
+	UserID int64 `json:"user_id" validate:"required,min=1"`
 }
 
 // createStore maps to endpoint "POST /users/{id}/stores".
@@ -27,7 +27,7 @@ func (s *StoreHub) createStore(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	// parse path variables
-	pathVar.UserID, err = s.retrieveIDParam(r, "id")
+	pathVar.UserID, err = s.retrieveIDParam(r, "user_id")
 	if err != nil || pathVar.UserID == 0 {
 		s.errorResponse(w, r, http.StatusBadRequest, "invalid user id")
 		return
