@@ -3,7 +3,6 @@ package api
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -234,7 +233,7 @@ func (s *StoreHub) createUserOrLoginUser(w http.ResponseWriter, r *http.Request)
 				FirstName: "string",
 				LastName:  "string",
 				Password:  "stringst",
-				Email:     fmt.Sprintf("user-%s@example.com", util.RandomString(6)),
+				Email:     util.RandomEmail(),
 				AccountID: "string",
 			}
 

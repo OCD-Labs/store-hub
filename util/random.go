@@ -50,7 +50,7 @@ func RandomPermission() string {
 
 // RandomEmail generates a random email.
 func RandomEmail() string {
-	return fmt.Sprintf("%s@gmail.com", RandomString(6))
+	return fmt.Sprintf("%s-%s@gmail.com", RandomString(6), RandomString(6))
 }
 
 // Extract retrieve a substring of the PASETO token string value.
