@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -151,6 +152,8 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request, reqBody cr
 		},
 	}
 
+	fmt.Printf("%+v", arg)
+
 	result, err := s.dbStore.CreateUserTx(r.Context(), arg)
 	if err != nil {
 		if pqError, ok := err.(*pq.Error); ok {
@@ -234,7 +237,7 @@ func (s *StoreHub) createUserOrLoginUser(w http.ResponseWriter, r *http.Request)
 				LastName:  "string",
 				Password:  "stringst",
 				Email:     util.RandomEmail(),
-				AccountID: "string",
+				AccountID: reqBody.AccountID,
 			}
 
 			s.createUser(w, r, createUserRequestBody)
