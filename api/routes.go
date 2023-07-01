@@ -32,7 +32,7 @@ func (s *StoreHub) setupRoutes() http.Handler {
 
 	// user
 	mux.HandlerFunc(http.MethodPost, "/api/v1/users", s.createUser)
-	mux.HandlerFunc(http.MethodGet, "/api/v1/auth/login", s.login)
+	mux.HandlerFunc(http.MethodPost, "/api/v1/auth/login", s.login)
 	mux.Handler(http.MethodPost, "/api/v1/auth/logout", s.authenticate(http.HandlerFunc(s.logout)))
 	mux.Handler(http.MethodGet, "/api/v1/users/{id}", s.authenticate(http.HandlerFunc(s.getUser)))
 
