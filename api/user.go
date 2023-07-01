@@ -152,6 +152,8 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request, reqBody cr
 		},
 	}
 
+	fmt.Printf("%+v", arg)
+
 	result, err := s.dbStore.CreateUserTx(r.Context(), arg)
 	if err != nil {
 		if pqError, ok := err.(*pq.Error); ok {
@@ -234,8 +236,8 @@ func (s *StoreHub) createUserOrLoginUser(w http.ResponseWriter, r *http.Request)
 				FirstName: "string",
 				LastName:  "string",
 				Password:  "stringst",
-				Email:     fmt.Sprintf("user-%s@example.com", util.RandomString(6)),
-				AccountID: "string",
+				Email:     util.RandomEmail(),
+				AccountID: reqBody.AccountID,
 			}
 
 			s.createUser(w, r, createUserRequestBody)
