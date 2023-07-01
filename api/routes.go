@@ -30,11 +30,15 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	mux.Handler(http.MethodDelete, "/api/v1/users/{user_id}/store/{store_id}/owners", s.authenticate(http.HandlerFunc(s.deleteOwner)))
 	mux.Handler(http.MethodDelete, "/api/v1/users/{user_id}/stores/{store_id}", s.authenticate(http.HandlerFunc(s.deleteStore)))
 
+
+	// TODO: After the hackathon , work on a proper create_user & login process.
+	// mux.HandlerFunc(http.MethodPost, "/api/v1/users", s.createUser)
+	// mux.HandlerFunc(http.MethodPost, "/api/v1/auth/login", s.login)
+
 	// user
-	mux.HandlerFunc(http.MethodPost, "/api/v1/users", s.createUser)
-	mux.HandlerFunc(http.MethodPost, "/api/v1/auth/login", s.login)
 	mux.Handler(http.MethodPost, "/api/v1/auth/logout", s.authenticate(http.HandlerFunc(s.logout)))
 	mux.Handler(http.MethodGet, "/api/v1/users/{id}", s.authenticate(http.HandlerFunc(s.getUser)))
+	mux.HandlerFunc(http.MethodPost, "/api/v1/auth", s.createUserOrLoginUser)
 
 	// TODO:
 	mux.HandlerFunc(http.MethodPatch, "/api/v1/stores/{id}/freeze", http.HandlerFunc(s.freezeStore))

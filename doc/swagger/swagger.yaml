@@ -4,8 +4,8 @@ info:
   description: "
   Rediscovery e-commerce et blockchain—server."
   version: "1.0.0"
-host: "storehub-zjp3.onrender.com"
-# host: "localhost:6780"
+# host: "storehub-zjp3.onrender.com"
+host: "localhost:6780"
 basePath: "/api/v1"
 schemes:
   - "https"
@@ -688,6 +688,43 @@ paths:
             properties:
               data:
                 $ref: "#/definitions/userResponse"
+        400:
+          description: Bad request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        404:
+          description: Not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /auth:
+    post:
+      summary: Create user or Login a user
+      parameters:
+        - name: requestBody
+          in: body
+          description: User NEAR AccountID
+          required: true
+          schema:
+            type: object
+            properties:
+              account_id:
+                type: string
+                minLength: 2
+                maxLength: 64
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: "#/definitions/userResponse"
+              access_token:
+                type: string
         400:
           description: Bad request
           schema:
