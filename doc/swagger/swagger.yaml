@@ -687,7 +687,7 @@ paths:
             type: object
             properties:
               data:
-                $ref: "#/definitions/User"
+                $ref: "#/definitions/userResponse"
         400:
           description: Bad request
           schema:
