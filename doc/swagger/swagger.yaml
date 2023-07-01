@@ -4,7 +4,7 @@ info:
   description: "
   Rediscovery e-commerce et blockchain—server."
   version: "1.0.0"
-host: "https://storehub-zjp3.onrender.com"
+host: "storehub-zjp3.onrender.com"
 # host: "localhost:8081"
 basePath: "/api/v1"
 schemes:
