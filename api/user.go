@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -102,21 +103,13 @@ func newUserResponse(user db.User) userResponse {
 }
 
 // createUser maps to endpoint "POST /users"
-func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request) {
-	// parse request
-	var req createUserRequest
-	if err := s.readJSON(w, r, &req); err != nil {
-		s.errorResponse(w, r, http.StatusBadRequest, "failed to parse request body")
-		log.Error().Err(err).Msg("error occurred")
-		return
-	}
-
-	if err := s.bindJSONWithValidation(w, r, req, validator.New()); err != nil {
+func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request, reqBody createUserRequest) {
+	if err := s.bindJSONWithValidation(w, r, reqBody, validator.New()); err != nil {
 		return
 	}
 
 	// hash password
-	hashedPassword, err := util.HashedPassword(req.Password)
+	hashedPassword, err := util.HashedPassword(reqBody.Password)
 	if err != nil {
 		s.errorResponse(w, r, http.StatusInternalServerError, "failed to hash password")
 		log.Error().Err(err).Msg("error occurred")
@@ -125,17 +118,17 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request) {
 
 	// db transaction
 	createUserArg := db.CreateUserParams{
-		FirstName:      req.FirstName,
-		LastName:       req.LastName,
-		AccountID:      req.AccountID,
+		FirstName:      reqBody.FirstName,
+		LastName:       reqBody.LastName,
+		AccountID:      reqBody.AccountID,
 		Status:         util.NORMALUSER,
 		HashedPassword: hashedPassword,
-		Email:          req.Email,
-		Socials: []byte("{}"),
+		Email:          reqBody.Email,
+		Socials:        []byte("{}"),
 	}
 
-	if req.ProfileImageUrl != nil {
-		createUserArg.ProfileImageUrl.String = *req.ProfileImageUrl
+	if reqBody.ProfileImageUrl != nil {
+		createUserArg.ProfileImageUrl.String = *reqBody.ProfileImageUrl
 		createUserArg.ProfileImageUrl.Valid = true
 	}
 
@@ -174,6 +167,14 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// access token
+	token, _, err := s.tokenMaker.CreateToken(result.User.ID, reqBody.AccountID, 24*time.Hour)
+	if err != nil {
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to generate access token")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
 	// return response
 	s.writeJSON(w, http.StatusCreated, envelop{
 		"status": "success",
@@ -181,68 +182,14 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request) {
 			"message": "new user created",
 			"result": envelop{
 				"user": newUserResponse(result.User),
+				"access_token": token,
 			},
 		},
 	}, nil)
 }
 
-type loginRequest struct {
-	// Email    string `json:"email" validate:"required,email"`
-	// Password string `json:"password" validate:"required,min=8"`
-	AccountID string `json:"account_id" validate:"required,min=2,max=64"`
-}
-
 // login maps to endpoint "GET /auth/login"
-func (s *StoreHub) login(w http.ResponseWriter, r *http.Request) {
-	var req loginRequest
-	if err := s.readJSON(w, r, &req); err != nil {
-		s.errorResponse(w, r, http.StatusBadRequest, "failed to parse request body")
-		log.Error().Err(err).Msg("error occurred")
-		return
-	}
-
-	if err := s.bindJSONWithValidation(w, r, &req, validator.New()); err != nil {
-		return
-	}
-
-	user, err := s.dbStore.GetUserByAccountID(r.Context(), req.AccountID)
-	if err != nil {
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
-			s.errorResponse(w, r, http.StatusNotFound, "user not found")
-		default:
-			s.errorResponse(w, r, http.StatusInternalServerError, "failed to fetch user's profile")
-		}
-		log.Error().Err(err).Msg("error occurred")
-		return
-	}
-
-	// if !user.IsEmailVerified {
-	// 	newReq, err := http.NewRequest(http.MethodPost, "/api/v1/resend_email_verification", r.Body)
-	// 	if err != nil {
-	// 		s.errorResponse(w, r, http.StatusInternalServerError, "failed to resend email verification mail")
-	// 		log.Error().Err(err).Msg("error occurred")
-	// 		return
-	// 	}
-
-	// 	for key, value := range r.Header {
-	// 		newReq.Header.Set(key, value[0])
-	// 	}
-
-	// 	http.Redirect(w, r, fmt.Sprintf("/api/v1/resend_email_verification?user_id=%d", user.ID), http.StatusTemporaryRedirect)
-	// }
-
-	// if !user.IsActive {
-	// 	s.errorResponse(w, r, http.StatusNoContent, "user is not activated")
-	// 	return
-	// }
-
-	// err = util.CheckPassword(user.HashedPassword, req.Password)
-	// if err != nil {
-	// 	s.errorResponse(w, r, http.StatusUnauthorized, "Invalid login credentials")
-	// 	log.Error().Err(err).Msg("error occurred")
-	// 	return
-	// }
+func (s *StoreHub) login(w http.ResponseWriter, r *http.Request, req createUserOrLoginUserRequestBody, user db.User) {
 
 	token, _, err := s.tokenMaker.CreateToken(user.ID, req.AccountID, 24*time.Hour)
 	if err != nil {
@@ -261,6 +208,47 @@ func (s *StoreHub) login(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 	}, nil)
+}
+
+type createUserOrLoginUserRequestBody struct {
+	AccountID string `json:"account_id" validate:"required,min=2,max=64"`
+}
+
+func (s *StoreHub) createUserOrLoginUser(w http.ResponseWriter, r *http.Request) {
+	var reqBody createUserOrLoginUserRequestBody
+	if err := s.readJSON(w, r, &reqBody); err != nil {
+		s.errorResponse(w, r, http.StatusBadRequest, "failed to parse request body")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	if err := s.bindJSONWithValidation(w, r, &reqBody, validator.New()); err != nil {
+		return
+	}
+
+	user, err := s.dbStore.GetUserByAccountID(r.Context(), reqBody.AccountID)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			createUserRequestBody := createUserRequest{
+				FirstName: "string",
+				LastName:  "string",
+				Password:  "stringst",
+				Email:     fmt.Sprintf("user-%s@example.com", util.RandomString(6)),
+				AccountID: "string",
+			}
+
+			s.createUser(w, r, createUserRequestBody)
+
+			return
+		default:
+			s.errorResponse(w, r, http.StatusInternalServerError, "failed to fetch user's profile")
+		}
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	s.login(w, r, reqBody, user)
 }
 
 // logout maps to endpoint "POST /auth/logout"
