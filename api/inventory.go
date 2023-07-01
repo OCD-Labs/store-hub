@@ -89,7 +89,7 @@ type addStoreItemRequestBody struct {
 	Description        string   `json:"description" validate:"required"`
 	Price              string   `json:"price" validate:"required"`
 	ImageURLs          []string `json:"image_urls" validate:"required"`
-	Category           string   `json:"category" validate:"category"`
+	Category           string   `json:"category" validate:"required"`
 	DiscountPercentage string   `json:"discount_percentage" validate:"required"`
 	SupplyQuantity     int64    `json:"supply_quantity" validate:"required"`
 }

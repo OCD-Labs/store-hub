@@ -15,4 +15,5 @@ WHERE user_id = $1 AND store_id = $2;
 SELECT COUNT(*) AS ownership_count, access_level
 FROM store_owners
 WHERE user_id = $1
-  AND store_id = $2;
+  AND store_id = $2
+GROUP BY access_level;
