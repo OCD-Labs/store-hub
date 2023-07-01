@@ -1,0 +1,993 @@
+swagger: "2.0"
+info:
+  title: "StoreHub API"
+  description: "
+  Rediscovery e-commerce et blockchain—server."
+  version: "1.0.0"
+host: "storehub.onrender.com"
+# host: "localhost:8081"
+basePath: "/api/v1"
+schemes:
+  - "https"
+  - "http"
+consumes:
+  - "application/json"
+produces:
+  - "application/json"
+securityDefinitions:
+  Bearer:
+    type: apiKey
+    name: Authorization
+    in: header
+paths:
+  /users/{id}/stores:
+    post:
+      summary: Create a new store
+      parameters:
+        - name: id
+          in: path
+          description: User ID
+          required: true
+          type: integer
+          minimum: 1
+        - name: requestBody
+          in: body
+          description: Store details
+          required: true
+          schema:
+            $ref: "#/definitions/createStoreRequestBody"
+      responses:
+        201:
+          description: Store created successfully
+          schema:
+            $ref: "#/definitions/storeResponse"
+        400:
+          description: Invalid request or user ID
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: Unauthorized request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+    get:
+      summary: Retrieve stores owned by a user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The ID of the user
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      stores:
+                        type: array
+                        items:
+                          $ref: '#/definitions/store'
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+  /users/{user_id}/stores/{store_id}/items:
+    post:
+      summary: Add a new item to a store
+      parameters:
+        - name: user_id
+          in: path
+          description: User ID
+          required: true
+          type: integer
+          minimum: 1
+        - name: store_id
+          in: path
+          description: Store ID
+          required: true
+          type: integer
+          minimum: 1
+        - name: requestBody
+          in: body
+          description: Item details
+          required: true
+          schema:
+            $ref: "#/definitions/addStoreItemRequestBody"
+      responses:
+        201:
+          description: Item added successfully
+          schema:
+            $ref: "#/definitions/addStoreItemResponse"
+        400:
+          description: Invalid request or user/store ID
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: Unauthorized request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        403:
+          description: Access to store denied
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+    get:
+      summary: List owned store items
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The ID of the user
+        - in: path
+          name: store_id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The ID of the store
+        - in: query
+          name: item_name
+          schema:
+            type: string
+          description: The name of the item
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10000000
+          description: The page number
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+          description: The number of items per page
+        - in: query
+          name: sort
+          schema:
+            type: string
+          description: The sorting order (e.g., "id", "category", "price", "name", "-id", "-category", "-name", "-price")
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/definitions/storeItem'
+                      metadata:
+                        $ref: '#/definitions/pagination'
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        403:
+          description: Forbidden
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+  /users/{user_id}/stores/{store_id}/items/{item_id}:
+    patch:
+      summary: Update store item
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The ID of the user
+        - in: path
+          name: store_id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The ID of the store
+        - in: path
+          name: item_id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The ID of the item
+        - name: requestBody
+          in: body
+          required: true
+          description: New Item details
+          schema:
+            $ref: '#/definitions/updateStoreItemsRequestBody'
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      item:
+                        $ref: '#/definitions/storeItem'
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        403:
+          description: Forbidden
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+    delete:
+      summary: Delete a store item
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The ID of the user
+        - in: path
+          name: store_id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The ID of the store
+        - in: path
+          name: item_id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The ID of the item
+      responses:
+        204:
+          description: No Content
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        403:
+          description: Forbidden
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+  /users/{user_id}/store/{store_id}/owners:
+    post:
+      summary: Add a new store owner
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The ID of the user
+        - in: path
+          name: store_id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The ID of the store
+        - name: requestBody
+          in: body
+          description: New Owner details
+          required: true
+          schema:
+            type: object
+            properties:
+              account_id:
+                type: string
+                minLength: 2
+                maxLength: 64
+      responses:
+        201:
+          description: Created
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      owner:
+                        $ref: '#/definitions/storeOwner'
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        403:
+          description: Forbidden
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+    delete:
+      summary: Remove a user from store ownership
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The ID of the user
+        - in: path
+          name: store_id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The ID of the store
+        - name: requestBody
+          in: body
+          description: Store details
+          required: true
+          schema:
+            type: object
+            properties:
+              account_id:
+                type: string
+                minLength: 2
+                maxLength: 64
+            required:
+              - account_id
+      responses:
+        204:
+          description: No Content
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        403:
+          description: Forbidden
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+  /stores:
+    get:
+      summary: Discover stores
+      parameters:
+        - in: query
+          name: store_name
+          schema:
+            type: string
+          description: Filter stores by name
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10000000
+          description: The page number for pagination
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+          description: The number of stores to include per page
+        - in: query
+          name: sort
+          schema:
+            type: string
+          description: The sorting criteria for the stores
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      stores:
+                        type: array
+                        items:
+                          $ref: '#/definitions/store'
+                      metadata:
+                        $ref: '#/definitions/pagination'
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /stores/{id}/items:
+    get:
+      summary: List store items
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+            minimum: 1
+          description: The ID of the store
+        - in: query
+          name: item_name
+          schema:
+            type: string
+          description: Filter items by name
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10000000
+          description: The page number for pagination
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+          description: The number of items to include per page
+        - in: query
+          name: sort
+          schema:
+            type: string
+          description: The sorting criteria for the items (e.g "id", "category", "price", "name", "-id", "-category", "-name", "-price")
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/definitions/storeItem'
+                      metadata:
+                        $ref: '#/definitions/pagination'
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /users:
+    post:
+      summary: Create a new user
+      parameters:
+        - name: requestBody
+          in: body
+          required: true
+          description: User details
+          schema:
+            $ref: '#/definitions/createUserRequest'
+      responses:
+        201:
+          description: Created
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/definitions/userResponse'
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        403:
+          description: Forbidden
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /auth/logout:
+    post:
+      summary: Logout a user
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+        400:
+          description: Bad request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        404:
+          description: Not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+  /auth/login:
+    get:
+      summary: Login a user
+      parameters:
+        - name: requestBody
+          in: body
+          description: User NEAR AccountID
+          required: true
+          schema:
+            type: object
+            properties:
+              account_id:
+                type: string
+                minLength: 2
+                maxLength: 64
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: "#/definitions/User"
+        400:
+          description: Bad request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        404:
+          description: Not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /users/{id}:
+    get:
+      summary: Get a user by ID
+      parameters:
+        - name: id
+          in: path
+          description: User's ID
+          required: true
+          type: integer
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: "#/definitions/User"
+        400:
+          description: Bad request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        404:
+          description: Not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+  
+definitions:
+  createStoreRequestBody:
+    type: object
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+      profile_image_url:
+        type: string
+      category:
+        type: string
+    required:
+      - name
+      - description
+      - profile_image_url
+      - category
+
+  storeResponse:
+    type: object
+    properties:
+      status:
+        type: string
+      data:
+        type: object
+        properties:
+          message:
+            type: string
+          result:
+            $ref: "#/definitions/storeResult"
+
+  storeResult:
+    type: object
+    properties:
+      store:
+        $ref: "#/definitions/store"
+      store_owners:
+        type: array
+        items:
+          $ref: "#/definitions/storeOwner"
+
+  store:
+    type: object
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      description:
+        type: string
+      profile_image_url:
+        type: string
+      is_verified:
+        type: boolean
+      category:
+        type: string
+      is_frozen:
+        type: boolean
+      created_at:
+        type: string
+        format: date-time
+
+  storeOwner:
+    type: object
+    properties:
+      user_id:
+        type: integer
+      store_id:
+        type: integer
+      access_level:
+        type: integer
+      added_at:
+        type: string
+        format: date-time
+  
+  ErrorResponse:
+    type: object
+    properties:
+      status:
+        type: string
+      error:
+        type: object
+        properties:
+          message:
+            type: string
+
+  addStoreItemRequestBody:
+    type: object
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+      price:
+        type: string
+      image_urls:
+        type: array
+        items:
+          type: string
+      category:
+        type: string
+      discount_percentage:
+        type: string
+      supply_quantity:
+        type: integer
+    required:
+      - name
+      - description
+      - price
+      - image_urls
+      - category
+      - discount_percentage
+      - supply_quantity
+  
+  addStoreItemResponse:
+    type: object
+    properties:
+      status:
+        type: string
+      data:
+        type: object
+        properties:
+          message:
+            type: string
+          result:
+            $ref: "#/definitions/addStoreItemResult"
+
+  addStoreItemResult:
+    type: object
+    properties:
+      item:
+        $ref: "#/definitions/storeItem"
+
+  storeItem:
+    type: object
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      description:
+        type: string
+      price:
+        type: string
+      store_id:
+        type: integer
+      image_urls:
+        type: array
+        items:
+          type: string
+      category:
+        type: string
+      discount_percentage:
+        type: string
+      supply_quantity:
+        type: integer
+      extra:
+        type: object
+      is_frozen:
+        type: boolean
+      created_at:
+        type: string
+        format: date-time
+      updated_at:
+        type: string
+        format: date-time
+
+  updateStoreItemsRequestBody:
+    type: object
+    properties:
+      name:
+        type: string
+        minLength: 2
+      description:
+        type: string
+        minLength: 2
+      price:
+        type: string
+      image_urls:
+        type: array
+        items:
+          type: string
+      category:
+        type: string
+      discount_percentage:
+        type: string
+      supply_quantity:
+        type: integer
+
+  pagination:
+    type: object
+    properties:
+      current_page:
+        type: integer
+      page_size:
+        type: integer
+      first_page:
+        type: integer
+      last_page:
+        type: integer
+      total_records:
+        type: integer
+
+  createUserRequest:
+    type: object
+    properties:
+      first_name:
+        type: string
+        minLength: 1
+      last_name:
+        type: string
+        minLength: 1
+      password:
+        type: string
+        minLength: 8
+      email:
+        type: string
+        format: email
+      account_id:
+        type: string
+        oneOf:
+          - minLength: 2
+          - maxLength: 64
+      profile_image_url:
+        type: string
+    required:
+      - first_name
+      - last_name
+      - password
+      - email
+      - account_id
+    additionalProperties: false
+
+  userResponse:
+    type: object
+    properties:
+      user_id:
+        type: integer
+      first_name:
+        type: string
+      last_name:
+        type: string
+      account_id:
+        type: string
+      email:
+        type: string
+      profil_image_url:
+        type: string
+      created_at:
+        type: string
+        format: date-time
+      password_changed_at:
+        type: string
+        format: date-time
+      is_active:
+        type: boolean
+      is_email_verified:
+        type: boolean
+  
