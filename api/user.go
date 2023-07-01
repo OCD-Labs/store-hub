@@ -26,7 +26,7 @@ func (s *StoreHub) listUserStores(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	// parse path variables
-	pathVar.UserID, err = s.retrieveIDParam(r, "id")
+	pathVar.UserID, err = s.retrieveIDParam(r, "user_id")
 	if err != nil || pathVar.UserID == 0 {
 		s.errorResponse(w, r, http.StatusBadRequest, "invalid store id")
 		return
