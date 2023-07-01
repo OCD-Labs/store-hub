@@ -4,8 +4,8 @@ info:
   description: "
   Rediscovery e-commerce et blockchain—server."
   version: "1.0.0"
-host: "store-hub-djxu.onrender.com"
-# host: "localhost:6780"
+# host: "store-hub-djxu.onrender.com"
+host: "localhost:6780"
 basePath: "/api/v1"
 schemes:
   - "https"
@@ -753,7 +753,7 @@ paths:
             type: object
             properties:
               data:
-                $ref: "#/definitions/User"
+                $ref: "#/definitions/userResponse"
         400:
           description: Bad request
           schema:

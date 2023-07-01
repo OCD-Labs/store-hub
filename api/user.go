@@ -19,7 +19,7 @@ type discoverStoreByOwnerPathVar struct {
 	UserID int64 `json:"user_id" validate:"required,min=1"`
 }
 
-// listUserStores maps to endpoint "GET /users/{id}/stores"
+// listUserStores maps to endpoint "GET /users/{user_id}/stores"
 func (s *StoreHub) listUserStores(w http.ResponseWriter, r *http.Request) {
 	// parse path variables
 	var pathVar discoverStoreByOwnerPathVar
@@ -273,7 +273,7 @@ func (s *StoreHub) logout(w http.ResponseWriter, r *http.Request) {
 }
 
 type getUserPathVariable struct {
-	ID int64 `json:"id" validate:"required,min=1"`
+	ID int64 `json:"user_id" validate:"required,min=1"`
 }
 
 // getUser maps to endpoint "GET /users/{id}"
@@ -282,7 +282,7 @@ func (s *StoreHub) getUser(w http.ResponseWriter, r *http.Request) {
 	var pathVar getUserPathVariable
 	var err error
 
-	pathVar.ID, err = s.retrieveIDParam(r, "id")
+	pathVar.ID, err = s.retrieveIDParam(r, "user_id")
 	if err != nil || pathVar.ID == 0 {
 		s.errorResponse(w, r, http.StatusBadRequest, "invalid user id")
 		return
@@ -308,7 +308,7 @@ func (s *StoreHub) getUser(w http.ResponseWriter, r *http.Request) {
 	s.writeJSON(w, http.StatusOK, envelop{
 		"status": "success",
 		"data": envelop{
-			"message": "logged out user",
+			"message": "found user",
 			"result": envelop{
 				"user": newUserResponse(user),
 			},
