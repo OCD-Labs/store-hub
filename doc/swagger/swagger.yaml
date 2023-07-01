@@ -666,7 +666,7 @@ paths:
       security:
         - Bearer: []
   /auth/login:
-    get:
+    post:
       summary: Login a user
       parameters:
         - name: requestBody
