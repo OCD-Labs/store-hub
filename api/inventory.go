@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 
 	db "github.com/OCD-Labs/store-hub/db/sqlc"
@@ -225,7 +226,7 @@ func (s *StoreHub) listOwnedStoreItems(w http.ResponseWriter, r *http.Request) {
 	var reqQueryStr listOwnedStoreItemsQueryStr
 
 	reqQueryStr.ItemName = s.readStr(queryStr, "item_name", "")
-	reqQueryStr.Sort = s.readStr(queryStr, "sort", "")
+	reqQueryStr.Sort = s.readStr(queryStr, "sort", "id")
 
 	reqQueryStr.Page, _ = s.readInt(queryStr, "page", 1)
 	reqQueryStr.PageSize, _ = s.readInt(queryStr, "page_size", 15)
@@ -281,12 +282,11 @@ func (s *StoreHub) listOwnedStoreItems(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 	}, nil)
-
 }
 
-type updateStoreItemsRequestBody struct {
-	Name               *string  `json:"name" validate:"min=2"`
-	Description        *string  `json:"description" validate:"min=2"`
+type updateStoreItemsRequestBody struct { // TODO: write custom validation tags for Name and Description fields
+	Name               *string  `json:"name"`
+	Description        *string  `json:"description"`
 	Price              *string  `json:"price"`
 	ImageURLs          []string `json:"image_urls"`
 	Category           *string  `json:"category"`
@@ -370,13 +370,13 @@ func (s *StoreHub) updateStoreItems(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if reqBody.Description != nil {
-		arg.Name = sql.NullString{
+		arg.Description = sql.NullString{
 			String: *reqBody.Description,
 			Valid:  true,
 		}
 	}
 	if reqBody.Price != nil {
-		arg.Name = sql.NullString{
+		arg.Price = sql.NullString{
 			String: *reqBody.Price,
 			Valid:  true,
 		}
@@ -423,7 +423,7 @@ func (s *StoreHub) updateStoreItems(w http.ResponseWriter, r *http.Request) {
 }
 
 type addNewOwnerRequestBody struct {
-	AccountID string `json:"account_id" validate:"required,min=,|max=64"`
+	AccountID string `json:"account_id" validate:"required,min=2,max=64"`
 }
 
 type addNewOwnerPathVar struct {
@@ -474,6 +474,9 @@ func (s *StoreHub) addNewOwner(w http.ResponseWriter, r *http.Request) {
 		s.errorResponse(w, r, http.StatusUnauthorized, "mismatch user")
 		return
 	}
+
+	fmt.Println("here<><<<><><><><><> 2")
+
 
 	// check ownership
 	check, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
