@@ -3,7 +3,6 @@ package api
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -151,8 +150,6 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request, reqBody cr
 			return err
 		},
 	}
-
-	fmt.Printf("%+v", arg)
 
 	result, err := s.dbStore.CreateUserTx(r.Context(), arg)
 	if err != nil {
