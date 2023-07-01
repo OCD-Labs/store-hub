@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OCD-Labs/store-hub/pagination"
+	"github.com/lib/pq"
 )
 
 type ListAllStoresParams struct {
@@ -94,7 +95,7 @@ func (q *SQLTx) ListStoreItems(ctx context.Context, arg ListStoreItemsParams) ([
 			&i.Description,
 			&i.Price,
 			&i.StoreID,
-			&i.ImageUrls,
+			pq.Array(&i.ImageUrls),
 			&i.Category,
 			&i.DiscountPercentage,
 			&i.SupplyQuantity,

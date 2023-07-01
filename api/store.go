@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
 	db "github.com/OCD-Labs/store-hub/db/sqlc"
@@ -23,7 +24,7 @@ func (s *StoreHub) discoverStores(w http.ResponseWriter, r *http.Request) {
 	var reqQueryStr discoverStoreQueryStr
 
 	reqQueryStr.StoreName = s.readStr(queryStr, "store_name", "")
-	reqQueryStr.Sort = s.readStr(queryStr, "sort", "")
+	reqQueryStr.Sort = s.readStr(queryStr, "sort", "id")
 
 	reqQueryStr.Page, _ = s.readInt(queryStr, "page", 1)
 	reqQueryStr.PageSize, _ = s.readInt(queryStr, "page_size", 15)
@@ -32,6 +33,8 @@ func (s *StoreHub) discoverStores(w http.ResponseWriter, r *http.Request) {
 	if err := s.bindJSONWithValidation(w, r, &reqQueryStr, validator.New()); err != nil {
 		return
 	}
+
+	fmt.Printf("\n%+v\n", reqQueryStr)
 
 	// db query
 	arg := db.ListAllStoresParams{
@@ -97,7 +100,7 @@ func (s *StoreHub) listStoreItems(w http.ResponseWriter, r *http.Request) {
 	var reqQueryStr listStoreItemsQueryStr
 
 	reqQueryStr.ItemName = s.readStr(queryStr, "item_name", "")
-	reqQueryStr.Sort = s.readStr(queryStr, "sort", "")
+	reqQueryStr.Sort = s.readStr(queryStr, "sort", "id")
 
 	reqQueryStr.Page, _ = s.readInt(queryStr, "page", 1)
 	reqQueryStr.PageSize, _ = s.readInt(queryStr, "page_size", 15)
