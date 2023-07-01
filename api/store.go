@@ -75,7 +75,7 @@ type listStoreItemsQueryStr struct {
 }
 
 type listStoreItemsPathVar struct {
-	StoreID int64 `json:"id" validate:"required,min=1"`
+	StoreID int64 `json:"store_id" validate:"required,min=1"`
 }
 
 // listStoreItems maps to endpoint "GET /stores/{id}/items"
@@ -84,7 +84,7 @@ func (s *StoreHub) listStoreItems(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	// parse path variables
-	pathVar.StoreID, err = s.retrieveIDParam(r, "id")
+	pathVar.StoreID, err = s.retrieveIDParam(r, "store_id")
 	if err != nil || pathVar.StoreID == 0 {
 		s.errorResponse(w, r, http.StatusBadRequest, "invalid store id")
 		return
