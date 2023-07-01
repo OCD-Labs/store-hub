@@ -101,7 +101,7 @@ func newUserResponse(user db.User) userResponse {
 	}
 }
 
-// createUser maps to endpoint "POST /api/v1/users"
+// createUser maps to endpoint "POST /users"
 func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request) {
 	// parse request
 	var req createUserRequest
@@ -191,6 +191,7 @@ type loginRequest struct {
 	AccountID string `json:"account_id" validate:"required,len=2|len=64"`
 }
 
+// login maps to endpoint "GET /auth/login"
 func (s *StoreHub) login(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
 	if err := s.readJSON(w, r, &req); err != nil {
@@ -261,6 +262,7 @@ func (s *StoreHub) login(w http.ResponseWriter, r *http.Request) {
 	}, nil)
 }
 
+// logout maps to endpoint "POST /auth/logout"
 func (s *StoreHub) logout(w http.ResponseWriter, r *http.Request) {
 	authPayload := s.contextGetToken(r)
 
@@ -286,6 +288,7 @@ type getUserPathVariable struct {
 	ID int64 `json:"id" validate:"required,min=1"`
 }
 
+// getUser maps to endpoint "GET /users/{id}"
 func (s *StoreHub) getUser(w http.ResponseWriter, r *http.Request) {
 	authPayload := s.contextGetToken(r)
 	var pathVar getUserPathVariable

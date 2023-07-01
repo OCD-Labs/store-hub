@@ -9,6 +9,9 @@ import (
 func (s *StoreHub) setupRoutes() http.Handler {
 	mux := httprouter.New()
 
+	fsysHandler := http.FileServer(http.FS(s.swaggerFiles))
+	mux.Handler(http.MethodGet, "/api/v1/swagger/*any", http.StripPrefix("/api/v1/swagger/", fsysHandler))
+
 	mux.HandlerFunc(http.MethodGet, "/api/v1/ping", s.healthcheck)
 
 	// store
@@ -24,7 +27,7 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	mux.Handler(http.MethodPost, "/api/v1/users/{user_id}/store/{store_id}/owners", http.HandlerFunc(s.addNewOwner))
 	mux.Handler(http.MethodGet, "/api/v1/users/{id}/stores", s.authenticate(http.HandlerFunc(s.listUserStores)))
 	mux.Handler(http.MethodDelete, "/api/v1/users/{user_id}/stores/{store_id}/items/{item_id}", s.authenticate(http.HandlerFunc(s.deleteStoreItems)))
-	mux.HandlerFunc(http.MethodDelete, "/api/v1/users/{user_id}/store/{store_id}/owners", http.HandlerFunc(s.deleteOwner))
+	mux.Handler(http.MethodDelete, "/api/v1/users/{user_id}/store/{store_id}/owners", s.authenticate(http.HandlerFunc(s.deleteOwner)))
 	mux.Handler(http.MethodDelete, "/api/v1/users/{user_id}/stores/{store_id}", s.authenticate(http.HandlerFunc(s.deleteStore)))
 
 	// user

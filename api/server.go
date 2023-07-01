@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -21,6 +22,7 @@ import (
 type StoreHub struct {
 	configs         util.Configs
 	logger          zerolog.Logger
+	swaggerFiles       fs.FS
 	cache           cache.Cache
 	tokenMaker      token.Maker
 	dbStore         db.StoreTx
@@ -34,6 +36,7 @@ func NewStoreHub(
 	store db.StoreTx,
 	taskDistributor worker.TaskDistributor,
 	tokenMaker token.Maker,
+	swaggerFiles fs.FS,
 ) (*StoreHub, error) {
 	return &StoreHub{
 		configs:         configs,
@@ -42,6 +45,7 @@ func NewStoreHub(
 		tokenMaker:      tokenMaker,
 		dbStore:         store,
 		taskDistributor: taskDistributor,
+		swaggerFiles: swaggerFiles,
 	}, nil
 }
 

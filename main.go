@@ -2,6 +2,8 @@ package main
 
 import (
 	"database/sql"
+	"embed"
+	"io/fs"
 	"os"
 	"time"
 
@@ -16,6 +18,9 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
+
+//go:embed doc
+var swaggerDocs embed.FS
 
 func main() {
 	configs, err := util.ParseConfigs(".")
@@ -51,7 +56,14 @@ func main() {
 		log.Fatal().Err(err).Msg("cannot create token maker")
 	}
 
-	app, err := api.NewStoreHub(configs, log.Logger, cache, dbStore, taskDistributor, tokenMaker)
+	// Retrieve the swagger-ui files.
+	swaggerFiles, err := fs.Sub(swaggerDocs, "doc/swagger")
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to get subcontent from swaggerDocs")
+	}
+
+
+	app, err := api.NewStoreHub(configs, log.Logger, cache, dbStore, taskDistributor, tokenMaker, swaggerFiles)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to initialise application")
 	}
