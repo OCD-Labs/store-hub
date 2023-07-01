@@ -69,7 +69,7 @@ type createUserRequest struct {
 	LastName        string  `json:"last_name" validate:"required,min=1"`
 	Password        string  `json:"password" validate:"required,min=8"`
 	Email           string  `json:"email" validate:"required,email"`
-	AccountID       string  `json:"account_id" validate:"required,len=2|len=64"`
+	AccountID       string  `json:"account_id" validate:"required,min=2,max=64"`
 	ProfileImageUrl *string `json:"profile_image_url"`
 }
 
@@ -131,6 +131,7 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request) {
 		Status:         util.NORMALUSER,
 		HashedPassword: hashedPassword,
 		Email:          req.Email,
+		Socials: []byte("{}"),
 	}
 
 	if req.ProfileImageUrl != nil {
@@ -188,7 +189,7 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request) {
 type loginRequest struct {
 	// Email    string `json:"email" validate:"required,email"`
 	// Password string `json:"password" validate:"required,min=8"`
-	AccountID string `json:"account_id" validate:"required,len=2|len=64"`
+	AccountID string `json:"account_id" validate:"required,min=2,max=64"`
 }
 
 // login maps to endpoint "GET /auth/login"

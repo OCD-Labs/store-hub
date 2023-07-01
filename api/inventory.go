@@ -423,7 +423,7 @@ func (s *StoreHub) updateStoreItems(w http.ResponseWriter, r *http.Request) {
 }
 
 type addNewOwnerRequestBody struct {
-	AccountID string `json:"account_id" validate:"required,len=2|len=64"`
+	AccountID string `json:"account_id" validate:"required,min=,|max=64"`
 }
 
 type addNewOwnerPathVar struct {
@@ -603,7 +603,7 @@ type deleteOwnerPathVar struct {
 }
 
 type deleteOwnerRequestBody struct {
-	AccountID string `json:"account_id" validate:"required,len=2|len=64"`
+	AccountID string `json:"account_id" validate:"required,min=2,max=64"`
 }
 
 // deleteOwner maps to endpoint "DELETE /users/{user_id}/store/{store_id}/owners"
