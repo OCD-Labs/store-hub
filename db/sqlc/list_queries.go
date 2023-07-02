@@ -16,7 +16,7 @@ type ListAllStoresParams struct {
 // ListAllStores do a fulltext search to list stores, and paginates accordingly.
 func (q *SQLTx) ListAllStores(ctx context.Context, arg ListAllStoresParams) ([]Store, pagination.Metadata, error) {
 	stmt := fmt.Sprintf(`
-		SELECT count(*) OVER() AS total_count, id, name, description, "profile_image_url", is_verified, category, is_frozen, created_at
+		SELECT count(*) OVER() AS total_count, id, name, description, "profile_image_url", store_account_id, is_verified, category, is_frozen, created_at
 		FROM stores
 		WHERE (name ILIKE '%%' || $1 || '%%' OR $1 = '')
 		ORDER BY %s %s, id ASC
@@ -41,6 +41,7 @@ func (q *SQLTx) ListAllStores(ctx context.Context, arg ListAllStoresParams) ([]S
 			&i.Name,
 			&i.Description,
 			&i.ProfileImageUrl,
+			&i.StoreAccountID,
 			&i.IsVerified,
 			&i.Category,
 			&i.IsFrozen,
