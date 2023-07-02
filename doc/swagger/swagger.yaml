@@ -4,8 +4,8 @@ info:
   description: "
   Rediscovery e-commerce et blockchain—server."
   version: "1.0.0"
-# host: "store-hub-djxu.onrender.com"
-host: "localhost:6780"
+host: "store-hub-djxu.onrender.com"
+# host: "localhost:6780"
 basePath: "/api/v1"
 schemes:
   - "https"
@@ -768,7 +768,96 @@ paths:
             $ref: "#/definitions/ErrorResponse"
       security:
         - Bearer: []
-  
+  /stores/{store_id}/items/{item_id}/buy:
+    patch:
+      summary: Buy an item from a store
+      description: Decreases the supply quantity of a specific item in a specific store by one If the item supply quantity is greater than 1.
+      parameters:
+        - in: path
+          name: store_id
+          required: true
+          type: integer
+          description: ID of the store
+          minimum: 1
+        - in: path
+          name: item_id
+          required: true
+          type: integer
+          description: ID of the item
+          minimum: 1
+      responses:
+        200:
+          description: Item successfully bought
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                example: success
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: item sold
+                  result:
+                    type: object
+                    properties:
+                      new_item:
+                        $ref: "#/definitions/storeItem"
+        400:
+          description: Invalid store ID or item ID provided
+        404:
+          description: Item not found or item no longer in stock
+        500:
+          description: Failed to fetch item details or failed to update item
+      security:
+        - Bearer: []
+
+  /stores/{store_id}/items/{item_id}:
+    get:
+      summary: Retrieve an item from a store
+      description: Fetches the details of a specific item in a specific store If the item does exist
+      parameters:
+        - in: path
+          name: store_id
+          required: true
+          type: integer
+          description: ID of the store
+          minimum: 1
+        - in: path
+          name: item_id
+          required: true
+          type: integer
+          description: ID of the item
+          minimum: 1
+      responses:
+        200:
+          description: Item successfully retrieved
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                example: success
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: found item
+                  result:
+                    type: object
+                    properties:
+                      item:
+                        $ref: "#/definitions/storeItem"
+        400:
+          description: Invalid store ID or item ID provided
+        404:
+          description: Item not found
+        500:
+          description: Failed to fetch item details
+
 definitions:
   createStoreRequestBody:
     type: object

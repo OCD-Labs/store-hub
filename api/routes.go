@@ -17,7 +17,8 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	// store
 	mux.HandlerFunc(http.MethodGet, "/api/v1/stores", http.HandlerFunc(s.discoverStores))
 	mux.HandlerFunc(http.MethodGet, "/api/v1/stores/:store_id/items", http.HandlerFunc(s.listStoreItems))
-	mux.HandlerFunc(http.MethodPatch, "/api/v1/stores/:store_id/items/:item_id/buy", http.HandlerFunc(s.buyStoreItems))
+	mux.HandlerFunc(http.MethodGet, "/api/v1/stores/:store_id/items/:item_id", http.HandlerFunc(s.getStoreItems))
+	mux.Handler(http.MethodPatch, "/api/v1/stores/:store_id/items/:item_id/buy", s.authenticate(http.HandlerFunc(s.buyStoreItems)))
 
 	// inventory
 	mux.Handler(http.MethodPost, "/api/v1/users/:user_id/stores", s.authenticate(http.HandlerFunc(s.createStore)))

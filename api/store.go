@@ -1,6 +1,8 @@
 package api
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -141,8 +143,125 @@ func (s *StoreHub) listStoreItems(w http.ResponseWriter, r *http.Request) {
 	}, nil)
 }
 
-func (s *StoreHub) buyStoreItems(w http.ResponseWriter, r *http.Request) {
+type buyStoreItemsPathVar struct {
+	StoreID int64 `json:"store_id" validate:"required,min=1"`
+	ItemID int64 `json:"item_id" validate:"required,min=1"`
+}
 
+// buyStoreItems maps to endpoint "PATCH /stores/:store_id/items/:item_id/buy"
+func (s *StoreHub) buyStoreItems(w http.ResponseWriter, r *http.Request) {
+	var pathVar buyStoreItemsPathVar
+	var err error
+
+	// parse path variables
+	pathVar.StoreID, err = s.retrieveIDParam(r, "store_id")
+	if err != nil || pathVar.StoreID == 0 {
+		s.errorResponse(w, r, http.StatusBadRequest, "invalid store id")
+		return
+	}
+
+	// parse path variables
+	pathVar.ItemID, err = s.retrieveIDParam(r, "item_id")
+	if err != nil || pathVar.StoreID == 0 {
+		s.errorResponse(w, r, http.StatusBadRequest, "invalid store id")
+		return
+	}
+
+	// validate path variables
+	if err := s.bindJSONWithValidation(w, r, &pathVar, validator.New()); err != nil {
+		return
+	}
+
+	item, err := s.dbStore.GetItem(r.Context(), pathVar.ItemID)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			s.errorResponse(w, r, http.StatusNotFound, "item not found")
+		default:
+			s.errorResponse(w, r, http.StatusInternalServerError, "failed to fetch item's details")
+		}
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	if item.SupplyQuantity >= 1 {
+		arg := db.UpdateItemParams {
+			ItemID: pathVar.ItemID,
+			SupplyQuantity: sql.NullInt64{
+				Int64: item.SupplyQuantity - 1,
+				Valid: true,
+			},
+		}
+		updatedItem, err := s.dbStore.UpdateItem(r.Context(), arg)
+		if err != nil {
+			s.errorResponse(w, r, http.StatusInternalServerError, "failed to update item")
+			log.Error().Err(err).Msg("error occurred")
+			return
+		}
+		s.writeJSON(w, http.StatusOK, envelop{
+			"status": "success",
+			"data": envelop{
+				"message": "item sold",
+				"result": envelop{
+					"new_item": updatedItem,
+				},
+			},
+		}, nil)
+	} else {
+		s.errorResponse(w, r, http.StatusNotFound, "item no longer in stock")
+	}
+}
+
+type getStoreItemsPathVar struct {
+	StoreID int64 `json:"store_id" validate:"required,min=1"`
+	ItemID int64 `json:"item_id" validate:"required,min=1"`
+}
+
+// maps to endpoint "GET /stores/:store_id/items/:item_id"
+func (s *StoreHub) getStoreItems(w http.ResponseWriter, r *http.Request) {
+	var pathVar getStoreItemsPathVar
+	var err error
+
+	// parse path variables
+	pathVar.StoreID, err = s.retrieveIDParam(r, "store_id")
+	if err != nil || pathVar.StoreID == 0 {
+		s.errorResponse(w, r, http.StatusBadRequest, "invalid store id")
+		return
+	}
+
+	// parse path variables
+	pathVar.ItemID, err = s.retrieveIDParam(r, "item_id")
+	if err != nil || pathVar.StoreID == 0 {
+		s.errorResponse(w, r, http.StatusBadRequest, "invalid store id")
+		return
+	}
+
+	// validate path variables
+	if err := s.bindJSONWithValidation(w, r, &pathVar, validator.New()); err != nil {
+		return
+	}
+
+	item, err := s.dbStore.GetItem(r.Context(), pathVar.ItemID)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			s.errorResponse(w, r, http.StatusNotFound, "item not found")
+		default:
+			s.errorResponse(w, r, http.StatusInternalServerError, "failed to fetch item's details")
+		}
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, envelop{
+		"status": "success",
+		"data": envelop{
+			"message": "found item",
+			"result": envelop{
+				"item": item,
+			},
+		},
+	}, nil)
 }
 
 func (s *StoreHub) freezeStore(w http.ResponseWriter, r *http.Request) {
