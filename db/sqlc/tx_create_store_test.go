@@ -17,6 +17,7 @@ func createStoreAndOwners(t *testing.T) (CreateStoreTxResult, User) {
 			Description:     util.RandomString(20),
 			ProfileImageUrl: fmt.Sprintf("https://%s.com", util.RandomString(15)),
 			Category:        util.RandomString(5),
+			StoreAccountID: fmt.Sprintf("%s.testnet", util.RandomString(6)),
 		},
 		OwnerID: user.ID,
 	}
