@@ -35,6 +35,7 @@ CREATE TABLE "stores" (
   "id" bigserial PRIMARY KEY,
   "name" varchar NOT NULL,
   "description" varchar NOT NULL,
+  "store_account_id" varchar UNIQUE NOT NULL,
   "profile_image_url" varchar NOT NULL,
   "is_verified" boolean NOT NULL DEFAULT false,
   "category" varchar NOT NULL,

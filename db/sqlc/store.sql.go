@@ -17,16 +17,18 @@ INSERT INTO stores (
   name,
   description,
   profile_image_url,
+  store_account_id,
   category
 ) VALUES (
-  $1, $2, $3, $4
-) RETURNING id, name, description, profile_image_url, is_verified, category, is_frozen, created_at
+  $1, $2, $3, $4, $5
+) RETURNING id, name, description, store_account_id, profile_image_url, is_verified, category, is_frozen, created_at
 `
 
 type CreateStoreParams struct {
 	Name            string `json:"name"`
 	Description     string `json:"description"`
 	ProfileImageUrl string `json:"profile_image_url"`
+	StoreAccountID  string `json:"store_account_id"`
 	Category        string `json:"category"`
 }
 
@@ -35,6 +37,7 @@ func (q *Queries) CreateStore(ctx context.Context, arg CreateStoreParams) (Store
 		arg.Name,
 		arg.Description,
 		arg.ProfileImageUrl,
+		arg.StoreAccountID,
 		arg.Category,
 	)
 	var i Store
@@ -42,6 +45,7 @@ func (q *Queries) CreateStore(ctx context.Context, arg CreateStoreParams) (Store
 		&i.ID,
 		&i.Name,
 		&i.Description,
+		&i.StoreAccountID,
 		&i.ProfileImageUrl,
 		&i.IsVerified,
 		&i.Category,
@@ -63,7 +67,7 @@ func (q *Queries) DeleteStore(ctx context.Context, storeID int64) error {
 
 const getStoreByID = `-- name: GetStoreByID :one
 SELECT 
-  s.id, s.name, s.description, s.profile_image_url, s.is_verified, s.category, s.is_frozen, s.created_at, 
+  s.id, s.name, s.description, s.store_account_id, s.profile_image_url, s.is_verified, s.category, s.is_frozen, s.created_at, 
   json_agg(json_build_object(
       'user', json_build_object('id', u.id, 'account_id', u.account_id, 'first_name', u.first_name, 'last_name', u.last_name, 'email', u.email),
       'store_owners', json_build_object('user_id', so.user_id, 'store_id', so.store_id, 'added_at', so.added_at)
@@ -84,6 +88,7 @@ type GetStoreByIDRow struct {
 	ID              int64           `json:"id"`
 	Name            string          `json:"name"`
 	Description     string          `json:"description"`
+	StoreAccountID  string          `json:"store_account_id"`
 	ProfileImageUrl string          `json:"profile_image_url"`
 	IsVerified      bool            `json:"is_verified"`
 	Category        string          `json:"category"`
@@ -99,6 +104,7 @@ func (q *Queries) GetStoreByID(ctx context.Context, storeID int64) (GetStoreByID
 		&i.ID,
 		&i.Name,
 		&i.Description,
+		&i.StoreAccountID,
 		&i.ProfileImageUrl,
 		&i.IsVerified,
 		&i.Category,
@@ -110,7 +116,7 @@ func (q *Queries) GetStoreByID(ctx context.Context, storeID int64) (GetStoreByID
 }
 
 const getStoreByOwner = `-- name: GetStoreByOwner :many
-SELECT s.id, s.name, s.description, s.profile_image_url, s.is_verified, s.category, s.is_frozen, s.created_at
+SELECT s.id, s.name, s.description, s.store_account_id, s.profile_image_url, s.is_verified, s.category, s.is_frozen, s.created_at
 FROM stores s
 JOIN store_owners so ON s.id = so.store_id
 WHERE so.user_id = $1
@@ -129,6 +135,7 @@ func (q *Queries) GetStoreByOwner(ctx context.Context, userID int64) ([]Store, e
 			&i.ID,
 			&i.Name,
 			&i.Description,
+			&i.StoreAccountID,
 			&i.ProfileImageUrl,
 			&i.IsVerified,
 			&i.Category,
@@ -159,7 +166,7 @@ SET
   is_frozen = COALESCE($6, is_frozen)
 WHERE 
   id = $7
-RETURNING id, name, description, profile_image_url, is_verified, category, is_frozen, created_at
+RETURNING id, name, description, store_account_id, profile_image_url, is_verified, category, is_frozen, created_at
 `
 
 type UpdateStoreParams struct {
@@ -187,6 +194,7 @@ func (q *Queries) UpdateStore(ctx context.Context, arg UpdateStoreParams) (Store
 		&i.ID,
 		&i.Name,
 		&i.Description,
+		&i.StoreAccountID,
 		&i.ProfileImageUrl,
 		&i.IsVerified,
 		&i.Category,

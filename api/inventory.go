@@ -16,6 +16,7 @@ type createStoreRequestBody struct {
 	Description     string `json:"description" validate:"required"`
 	ProfileImageUrl string `json:"profile_image_url" validate:"required"`
 	Category        string `json:"category" validate:"required"`
+	StoreAccountID string `json:"store_account_id" validate:"required,min=2,max=64"`
 }
 
 type createStorePathVar struct {
@@ -65,6 +66,7 @@ func (s *StoreHub) createStore(w http.ResponseWriter, r *http.Request) {
 			Description:     reqBody.Description,
 			ProfileImageUrl: reqBody.ProfileImageUrl,
 			Category:        reqBody.Category,
+			StoreAccountID: reqBody.StoreAccountID,
 		},
 		OwnerID: authPayload.UserID,
 	}

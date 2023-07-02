@@ -3,9 +3,10 @@ INSERT INTO stores (
   name,
   description,
   profile_image_url,
+  store_account_id,
   category
 ) VALUES (
-  $1, $2, $3, $4
+  $1, $2, $3, $4, $5
 ) RETURNING *;
 
 -- name: GetStoreByID :one

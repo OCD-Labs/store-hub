@@ -781,11 +781,14 @@ definitions:
         type: string
       category:
         type: string
+      store_account_id:
+        type: string
     required:
       - name
       - description
       - profile_image_url
       - category
+      - store_account_id
 
   storeResponse:
     type: object

@@ -39,6 +39,7 @@ Table stores as S {
   name varchar [not null]
   description varchar [not null]
   profile_image_url varchar [not null]
+  store_account_id varchar [unique, not null]
   is_verified boolean [not null, default: false]
   category varchar [not null]
   is_frozen bool [not null, default: false]

@@ -52,6 +52,7 @@ type Store struct {
 	ID              int64     `json:"id"`
 	Name            string    `json:"name"`
 	Description     string    `json:"description"`
+	StoreAccountID  string    `json:"store_account_id"`
 	ProfileImageUrl string    `json:"profile_image_url"`
 	IsVerified      bool      `json:"is_verified"`
 	Category        string    `json:"category"`
