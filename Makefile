@@ -1,4 +1,4 @@
-DB_URL=postgres://storehub_db_user:9iDzrJqajhSzbo3QEk8G9Oq94RYCCIyF@dpg-cibbac59aq03rjmp88og-a.oregon-postgres.render.com/storehub_db
+DB_URL=postgres://root:fde24e52415e@localhost:5434/store_hub?sslmode=disable
 
 server:
 	go run ./main.go
