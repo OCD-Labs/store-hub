@@ -1,6 +1,6 @@
 -- SQL dump generated using DBML (dbml-lang.org)
 -- Database: PostgreSQL
--- Generated at: 2023-06-30T23:24:53.675Z
+-- Generated at: 2023-07-02T01:53:19.545Z
 
 CREATE TABLE "users" (
   "id" bigserial PRIMARY KEY,
@@ -36,6 +36,7 @@ CREATE TABLE "stores" (
   "name" varchar NOT NULL,
   "description" varchar NOT NULL,
   "profile_image_url" varchar NOT NULL,
+  "store_account_id" varchar UNIQUE NOT NULL,
   "is_verified" boolean NOT NULL DEFAULT false,
   "category" varchar NOT NULL,
   "is_frozen" bool NOT NULL DEFAULT false,
