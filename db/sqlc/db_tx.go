@@ -8,15 +8,6 @@ import (
 	"github.com/OCD-Labs/store-hub/pagination"
 )
 
-var (
-	AnonymousUser = &User{}
-)
-
-// IsAnonymous checks if a User instance is the AnonymousUser.
-func (u *User) IsAnonymous() bool {
-	return u == AnonymousUser
-}
-
 // Store provides all functions to execute db queries
 // and transactions.
 type StoreTx interface {

@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -161,7 +162,7 @@ func (s *StoreHub) retrieveIDParam(r *http.Request, pathVariable string) (int64,
 	return id, nil
 }
 
-// readInt parses string values provided through the query string
+// readStr parses string values provided through the query string
 func (s *StoreHub) readStr(fields url.Values, key string, defaultVal string) string {
 	val := fields.Get(key)
 	if val == "" {
@@ -182,4 +183,25 @@ func (s *StoreHub) readInt(queryStr url.Values, key string, defaultValue int) (i
 	}
 
 	return intValue, nil
+}
+
+func (s *StoreHub) readAndValidateStruct(data interface{}) []string {
+	var dType = reflect.TypeOf(data)
+
+	if dType.Kind() != reflect.Struct {
+		return nil
+	}
+
+	numFields := dType.NumField()
+	tags := make([]string, 0, numFields)
+
+	for i := 0; i < numFields; i++ {
+		f := dType.Field(i)
+		jt := f.Tag.Get("json")
+		if jt != "" {
+			tags = append(tags, strings.Split(jt, ",")[0])
+		}
+	}
+
+	return tags
 }
