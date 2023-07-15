@@ -20,7 +20,7 @@ func TestPasetoMaker(t *testing.T) {
 	var userID int64 = 1
 	accountID := "643a7dedbc8c7b338e50bd0f"
 
-	duration := 15 * time.Minute
+	duration := 60 * time.Minute
 
 	issuedAt := time.Now()
 	expiredAt := time.Now().Add(duration)
@@ -31,6 +31,8 @@ func TestPasetoMaker(t *testing.T) {
 	require.NotEmpty(t, payload)
 
 	fmt.Println(token)
+	fmt.Println(userID)
+	fmt.Println(accountID)
 	fmt.Printf("\n\n")
 
 	payload, err = maker.VerifyToken(token)

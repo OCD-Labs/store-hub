@@ -40,7 +40,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to connect to DB")
 	}
-	
+
 	runDBMigrations(configs.MigrationURL, configs.DBSource)
 	dbStore := db.NewSQLTx(dbConn)
 
@@ -65,7 +65,6 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to get subcontent from swaggerDocs")
 	}
-
 
 	app, err := api.NewStoreHub(configs, log.Logger, cache, dbStore, taskDistributor, tokenMaker, swaggerFiles)
 	if err != nil {

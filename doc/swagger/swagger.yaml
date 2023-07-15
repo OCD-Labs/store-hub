@@ -671,15 +671,16 @@ paths:
       parameters:
         - name: requestBody
           in: body
-          description: User NEAR AccountID
+          description: User credentials
           required: true
           schema:
             type: object
             properties:
-              account_id:
+              email:
                 type: string
-                minLength: 2
-                maxLength: 64
+              password:
+                type: string
+                minLength: 8
       responses:
         200:
           description: OK
@@ -700,43 +701,7 @@ paths:
           description: Internal server error
           schema:
             $ref: "#/definitions/ErrorResponse"
-  /auth:
-    post:
-      summary: Create user or Login a user
-      parameters:
-        - name: requestBody
-          in: body
-          description: User NEAR AccountID
-          required: true
-          schema:
-            type: object
-            properties:
-              account_id:
-                type: string
-                minLength: 2
-                maxLength: 64
-      responses:
-        200:
-          description: OK
-          schema:
-            type: object
-            properties:
-              data:
-                $ref: "#/definitions/userResponse"
-              access_token:
-                type: string
-        400:
-          description: Bad request
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        404:
-          description: Not found
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        500:
-          description: Internal server error
-          schema:
-            $ref: "#/definitions/ErrorResponse"
+
   /users/{id}:
     get:
       summary: Get a user by ID

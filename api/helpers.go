@@ -6,19 +6,26 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
+	"reflect"
 	"strconv"
 	"strings"
 
-	"github.com/go-playground/validator"
+	"github.com/go-playground/validator/v10"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rs/zerolog/log"
 )
 
 type envelop map[string]interface{}
 
-// readJSON reads/parses request body.
-func (s *StoreHub) readJSON(w http.ResponseWriter, r *http.Request, input interface{}) error {
+// ValidationError represents a custom validation error that
+// contains information about the violated fields and their messages.
+type ValidationError struct {
+	Field string `json:"field"`
+	Error string `json:"error"`
+}
+
+// shouldBindBody reads/parses & validates request body.
+func (s *StoreHub) shouldBindBody(w http.ResponseWriter, r *http.Request, obj interface{}) error {
 	// Restrict r.Body to 1MB
 	maxBytes := 1_048_578
 	r.Body = http.MaxBytesReader(w, r.Body, int64(maxBytes))
@@ -27,7 +34,7 @@ func (s *StoreHub) readJSON(w http.ResponseWriter, r *http.Request, input interf
 
 	// Disallow unknown fields.
 	decoder.DisallowUnknownFields()
-	err := decoder.Decode(input)
+	err := decoder.Decode(obj)
 
 	if err != nil {
 		// expected error types
@@ -65,11 +72,18 @@ func (s *StoreHub) readJSON(w http.ResponseWriter, r *http.Request, input interf
 		return fmt.Errorf("request body must contain only a single JSON")
 	}
 
-	return nil
+	err = s.bindValidation(w, r, obj)
+
+	return err
 }
 
 // writeJSON writes and sends JSON response.
-func (s *StoreHub) writeJSON(w http.ResponseWriter, statusCode int, data envelop, header http.Header) error {
+func (s *StoreHub) writeJSON(
+	w http.ResponseWriter,
+	statusCode int,
+	data envelop,
+	header http.Header,
+) error {
 	resp, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -87,21 +101,16 @@ func (s *StoreHub) writeJSON(w http.ResponseWriter, statusCode int, data envelop
 	return nil
 }
 
-// ValidationError represents a custom validation error that
-// contains information about the violated fields and their messages.
-type ValidationError struct {
-	Field string `json:"field"`
-	Error string `json:"error"`
-}
-
-// BindJSONWithValidation is a helper function that binds the JSON request
-// body to the given interface and validates it with the specified validator.
-func (s *StoreHub) bindJSONWithValidation(
+// bindValidation is a helper function that binds the request
+// (body, path variable and query string) to the given interface
+// and validates it with the specified validator.
+func (s *StoreHub) bindValidation(
 	w http.ResponseWriter,
 	r *http.Request,
 	data interface{},
-	validate *validator.Validate,
 ) error {
+	validate := validator.New()
+
 	if err := validate.Struct(data); err != nil {
 		errs, ok := err.(validator.ValidationErrors)
 		if !ok {
@@ -125,6 +134,100 @@ func (s *StoreHub) bindJSONWithValidation(
 	return nil
 }
 
+// shouldBindQuery extracts and binds query string to a struct using reflection:
+func (s *StoreHub) shouldBindQuery(w http.ResponseWriter, r *http.Request, obj interface{}) (err error) {
+	values := r.URL.Query()
+
+	v := reflect.ValueOf(obj).Elem()
+	t := v.Type()
+
+	for i := 0; i < v.NumField(); i++ {
+		f := v.Field(i)
+		fType := t.Field(i)
+
+		tag := fType.Tag.Get("querystr")
+		if tag == "-" {
+			continue
+		}
+		value := values.Get(tag)
+
+		setValue(f, value)
+	}
+
+	err = s.bindValidation(w, r, obj)
+
+	return
+}
+
+// ShouldBindPathVars extracts and binds path variables to a struct using reflection:
+func (s *StoreHub) ShouldBindPathVars(w http.ResponseWriter, r *http.Request, obj interface{}) (err error) {
+	params := httprouter.ParamsFromContext(r.Context())
+	if params == nil {
+		err = fmt.Errorf("URL parameters not found")
+		s.errorResponse(w, r, http.StatusBadRequest, err)
+		return err
+	}
+
+	v := reflect.ValueOf(obj).Elem()
+	t := v.Type()
+
+	for i := 0; i < v.NumField(); i++ {
+		f := v.Field(i)
+		fType := t.Field(i)
+
+		tag := fType.Tag.Get("path")
+		if tag == "-" {
+			continue
+		}
+		val := params.ByName(tag)
+
+		setValue(f, val)
+	}
+
+	err = s.bindValidation(w, r, obj)
+
+	return
+}
+
+// setValue leverage reflection to set values.
+func setValue(field reflect.Value, value string) {
+	switch field.Kind() {
+	case reflect.String:
+		field.SetString(value)
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		if intValue, err := strconv.ParseInt(value, 10, 64); err == nil {
+			field.SetInt(intValue)
+		}
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		if uintValue, err := strconv.ParseUint(value, 10, 64); err == nil {
+			field.SetUint(uintValue)
+		}
+	case reflect.Float32, reflect.Float64:
+		if floatValue, err := strconv.ParseFloat(value, 64); err == nil {
+			field.SetFloat(floatValue)
+		}
+	case reflect.Bool:
+		if boolValue, err := strconv.ParseBool(value); err == nil {
+			field.SetBool(boolValue)
+		}
+	case reflect.Slice:
+		if field.Type().Elem().Kind() == reflect.String {
+			if value == "" {
+				field.Set(reflect.Zero(field.Type()))
+				return
+			}
+
+			items := strings.Split(value, ",")
+			if len(items) > 0 {
+				field.Set(reflect.ValueOf(items))
+				return
+			}
+
+			field.Set(reflect.Zero(field.Type()))
+		}
+	}
+}
+
 // errorResponse writes error response.
 func (s *StoreHub) errorResponse(
 	w http.ResponseWriter,
@@ -146,40 +249,4 @@ func (s *StoreHub) errorResponse(
 			Msg("failed to write response body")
 		w.WriteHeader(500)
 	}
-}
-
-// retrieveIDParam returns a path variable URL parameter from the current request context,
-func (s *StoreHub) retrieveIDParam(r *http.Request, pathVariable string) (int64, error) {
-	params := httprouter.ParamsFromContext(r.Context())
-
-	id, err := strconv.ParseInt(params.ByName(pathVariable), 10, 64)
-
-	if err != nil || id < 1 {
-		return 0, errors.New("invalid id parameter")
-	}
-
-	return id, nil
-}
-
-// readInt parses string values provided through the query string
-func (s *StoreHub) readStr(fields url.Values, key string, defaultVal string) string {
-	val := fields.Get(key)
-	if val == "" {
-		return defaultVal
-	}
-	return val
-}
-
-// readInt parses integer values provided through the query string
-func (s *StoreHub) readInt(queryStr url.Values, key string, defaultValue int) (int, error) {
-	str := queryStr.Get(key)
-	if str == "" {
-		return defaultValue, nil
-	}
-	intValue, err := strconv.Atoi(str)
-	if err != nil {
-		return defaultValue, err
-	}
-
-	return intValue, nil
 }
