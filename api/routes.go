@@ -12,7 +12,7 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	fsysHandler := http.FileServer(http.FS(s.swaggerFiles))
 	mux.Handler(http.MethodGet, "/api/v1/swagger/*any", http.StripPrefix("/api/v1/swagger/", fsysHandler))
 
-	mux.HandlerFunc(http.MethodGet, "/api/v1/ping", s.healthcheck)
+	mux.HandlerFunc(http.MethodPost, "/api/v1/ping/:user_id/:store_id", s.healthcheck)
 
 	// store
 	mux.HandlerFunc(http.MethodGet, "/api/v1/stores", http.HandlerFunc(s.discoverStores))
@@ -31,15 +31,11 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	mux.Handler(http.MethodDelete, "/api/v1/users/:user_id/store/:store_id/owners", s.authenticate(http.HandlerFunc(s.deleteOwner)))
 	mux.Handler(http.MethodDelete, "/api/v1/users/:user_id/stores/:store_id", s.authenticate(http.HandlerFunc(s.deleteStore)))
 
-
-	// TODO: After the hackathon , work on a proper create_user & login process.
-	// mux.HandlerFunc(http.MethodPost, "/api/v1/users", s.createUser)
-	// mux.HandlerFunc(http.MethodPost, "/api/v1/auth/login", s.login)
-
 	// user
+	mux.HandlerFunc(http.MethodPost, "/api/v1/users", s.createUser)
+	mux.HandlerFunc(http.MethodPost, "/api/v1/auth/login", s.login)
 	mux.Handler(http.MethodPost, "/api/v1/auth/logout", s.authenticate(http.HandlerFunc(s.logout)))
 	mux.Handler(http.MethodGet, "/api/v1/users/:user_id", s.authenticate(http.HandlerFunc(s.getUser)))
-	mux.HandlerFunc(http.MethodPost, "/api/v1/auth", s.createUserOrLoginUser)
 
 	// TODO:
 	mux.HandlerFunc(http.MethodPatch, "/api/v1/stores/:store_id/freeze", http.HandlerFunc(s.freezeStore))

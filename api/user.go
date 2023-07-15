@@ -3,37 +3,27 @@ package api
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
 	db "github.com/OCD-Labs/store-hub/db/sqlc"
 	"github.com/OCD-Labs/store-hub/util"
 	"github.com/OCD-Labs/store-hub/worker"
-	"github.com/go-playground/validator"
 	"github.com/hibiken/asynq"
 	"github.com/lib/pq"
 	"github.com/rs/zerolog/log"
 )
 
 type discoverStoreByOwnerPathVar struct {
-	UserID int64 `json:"user_id" validate:"required,min=1"`
+	UserID int64 `path:"user_id" validate:"required,min=1"`
 }
 
 // listUserStores maps to endpoint "GET /users/{user_id}/stores"
 func (s *StoreHub) listUserStores(w http.ResponseWriter, r *http.Request) {
 	// parse path variables
 	var pathVar discoverStoreByOwnerPathVar
-	var err error
-
-	// parse path variables
-	pathVar.UserID, err = s.retrieveIDParam(r, "user_id")
-	if err != nil || pathVar.UserID == 0 {
-		s.errorResponse(w, r, http.StatusBadRequest, "invalid store id")
-		return
-	}
-
-	// validate path variables
-	if err := s.bindJSONWithValidation(w, r, &pathVar, validator.New()); err != nil {
+	if err := s.ShouldBindPathVars(w, r, &pathVar); err != nil {
 		return
 	}
 
@@ -102,8 +92,9 @@ func newUserResponse(user db.User) userResponse {
 }
 
 // createUser maps to endpoint "POST /users"
-func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request, reqBody createUserRequest) {
-	if err := s.bindJSONWithValidation(w, r, reqBody, validator.New()); err != nil {
+func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request) {
+	var reqBody createUserRequest
+	if err := s.shouldBindBody(w, r, &reqBody); err != nil {
 		return
 	}
 
@@ -130,6 +121,8 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request, reqBody cr
 		createUserArg.ProfileImageUrl.String = *reqBody.ProfileImageUrl
 		createUserArg.ProfileImageUrl.Valid = true
 	}
+
+	fmt.Printf("\n%+v\n", reqBody)
 
 	arg := db.CreateUserTxParams{
 		CreateUserParams: createUserArg,
@@ -180,17 +173,67 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request, reqBody cr
 		"data": envelop{
 			"message": "new user created",
 			"result": envelop{
-				"user": newUserResponse(result.User),
+				"user":         newUserResponse(result.User),
 				"access_token": token,
 			},
 		},
 	}, nil)
 }
 
-// login maps to endpoint "GET /auth/login"
-func (s *StoreHub) login(w http.ResponseWriter, r *http.Request, req createUserOrLoginUserRequestBody, user db.User) {
+type loginRequest struct {
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=8"`
+}
 
-	token, _, err := s.tokenMaker.CreateToken(user.ID, req.AccountID, 24*time.Hour)
+// login maps to endpoint "GET /auth/login"
+func (s *StoreHub) login(w http.ResponseWriter, r *http.Request) {
+	var reqBody loginRequest
+	if err := s.shouldBindBody(w, r, &reqBody); err != nil {
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	user, err := s.dbStore.GetUserByEmail(r.Context(), reqBody.Email)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			s.errorResponse(w, r, http.StatusNotFound, "Invalid login credentials")
+		default:
+			s.errorResponse(w, r, http.StatusInternalServerError, "failed to fetch user's profile")
+		}
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	if !user.IsEmailVerified {
+		newReq, err := http.NewRequest(http.MethodPost, "/api/v1/resend_email_verification", r.Body)
+		if err != nil {
+			s.errorResponse(w, r, http.StatusInternalServerError, "failed to resend email verification mail")
+			log.Error().Err(err).Msg("error occurred")
+			return
+		}
+
+		for key, value := range r.Header {
+			newReq.Header.Set(key, value[0])
+		}
+
+		http.Redirect(w, r, fmt.Sprintf("/api/v1/resend_email_verification?user_id=%d", user.ID), http.StatusTemporaryRedirect)
+		return
+	}
+
+	if !user.IsActive {
+		s.errorResponse(w, r, http.StatusNoContent, "user is not activated")
+		return
+	}
+
+	err = util.CheckPassword(reqBody.Password, user.HashedPassword)
+	if err != nil {
+		s.errorResponse(w, r, http.StatusUnauthorized, "Invalid login credentials")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	token, _, err := s.tokenMaker.CreateToken(user.ID, user.AccountID, 24*time.Hour)
 	if err != nil {
 		s.errorResponse(w, r, http.StatusInternalServerError, "failed to generate access token")
 		log.Error().Err(err).Msg("error occurred")
@@ -207,47 +250,6 @@ func (s *StoreHub) login(w http.ResponseWriter, r *http.Request, req createUserO
 			},
 		},
 	}, nil)
-}
-
-type createUserOrLoginUserRequestBody struct {
-	AccountID string `json:"account_id" validate:"required,min=2,max=64"`
-}
-
-func (s *StoreHub) createUserOrLoginUser(w http.ResponseWriter, r *http.Request) {
-	var reqBody createUserOrLoginUserRequestBody
-	if err := s.readJSON(w, r, &reqBody); err != nil {
-		s.errorResponse(w, r, http.StatusBadRequest, "failed to parse request body")
-		log.Error().Err(err).Msg("error occurred")
-		return
-	}
-
-	if err := s.bindJSONWithValidation(w, r, &reqBody, validator.New()); err != nil {
-		return
-	}
-
-	user, err := s.dbStore.GetUserByAccountID(r.Context(), reqBody.AccountID)
-	if err != nil {
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
-			createUserRequestBody := createUserRequest{
-				FirstName: "string",
-				LastName:  "string",
-				Password:  "stringst",
-				Email:     util.RandomEmail(),
-				AccountID: reqBody.AccountID,
-			}
-
-			s.createUser(w, r, createUserRequestBody)
-
-			return
-		default:
-			s.errorResponse(w, r, http.StatusInternalServerError, "failed to fetch user's profile")
-		}
-		log.Error().Err(err).Msg("error occurred")
-		return
-	}
-
-	s.login(w, r, reqBody, user)
 }
 
 // logout maps to endpoint "POST /auth/logout"
@@ -273,20 +275,18 @@ func (s *StoreHub) logout(w http.ResponseWriter, r *http.Request) {
 }
 
 type getUserPathVariable struct {
-	ID int64 `json:"user_id" validate:"required,min=1"`
+	ID int64 `path:"user_id" validate:"required,min=1"`
 }
 
 // getUser maps to endpoint "GET /users/{id}"
 func (s *StoreHub) getUser(w http.ResponseWriter, r *http.Request) {
-	authPayload := s.contextGetToken(r)
+	// parse path variables
 	var pathVar getUserPathVariable
-	var err error
-
-	pathVar.ID, err = s.retrieveIDParam(r, "user_id")
-	if err != nil || pathVar.ID == 0 {
-		s.errorResponse(w, r, http.StatusBadRequest, "invalid user id")
+	if err := s.ShouldBindPathVars(w, r, &pathVar); err != nil {
 		return
 	}
+
+	authPayload := s.contextGetToken(r)
 
 	if pathVar.ID != authPayload.UserID {
 		s.errorResponse(w, r, http.StatusUnauthorized, "mismatched user")
@@ -315,3 +315,5 @@ func (s *StoreHub) getUser(w http.ResponseWriter, r *http.Request) {
 		},
 	}, nil)
 }
+
+// TODO: update user's profile

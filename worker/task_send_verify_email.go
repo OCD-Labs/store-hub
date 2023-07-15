@@ -106,6 +106,11 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(
 	`, user.AccountID, verifyURL)
 	to := []string{user.Email}
 
+	fmt.Printf("\n%+v\n", verifyURL)
+	fmt.Printf("\n%+v\n", subject)
+	fmt.Printf("\n%+v\n", content)
+	fmt.Printf("\n%+v\n", to)
+
 	err = processor.mailer.SendEmail(subject, content, to, nil, nil, nil)
 	if err != nil {
 		return fmt.Errorf("failed to send verify email: %w", err)

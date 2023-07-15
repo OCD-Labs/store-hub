@@ -3,40 +3,38 @@ package api
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"net/http"
 
 	db "github.com/OCD-Labs/store-hub/db/sqlc"
 	"github.com/OCD-Labs/store-hub/pagination"
-	"github.com/go-playground/validator"
 	"github.com/rs/zerolog/log"
 )
 
 type discoverStoreQueryStr struct {
-	StoreName string `json:"store_name"`
-	Page      int    `json:"page" validate:"min=1,max=10000000"`
-	PageSize  int    `json:"page_size" validate:"min=1,max=20"`
-	Sort      string `json:"sort"`
+	StoreName string `querystr:"store_name"`
+	Page      int    `querystr:"page" validate:"max=10000000"`
+	PageSize  int    `querystr:"page_size" validate:"max=20"`
+	Sort      string `querystr:"sort"`
 }
 
 // discoverStoreByOwner maps to endpoint "GET /stores?<query_string>"
 func (s *StoreHub) discoverStores(w http.ResponseWriter, r *http.Request) {
 	// parse request
-	queryStr := r.URL.Query()
 	var reqQueryStr discoverStoreQueryStr
-
-	reqQueryStr.StoreName = s.readStr(queryStr, "store_name", "")
-	reqQueryStr.Sort = s.readStr(queryStr, "sort", "id")
-
-	reqQueryStr.Page, _ = s.readInt(queryStr, "page", 1)
-	reqQueryStr.PageSize, _ = s.readInt(queryStr, "page_size", 15)
-
-	// validate query string
-	if err := s.bindJSONWithValidation(w, r, &reqQueryStr, validator.New()); err != nil {
+	if err := s.shouldBindQuery(w, r, &reqQueryStr); err != nil {
 		return
 	}
 
-	fmt.Printf("\n%+v\n", reqQueryStr)
+	// TODO: check out how to use struct tag to achieve same result
+	if reqQueryStr.Page < 1 {
+		reqQueryStr.Page = 1
+	}
+	if reqQueryStr.PageSize < 1 {
+		reqQueryStr.PageSize = 15
+	}
+	if reqQueryStr.Sort == "" {
+		reqQueryStr.Sort = "id"
+	}
 
 	// db query
 	arg := db.ListAllStoresParams{
@@ -45,7 +43,7 @@ func (s *StoreHub) discoverStores(w http.ResponseWriter, r *http.Request) {
 			Page:         reqQueryStr.Page,
 			PageSize:     reqQueryStr.PageSize,
 			Sort:         reqQueryStr.Sort,
-			SortSafelist: []string{"id", "store_name", "-id", "-store_name"},
+			SortSafelist: []string{"id", "name", "-id", "-name"},
 		},
 	}
 
@@ -70,46 +68,38 @@ func (s *StoreHub) discoverStores(w http.ResponseWriter, r *http.Request) {
 }
 
 type listStoreItemsQueryStr struct {
-	ItemName string `json:"item_name"` // TODO: add category field
-	Page     int    `json:"page" validate:"min=1,max=10000000"`
-	PageSize int    `json:"page_size" validate:"min=1,max=20"`
-	Sort     string `json:"sort"`
+	ItemName string `querystr:"item_name"` // TODO: add category field
+	Page     int    `querystr:"page" validate:"max=10000000"`
+	PageSize int    `querystr:"page_size" validate:"max=20"`
+	Sort     string `querystr:"sort"`
 }
 
 type listStoreItemsPathVar struct {
-	StoreID int64 `json:"store_id" validate:"required,min=1"`
+	StoreID int64 `path:"store_id" validate:"required,min=1"`
 }
 
 // listStoreItems maps to endpoint "GET /stores/{id}/items"
 func (s *StoreHub) listStoreItems(w http.ResponseWriter, r *http.Request) {
-	var pathVar listStoreItemsPathVar
-	var err error
-
 	// parse path variables
-	pathVar.StoreID, err = s.retrieveIDParam(r, "store_id")
-	if err != nil || pathVar.StoreID == 0 {
-		s.errorResponse(w, r, http.StatusBadRequest, "invalid store id")
-		return
-	}
-
-	// validate path variables
-	if err := s.bindJSONWithValidation(w, r, &pathVar, validator.New()); err != nil {
+	var pathVar listStoreItemsPathVar
+	if err := s.ShouldBindPathVars(w, r, &pathVar); err != nil {
 		return
 	}
 
 	// parse request
-	queryStr := r.URL.Query()
 	var reqQueryStr listStoreItemsQueryStr
-
-	reqQueryStr.ItemName = s.readStr(queryStr, "item_name", "")
-	reqQueryStr.Sort = s.readStr(queryStr, "sort", "id")
-
-	reqQueryStr.Page, _ = s.readInt(queryStr, "page", 1)
-	reqQueryStr.PageSize, _ = s.readInt(queryStr, "page_size", 15)
-
-	// validate query string
-	if err := s.bindJSONWithValidation(w, r, &reqQueryStr, validator.New()); err != nil {
+	if err := s.shouldBindQuery(w, r, &reqQueryStr); err != nil {
 		return
+	}
+
+	if reqQueryStr.Page < 1 {
+		reqQueryStr.Page = 1
+	}
+	if reqQueryStr.PageSize < 1 {
+		reqQueryStr.PageSize = 15
+	}
+	if reqQueryStr.Sort == "" {
+		reqQueryStr.Sort = "id"
 	}
 
 	// db query
@@ -144,31 +134,15 @@ func (s *StoreHub) listStoreItems(w http.ResponseWriter, r *http.Request) {
 }
 
 type buyStoreItemsPathVar struct {
-	StoreID int64 `json:"store_id" validate:"required,min=1"`
-	ItemID int64 `json:"item_id" validate:"required,min=1"`
+	StoreID int64 `path:"store_id" validate:"required,min=1"`
+	ItemID  int64 `path:"item_id" validate:"required,min=1"`
 }
 
 // buyStoreItems maps to endpoint "PATCH /stores/:store_id/items/:item_id/buy"
 func (s *StoreHub) buyStoreItems(w http.ResponseWriter, r *http.Request) {
+	// parse path variables
 	var pathVar buyStoreItemsPathVar
-	var err error
-
-	// parse path variables
-	pathVar.StoreID, err = s.retrieveIDParam(r, "store_id")
-	if err != nil || pathVar.StoreID == 0 {
-		s.errorResponse(w, r, http.StatusBadRequest, "invalid store id")
-		return
-	}
-
-	// parse path variables
-	pathVar.ItemID, err = s.retrieveIDParam(r, "item_id")
-	if err != nil || pathVar.StoreID == 0 {
-		s.errorResponse(w, r, http.StatusBadRequest, "invalid store id")
-		return
-	}
-
-	// validate path variables
-	if err := s.bindJSONWithValidation(w, r, &pathVar, validator.New()); err != nil {
+	if err := s.ShouldBindPathVars(w, r, &pathVar); err != nil {
 		return
 	}
 
@@ -185,7 +159,7 @@ func (s *StoreHub) buyStoreItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if item.SupplyQuantity >= 1 {
-		arg := db.UpdateItemParams {
+		arg := db.UpdateItemParams{
 			ItemID: pathVar.ItemID,
 			SupplyQuantity: sql.NullInt64{
 				Int64: item.SupplyQuantity - 1,
@@ -210,34 +184,20 @@ func (s *StoreHub) buyStoreItems(w http.ResponseWriter, r *http.Request) {
 	} else {
 		s.errorResponse(w, r, http.StatusNotFound, "item no longer in stock")
 	}
+
+	// TODO: Add swagger documentation for this endpoint
 }
 
 type getStoreItemsPathVar struct {
-	StoreID int64 `json:"store_id" validate:"required,min=1"`
-	ItemID int64 `json:"item_id" validate:"required,min=1"`
+	StoreID int64 `path:"store_id" validate:"required,min=1"`
+	ItemID  int64 `path:"item_id" validate:"required,min=1"`
 }
 
 // maps to endpoint "GET /stores/:store_id/items/:item_id"
 func (s *StoreHub) getStoreItems(w http.ResponseWriter, r *http.Request) {
+	// parse path variables
 	var pathVar getStoreItemsPathVar
-	var err error
-
-	// parse path variables
-	pathVar.StoreID, err = s.retrieveIDParam(r, "store_id")
-	if err != nil || pathVar.StoreID == 0 {
-		s.errorResponse(w, r, http.StatusBadRequest, "invalid store id")
-		return
-	}
-
-	// parse path variables
-	pathVar.ItemID, err = s.retrieveIDParam(r, "item_id")
-	if err != nil || pathVar.StoreID == 0 {
-		s.errorResponse(w, r, http.StatusBadRequest, "invalid store id")
-		return
-	}
-
-	// validate path variables
-	if err := s.bindJSONWithValidation(w, r, &pathVar, validator.New()); err != nil {
+	if err := s.ShouldBindPathVars(w, r, &pathVar); err != nil {
 		return
 	}
 

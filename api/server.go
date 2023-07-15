@@ -22,7 +22,7 @@ import (
 type StoreHub struct {
 	configs         util.Configs
 	logger          zerolog.Logger
-	swaggerFiles       fs.FS
+	swaggerFiles    fs.FS
 	cache           cache.Cache
 	tokenMaker      token.Maker
 	dbStore         db.StoreTx
@@ -45,7 +45,7 @@ func NewStoreHub(
 		tokenMaker:      tokenMaker,
 		dbStore:         store,
 		taskDistributor: taskDistributor,
-		swaggerFiles: swaggerFiles,
+		swaggerFiles:    swaggerFiles,
 	}, nil
 }
 
