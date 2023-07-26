@@ -7,3 +7,4 @@
 *.dylib
 *.log
 doc/schema.sql
+tmp

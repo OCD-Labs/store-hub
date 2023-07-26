@@ -30,4 +30,9 @@ migratedown:
 test:
 	go test -v -cover -short ./...
 
+dev:
+	@echo "Starting dev server"
+	@air -c ./.air.toml
+	@echo "Dev server started"
+
 .PHONY: server db_schema migration_file sqlc postgres createdb dropdb migrateup migratedown
