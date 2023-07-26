@@ -183,7 +183,7 @@ func (s *StoreHub) listOwnedStoreItems(w http.ResponseWriter, r *http.Request) {
 		reqQueryStr.PageSize = 15
 	}
 	if reqQueryStr.Sort == "" {
-		reqQueryStr.Sort = "id"
+		reqQueryStr.Sort = "-id"
 	}
 
 	authPayload := s.contextGetToken(r) // authorize
