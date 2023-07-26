@@ -4,8 +4,8 @@ info:
   description: "
   Rediscovery e-commerce et blockchain—server."
   version: "1.0.0"
-host: "store-hub-djxu.onrender.com"
-# host: "localhost:6780"
+# host: "store-hub-djxu.onrender.com"
+host: "localhost:6780"
 basePath: "/api/v1"
 schemes:
   - "https"
@@ -184,7 +184,7 @@ paths:
           name: sort
           schema:
             type: string
-          description: The sorting order (e.g., "id", "category", "price", "name", "-id", "-category", "-name", "-price")
+          description: The sorting criteria for items (e.g., 'id', 'category', 'price', 'name', '-id', '-category', '-name', '-price').
       responses:
         200:
           description: OK
@@ -500,7 +500,7 @@ paths:
           name: sort
           schema:
             type: string
-          description: The sorting criteria for the stores
+          description: The sorting criteria for the stores (e.g., 'id', 'category', 'name', '-id', '-category', '-name'). Missing support for 'category' and '-category' for now.
       responses:
         200:
           description: OK
@@ -564,7 +564,7 @@ paths:
           name: sort
           schema:
             type: string
-          description: The sorting criteria for the items (e.g "id", "category", "price", "name", "-id", "-category", "-name", "-price")
+          description: The sorting criteria for the items (e.g 'id', 'category', 'price', 'name', '-id', '-category', '-name', '-price')
       responses:
         200:
           description: OK
