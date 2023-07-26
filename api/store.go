@@ -99,7 +99,7 @@ func (s *StoreHub) listStoreItems(w http.ResponseWriter, r *http.Request) {
 		reqQueryStr.PageSize = 15
 	}
 	if reqQueryStr.Sort == "" {
-		reqQueryStr.Sort = "id"
+		reqQueryStr.Sort = "-id"
 	}
 
 	// db query
