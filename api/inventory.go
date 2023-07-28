@@ -2,12 +2,17 @@ package api
 
 import (
 	"database/sql"
+	"errors"
+	"fmt"
 	"net/http"
 
 	db "github.com/OCD-Labs/store-hub/db/sqlc"
 	"github.com/OCD-Labs/store-hub/pagination"
+	"github.com/lib/pq"
 	"github.com/rs/zerolog/log"
 )
+
+// TODO: Create index on search columns like category, tag price etc.
 
 type createStoreRequestBody struct {
 	Name            string `json:"name" validate:"required"`
@@ -55,11 +60,21 @@ func (s *StoreHub) createStore(w http.ResponseWriter, r *http.Request) {
 		OwnerID: authPayload.UserID,
 	}
 	result, err := s.dbStore.CreateStoreTx(r.Context(), arg)
-	if err != nil { // TODO: Handle error due to Postgres constraints
+if err != nil {
+	if pqErr, ok := err.(*pq.Error); ok {
+		switch pqErr.Code.Name() {
+		case "unique_violation":
+			s.errorResponse(w, r, http.StatusConflict, "A store with the same AccountID already exists.")
+		default:
+			s.errorResponse(w, r, http.StatusInternalServerError, "failed to create new store")
+		}
+	} else {
 		s.errorResponse(w, r, http.StatusInternalServerError, "failed to create new store")
-		log.Error().Err(err).Msg("error occurred")
-		return
 	}
+
+	log.Error().Err(err).Msg("error occurred")
+	return
+}
 
 	// return response
 	s.writeJSON(w, http.StatusCreated, envelop{
@@ -73,8 +88,8 @@ func (s *StoreHub) createStore(w http.ResponseWriter, r *http.Request) {
 
 type addStoreItemRequestBody struct {
 	Name               string   `json:"name" validate:"required"`
-	Description        string   `json:"description" validate:"required"`
-	Price              string   `json:"price" validate:"required"`
+	Description        string   `json:"description" validate:"required"` // TODO: Check the DB schema for the NUMERIC type if it's enough to accommodate big price
+	Price              string   `json:"price" validate:"required"` // TODO: validate the value contain in the string is valid number
 	ImageURLs          []string `json:"image_urls" validate:"required"`
 	Category           string   `json:"category" validate:"required"` // TODO: change DB schema to tags
 	DiscountPercentage string   `json:"discount_percentage" validate:"required"`
@@ -87,7 +102,7 @@ type addStoreItemPathVar struct {
 	UserID  int64 `path:"user_id" validate:"required,min=1"`
 }
 
-// discoverStoreByOwner maps to endpoint "POST /users/{user_id}/stores/{store_id}/items"
+// addStoreItem maps to endpoint "POST /users/{user_id}/stores/{store_id}/items"
 func (s *StoreHub) addStoreItem(w http.ResponseWriter, r *http.Request) {
 	// parse path variables
 	var pathVar addStoreItemPathVar
@@ -133,7 +148,16 @@ func (s *StoreHub) addStoreItem(w http.ResponseWriter, r *http.Request) {
 	}
 	item, err := s.dbStore.CreateStoreItem(r.Context(), arg)
 	if err != nil {
-		s.errorResponse(w, r, http.StatusInternalServerError, "failed to add item")
+		if pqErr, ok := err.(*pq.Error); ok {
+			switch pqErr.Code.Name() {
+			case "foreign_key_violation":
+				s.errorResponse(w, r, http.StatusConflict, "Referenced store doesn't exist.")
+			default:
+				s.errorResponse(w, r, http.StatusInternalServerError, "failed to add item")
+			}
+		} else {
+			s.errorResponse(w, r, http.StatusInternalServerError, "failed to add item")
+		}
 		log.Error().Err(err).Msg("error occurred")
 		return
 	}
@@ -329,7 +353,12 @@ func (s *StoreHub) updateStoreItems(w http.ResponseWriter, r *http.Request) {
 
 	item, err := s.dbStore.UpdateItem(r.Context(), arg)
 	if err != nil {
-		s.errorResponse(w, r, http.StatusInternalServerError, "failed to update item details")
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			s.errorResponse(w, r, http.StatusNotFound, "item not found")
+		default:
+			s.errorResponse(w, r, http.StatusInternalServerError, "failed to update item details")
+		}
 		log.Error().Err(err).Msg("error occurred")
 		return
 	}
@@ -382,18 +411,18 @@ func (s *StoreHub) deleteStoreItems(w http.ResponseWriter, r *http.Request) {
 		ItemID:  pathVar.ItemID,
 	})
 	if err != nil {
-		s.errorResponse(w, r, http.StatusInternalServerError, "failed to delete item")
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			s.errorResponse(w, r, http.StatusNotFound, "item not found")
+		default:
+			s.errorResponse(w, r, http.StatusInternalServerError, "failed to delete item")
+		}
 		log.Error().Err(err).Msg("error occurred")
 		return
 	}
 
 	// return response
-	s.writeJSON(w, http.StatusNoContent, envelop{ // TODO: remove response body as 204 status code means no body
-		"status": "success",
-		"data": envelop{
-			"message": "deleted item and its details",
-		},
-	}, nil)
+	s.writeJSON(w, http.StatusNoContent, nil, nil)
 }
 
 type addNewOwnerRequestBody struct {
@@ -458,7 +487,16 @@ func (s *StoreHub) addNewOwner(w http.ResponseWriter, r *http.Request) {
 	}
 	newOwner, err := s.dbStore.CreateStoreOwner(r.Context(), arg)
 	if err != nil {
-		s.errorResponse(w, r, http.StatusInternalServerError, "failed to add owner")
+		if pqErr, ok := err.(*pq.Error); ok {
+			switch pqErr.Code.Name() {
+			case "unique_violation", "foreign_key_violation":
+				s.errorResponse(w, r, http.StatusConflict, "incorrect create store owner details")
+			default:
+				s.errorResponse(w, r, http.StatusInternalServerError, "failed to add owner")
+			}
+		} else {
+			s.errorResponse(w, r, http.StatusInternalServerError, "failed to add owner")
+		}
 		log.Error().Err(err).Msg("error occurred")
 		return
 	}
@@ -534,19 +572,14 @@ func (s *StoreHub) deleteOwner(w http.ResponseWriter, r *http.Request) {
 		UserID:  user.ID,
 		StoreID: pathVar.StoreID,
 	})
-	if err != nil {
+	if err != nil { // TODO: Check all delete endpoints for DB constraints
 		s.errorResponse(w, r, http.StatusInternalServerError, "failed to delete owner")
 		log.Error().Err(err).Msg("error occurred")
 		return
 	}
 
 	// return response
-	s.writeJSON(w, http.StatusNoContent, envelop{
-		"status": "success",
-		"data": envelop{
-			"message": "remove user from store ownership",
-		},
-	}, nil)
+	s.writeJSON(w, http.StatusNoContent, nil, nil)
 }
 
 type deleteStorePathVar struct {
@@ -589,6 +622,110 @@ func (s *StoreHub) deleteStore(w http.ResponseWriter, r *http.Request) {
 	// 	1. Delete all its items
 	// 	2. Delete all its owners' records
 	// 	3. then delete the store
+}
+
+type updateStoreProfilePathVar struct {
+	StoreID int64 `path:"store_id" validate:"required,min=1"`
+	UserID  int64 `path:"user_id" validate:"required,min=1"`
+}
+
+type updateStoreProfileRquestBody struct {
+	Name            *string  `json:"name"`
+	Description     *string  `json:"description"`
+	ProfileImageUrl *string  `json:"profile_image_url"`
+	Category        *string  `json:"category"`
+	Tags            []string `json:"tags"` // TODO: Ask if updating account_id of a store is necessary
+}
+
+// updateStoreProfile maps to "PATCH /api/v1/users/:user_id/stores/:store_id"
+func (s *StoreHub) updateStoreProfile(w http.ResponseWriter, r *http.Request) {
+	// parse path variables
+	var pathVar updateStoreProfilePathVar
+	if err := s.ShouldBindPathVars(w, r, &pathVar); err != nil {
+		fmt.Printf("pathVar: %v\n", pathVar)
+		return
+	}
+
+	// parse request body
+	var reqBody updateStoreProfileRquestBody
+	if err := s.shouldBindBody(w, r, &reqBody); err != nil {
+		return
+	}
+
+	authPayload := s.contextGetToken(r) // authorize
+	if pathVar.UserID != authPayload.UserID {
+		s.errorResponse(w, r, http.StatusUnauthorized, "mismatch user")
+		return
+	}
+
+	arg := db.UpdateStoreParams{
+		StoreID: pathVar.StoreID,
+	}
+
+	if reqBody.Name != nil {
+		arg.Name = sql.NullString{
+			String: *reqBody.Name,
+			Valid:  true,
+		}
+	}
+	if reqBody.Description != nil {
+		arg.Description = sql.NullString{
+			String: *reqBody.Description,
+			Valid:  true,
+		}
+	}
+	if reqBody.ProfileImageUrl != nil {
+		arg.ProfileImageUrl = sql.NullString{
+			String: *reqBody.ProfileImageUrl,
+			Valid:  true,
+		}
+	}
+	if reqBody.Category != nil {
+		arg.Category = sql.NullString{
+			String: *reqBody.Category,
+			Valid:  true,
+		}
+	}
+	// TODO: Add if section for Tags
+	// if reqBody.Tags != nil {
+	// 	arg.Tags = sql.NullString{
+	// 		String: *reqBody.Tags,
+	// 		Valid: true,
+	// 	}
+	// }
+
+	// check ownership
+	check, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
+		StoreID: pathVar.StoreID,
+		UserID:  authPayload.UserID,
+	})
+	if check.OwnershipCount != 1 {
+		s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	updatedStore, err := s.dbStore.UpdateStore(r.Context(), arg)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			s.errorResponse(w, r, http.StatusNotFound, "Store not found")
+		default:
+			s.errorResponse(w, r, http.StatusInternalServerError, "failed to update store profile")
+		}
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, envelop{
+		"status": "success",
+		"data": envelop{
+			"message": "updated store profile",
+			"result": envelop{
+				"store": updatedStore,
+			},
+		},
+	}, nil)
 }
 
 func (s *StoreHub) freezeStoreItems(w http.ResponseWriter, r *http.Request) {
