@@ -49,6 +49,10 @@ paths:
           description: Unauthorized request
           schema:
             $ref: "#/definitions/ErrorResponse"
+        409:
+          description: Conflict request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
         500:
           description: Internal server error
           schema:
@@ -135,7 +139,11 @@ paths:
           schema:
             $ref: "#/definitions/ErrorResponse"
         403:
-          description: Access to store denied
+          description: Forbidden request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        409:
+          description: Conflict request
           schema:
             $ref: "#/definitions/ErrorResponse"
         500:
@@ -225,7 +233,7 @@ paths:
             $ref: "#/definitions/ErrorResponse"
       security:
         - Bearer: []
-  /users/{user_id}/stores/{store_id}/items/{item_id}:
+  /users/{user_id}/stores/{store_id}/items/{item_id}: 
     patch:
       summary: Update store item
       parameters:
@@ -404,6 +412,10 @@ paths:
             $ref: "#/definitions/ErrorResponse"
         403:
           description: Forbidden
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        409:
+          description: Conflict
           schema:
             $ref: "#/definitions/ErrorResponse"
         500:
@@ -772,10 +784,16 @@ paths:
                         $ref: "#/definitions/storeItem"
         400:
           description: Invalid store ID or item ID provided
+          schema:
+            $ref: "#/definitions/ErrorResponse"
         404:
           description: Item not found or item no longer in stock
+          schema:
+            $ref: "#/definitions/ErrorResponse"
         500:
           description: Failed to fetch item details or failed to update item
+          schema:
+            $ref: "#/definitions/ErrorResponse"
       security:
         - Bearer: []
 
@@ -818,10 +836,86 @@ paths:
                         $ref: "#/definitions/storeItem"
         400:
           description: Invalid store ID or item ID provided
+          schema:
+            $ref: "#/definitions/ErrorResponse"
         404:
           description: Item not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
         500:
           description: Failed to fetch item details
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /users/{user_id}/stores/{store_id}:
+    patch:
+      summary: Update store profile
+      parameters:
+        - name: user_id
+          in: path
+          description: ID of the user who owns the store
+          required: true
+          type: integer
+        - name: store_id
+          in: path
+          description: ID of the store to be updated
+          required: true
+          type: integer
+        - name: requestBody
+          in: body
+          description: Store profile update data
+          required: true
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              profile_image_url:
+                type: string
+              category:
+                type: string
+              tags:
+                type: array
+                items:
+                  type: string
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    $ref: '#/definitions/store'
+        400:
+          description: Invalid user ID or store ID provided
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        404:
+          description: Item not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: Unauthorized request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        403:
+          description: Forbidden request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Failed to fetch item details
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
 
 definitions:
   createStoreRequestBody:

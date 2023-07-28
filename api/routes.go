@@ -29,6 +29,7 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	mux.Handler(http.MethodGet, "/api/v1/users/:user_id/stores", s.authenticate(http.HandlerFunc(s.listUserStores)))
 	mux.Handler(http.MethodDelete, "/api/v1/users/:user_id/stores/:store_id/items/:item_id", s.authenticate(http.HandlerFunc(s.deleteStoreItems)))
 	mux.Handler(http.MethodDelete, "/api/v1/users/:user_id/store/:store_id/owners", s.authenticate(http.HandlerFunc(s.deleteOwner)))
+	mux.Handler(http.MethodPatch, "/api/v1/users/:user_id/stores/:store_id", s.authenticate(http.HandlerFunc(s.updateStoreProfile)))
 	mux.Handler(http.MethodDelete, "/api/v1/users/:user_id/stores/:store_id", s.authenticate(http.HandlerFunc(s.deleteStore)))
 
 	// user
