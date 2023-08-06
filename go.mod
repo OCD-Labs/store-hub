@@ -14,8 +14,8 @@ require (
 	github.com/o1egl/paseto v1.0.0
 	github.com/rs/zerolog v1.29.1
 	github.com/spf13/viper v1.16.0
+	github.com/sqlc-dev/pqtype v0.2.0
 	github.com/stretchr/testify v1.8.3
-	github.com/tabbed/pqtype v0.1.1
 	golang.org/x/crypto v0.9.0
 )
 
