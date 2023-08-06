@@ -80,3 +80,18 @@ Table item_ratings {
   comment varchar
   created_at timestamptz [not null, default: `now()`]
 }
+
+Table orders as O {
+  id bigserial [pk] 
+  delivery_status varchar [not null]
+  delivered_date timestamptz [not null, default: '0001-01-01T00:00:00Z']
+  expected_delivery_date timestamptz [not null, default: `now() + interval '3 days'`]
+  item_id bigint [not null, ref: > I.id]
+  order_quantity int [not null]
+  buyer_id bigint [not null, ref: > U.id]
+  store_id bigint [not null, ref: > S.id]
+  delivery_fee NUMERIC(10, 2) [not null]
+  payment_channel varchar [not null]
+  payment_method varchar [not null]
+  created_at timestamptz [not null, default: `now()`]
+}

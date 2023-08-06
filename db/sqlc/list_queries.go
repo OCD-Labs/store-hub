@@ -118,3 +118,4 @@ func (q *SQLTx) ListStoreItems(ctx context.Context, arg ListStoreItemsParams) ([
 
 	return items, metadata, nil
 }
+
