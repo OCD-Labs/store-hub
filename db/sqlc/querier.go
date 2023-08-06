@@ -23,7 +23,7 @@ type Querier interface {
 	DeleteStore(ctx context.Context, storeID int64) error
 	DeleteStoreOwner(ctx context.Context, arg DeleteStoreOwnerParams) error
 	GetItem(ctx context.Context, itemID int64) (Item, error)
-	GetOrderForSeller(ctx context.Context, id int64) (GetOrderForSellerRow, error)
+	GetOrderForSeller(ctx context.Context, arg GetOrderForSellerParams) (GetOrderForSellerRow, error)
 	GetSession(ctx context.Context, id uuid.UUID) (Session, error)
 	GetStoreByID(ctx context.Context, storeID int64) (GetStoreByIDRow, error)
 	GetStoreByOwner(ctx context.Context, userID int64) ([]Store, error)

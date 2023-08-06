@@ -16,22 +16,24 @@ INSERT INTO orders (
   delivery_status,
   item_id,
   order_quantity,
+  buyer_id,
+  seller_id,
   store_id,
-  buyer_id, -- update by checking parameters that are missing.
   delivery_fee,
   payment_channel,
   payment_method
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8
-) RETURNING id, delivery_status, delivered_date, expected_delivery_date, item_id, order_quantity, buyer_id, store_id, delivery_fee, payment_channel, payment_method, created_at
+  $1, $2, $3, $4, $5, $6, $7, $8, $9
+) RETURNING id, delivery_status, delivered_on, expected_delivery_date, item_id, order_quantity, buyer_id, seller_id, store_id, delivery_fee, payment_channel, payment_method, created_at
 `
 
 type CreateOrderParams struct {
 	DeliveryStatus string `json:"delivery_status"`
 	ItemID         int64  `json:"item_id"`
 	OrderQuantity  int32  `json:"order_quantity"`
-	StoreID        int64  `json:"store_id"`
 	BuyerID        int64  `json:"buyer_id"`
+	SellerID       int64  `json:"seller_id"`
+	StoreID        int64  `json:"store_id"`
 	DeliveryFee    string `json:"delivery_fee"`
 	PaymentChannel string `json:"payment_channel"`
 	PaymentMethod  string `json:"payment_method"`
@@ -42,8 +44,9 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		arg.DeliveryStatus,
 		arg.ItemID,
 		arg.OrderQuantity,
-		arg.StoreID,
 		arg.BuyerID,
+		arg.SellerID,
+		arg.StoreID,
 		arg.DeliveryFee,
 		arg.PaymentChannel,
 		arg.PaymentMethod,
@@ -52,11 +55,12 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 	err := row.Scan(
 		&i.ID,
 		&i.DeliveryStatus,
-		&i.DeliveredDate,
+		&i.DeliveredOn,
 		&i.ExpectedDeliveryDate,
 		&i.ItemID,
 		&i.OrderQuantity,
 		&i.BuyerID,
+		&i.SellerID,
 		&i.StoreID,
 		&i.DeliveryFee,
 		&i.PaymentChannel,
@@ -70,7 +74,8 @@ const getOrderForSeller = `-- name: GetOrderForSeller :one
 SELECT
   o.id AS order_id,
   o.delivery_status,
-  o.delivered_date,
+  o.delivered_on,
+  o.expected_delivery_date,
   o.item_id,
   o.order_quantity,
   o.buyer_id,
@@ -78,6 +83,7 @@ SELECT
   o.delivery_fee,
   o.payment_channel,
   o.payment_method,
+  o.created_at,
   i.name AS item_name,
   i.description AS item_description,
   i.price,
@@ -94,38 +100,46 @@ JOIN
 JOIN
   users u ON o.buyer_id = u.id
 WHERE 
-    o.id = $1
+  o.id = $1 AND o.seller_id = $2
 `
 
-type GetOrderForSellerRow struct {
-	OrderID            int64     `json:"order_id"`
-	DeliveryStatus     string    `json:"delivery_status"`
-	DeliveredDate      time.Time `json:"delivered_date"`
-	ItemID             int64     `json:"item_id"`
-	OrderQuantity      int32     `json:"order_quantity"`
-	BuyerID            int64     `json:"buyer_id"`
-	StoreID            int64     `json:"store_id"`
-	DeliveryFee        string    `json:"delivery_fee"`
-	PaymentChannel     string    `json:"payment_channel"`
-	PaymentMethod      string    `json:"payment_method"`
-	ItemName           string    `json:"item_name"`
-	ItemDescription    string    `json:"item_description"`
-	Price              string    `json:"price"`
-	CoverImgUrl        string    `json:"cover_img_url"`
-	DiscountPercentage string    `json:"discount_percentage"`
-	FirstName          string    `json:"first_name"`
-	LastName           string    `json:"last_name"`
-	Email              string    `json:"email"`
-	AccountID          string    `json:"account_id"`
+type GetOrderForSellerParams struct {
+	ID       int64 `json:"id"`
+	SellerID int64 `json:"seller_id"`
 }
 
-func (q *Queries) GetOrderForSeller(ctx context.Context, id int64) (GetOrderForSellerRow, error) {
-	row := q.db.QueryRowContext(ctx, getOrderForSeller, id)
+type GetOrderForSellerRow struct {
+	OrderID              int64     `json:"order_id"`
+	DeliveryStatus       string    `json:"delivery_status"`
+	DeliveredOn          time.Time `json:"delivered_on"`
+	ExpectedDeliveryDate time.Time `json:"expected_delivery_date"`
+	ItemID               int64     `json:"item_id"`
+	OrderQuantity        int32     `json:"order_quantity"`
+	BuyerID              int64     `json:"buyer_id"`
+	StoreID              int64     `json:"store_id"`
+	DeliveryFee          string    `json:"delivery_fee"`
+	PaymentChannel       string    `json:"payment_channel"`
+	PaymentMethod        string    `json:"payment_method"`
+	CreatedAt            time.Time `json:"created_at"`
+	ItemName             string    `json:"item_name"`
+	ItemDescription      string    `json:"item_description"`
+	Price                string    `json:"price"`
+	CoverImgUrl          string    `json:"cover_img_url"`
+	DiscountPercentage   string    `json:"discount_percentage"`
+	FirstName            string    `json:"first_name"`
+	LastName             string    `json:"last_name"`
+	Email                string    `json:"email"`
+	AccountID            string    `json:"account_id"`
+}
+
+func (q *Queries) GetOrderForSeller(ctx context.Context, arg GetOrderForSellerParams) (GetOrderForSellerRow, error) {
+	row := q.db.QueryRowContext(ctx, getOrderForSeller, arg.ID, arg.SellerID)
 	var i GetOrderForSellerRow
 	err := row.Scan(
 		&i.OrderID,
 		&i.DeliveryStatus,
-		&i.DeliveredDate,
+		&i.DeliveredOn,
+		&i.ExpectedDeliveryDate,
 		&i.ItemID,
 		&i.OrderQuantity,
 		&i.BuyerID,
@@ -133,6 +147,7 @@ func (q *Queries) GetOrderForSeller(ctx context.Context, id int64) (GetOrderForS
 		&i.DeliveryFee,
 		&i.PaymentChannel,
 		&i.PaymentMethod,
+		&i.CreatedAt,
 		&i.ItemName,
 		&i.ItemDescription,
 		&i.Price,
@@ -149,16 +164,16 @@ func (q *Queries) GetOrderForSeller(ctx context.Context, id int64) (GetOrderForS
 const updateOrder = `-- name: UpdateOrder :one
 UPDATE orders
 SET
-  delivered_date = COALESCE($1, delivered_date),
+  delivered_on = COALESCE($1, delivered_on),
   delivery_status = COALESCE($2, delivery_status),
   expected_delivery_date = COALESCE($3, expected_delivery_date)
 WHERE
   id = $4
-RETURNING id, delivery_status, delivered_date, expected_delivery_date, item_id, order_quantity, buyer_id, store_id, delivery_fee, payment_channel, payment_method, created_at
+RETURNING id, delivery_status, delivered_on, expected_delivery_date, item_id, order_quantity, buyer_id, seller_id, store_id, delivery_fee, payment_channel, payment_method, created_at
 `
 
 type UpdateOrderParams struct {
-	DeliveredDate        sql.NullTime   `json:"delivered_date"`
+	DeliveredOn          sql.NullTime   `json:"delivered_on"`
 	DeliveryStatus       sql.NullString `json:"delivery_status"`
 	ExpectedDeliveryDate sql.NullTime   `json:"expected_delivery_date"`
 	OrderID              int64          `json:"order_id"`
@@ -166,7 +181,7 @@ type UpdateOrderParams struct {
 
 func (q *Queries) UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order, error) {
 	row := q.db.QueryRowContext(ctx, updateOrder,
-		arg.DeliveredDate,
+		arg.DeliveredOn,
 		arg.DeliveryStatus,
 		arg.ExpectedDeliveryDate,
 		arg.OrderID,
@@ -175,11 +190,12 @@ func (q *Queries) UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order
 	err := row.Scan(
 		&i.ID,
 		&i.DeliveryStatus,
-		&i.DeliveredDate,
+		&i.DeliveredOn,
 		&i.ExpectedDeliveryDate,
 		&i.ItemID,
 		&i.OrderQuantity,
 		&i.BuyerID,
+		&i.SellerID,
 		&i.StoreID,
 		&i.DeliveryFee,
 		&i.PaymentChannel,

@@ -40,11 +40,12 @@ type ItemRating struct {
 type Order struct {
 	ID                   int64     `json:"id"`
 	DeliveryStatus       string    `json:"delivery_status"`
-	DeliveredDate        time.Time `json:"delivered_date"`
+	DeliveredOn          time.Time `json:"delivered_on"`
 	ExpectedDeliveryDate time.Time `json:"expected_delivery_date"`
 	ItemID               int64     `json:"item_id"`
 	OrderQuantity        int32     `json:"order_quantity"`
 	BuyerID              int64     `json:"buyer_id"`
+	SellerID             int64     `json:"seller_id"`
 	StoreID              int64     `json:"store_id"`
 	DeliveryFee          string    `json:"delivery_fee"`
 	PaymentChannel       string    `json:"payment_channel"`

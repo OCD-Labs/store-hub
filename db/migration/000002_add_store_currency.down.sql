@@ -9,6 +9,7 @@ END $$;
 
 ALTER TABLE "orders" DROP CONSTRAINT IF EXISTS orders_item_id_fkey;
 ALTER TABLE "orders" DROP CONSTRAINT IF EXISTS orders_buyer_id_fkey;
+ALTER TABLE "orders" DROP CONSTRAINT IF EXISTS orders_seller_id_fkey;
 ALTER TABLE "orders" DROP CONSTRAINT IF EXISTS orders_store_id_fkey;
 
 DROP TABLE IF EXISTS "orders";
