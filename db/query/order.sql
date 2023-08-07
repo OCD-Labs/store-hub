@@ -1,6 +1,5 @@
 -- name: CreateOrder :one
 INSERT INTO orders (
-  delivery_status,
   item_id,
   order_quantity,
   buyer_id,
@@ -10,7 +9,7 @@ INSERT INTO orders (
   payment_channel,
   payment_method
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9
+  $1, $2, $3, $4, $5, $6, $7, $8
 ) RETURNING *;
 
 -- name: GetOrderForSeller :one

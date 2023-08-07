@@ -105,6 +105,8 @@ func (q *SQLTx) ListStoreItems(ctx context.Context, arg ListStoreItemsParams) ([
 			&i.IsFrozen,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Currency,
+			&i.CoverImgUrl,
 		); err != nil {
 			return nil, pagination.Metadata{}, err
 		}
@@ -122,25 +124,25 @@ func (q *SQLTx) ListStoreItems(ctx context.Context, arg ListStoreItemsParams) ([
 
 type ListSellerOrdersParams struct {
 	CreatedAtStart time.Time
-	CreatedAtEnd time.Time
+	CreatedAtEnd   time.Time
 	PaymentChannel string
-	Price string
+	Price          string
 	DeliveryStatus string
-	ItemName string
-	SellerID int64
-	Filters pagination.Filters
+	ItemName       string
+	SellerID       int64
+	Filters        pagination.Filters
 }
 
 type SellerOrder struct {
-	OrderID int64 `json:"order_id"`
-	DeliveryStatus string `json:"delivery_status"`
-	PaymentChannel string `json:"payment_channel"`
-	CreatedAt time.Time `json:"created_at"`
-	ItemName string `json:"item_name"`
-	ItemPrice string `json:"item_price"`
-	ItemCoverImgUrl string `json:"item_cover_img_url"`
-	BuyerFirstName string `json:"buyer_first_name"`
-	BuyerLastName string `json:"buyer_last_name"`
+	OrderID         int64     `json:"order_id"`
+	DeliveryStatus  string    `json:"delivery_status"`
+	PaymentChannel  string    `json:"payment_channel"`
+	CreatedAt       time.Time `json:"created_at"`
+	ItemName        string    `json:"item_name"`
+	ItemPrice       string    `json:"item_price"`
+	ItemCoverImgUrl string    `json:"item_cover_img_url"`
+	BuyerFirstName  string    `json:"buyer_first_name"`
+	BuyerLastName   string    `json:"buyer_last_name"`
 }
 
 // ListSellerOrders do a fulltext search to list a seller orders, and paginates accordingly.
@@ -183,7 +185,7 @@ func (q *SQLTx) ListSellerOrders(ctx context.Context, arg ListSellerOrdersParams
 		arg.CreatedAtEnd,
 		arg.SellerID,
 		arg.Filters.Limit(),
-		arg.Filters.Offset(), 
+		arg.Filters.Offset(),
 	}
 
 	rows, err := q.db.QueryContext(ctx, stmt, args...)
@@ -219,7 +221,6 @@ func (q *SQLTx) ListSellerOrders(ctx context.Context, arg ListSellerOrdersParams
 	}
 
 	metadata := pagination.CalcMetadata(totalRecords, arg.Filters.Page, arg.Filters.PageSize)
-
 
 	return sos, metadata, nil
 }

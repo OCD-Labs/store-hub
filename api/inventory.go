@@ -13,6 +13,7 @@ import (
 )
 
 // TODO: Create index on search columns like category, tag price etc.
+//TODO: When listing storefront items for a store, discuss catering for out of stock and delete items.
 
 type createStoreRequestBody struct {
 	Name            string `json:"name" validate:"required"`
@@ -60,21 +61,21 @@ func (s *StoreHub) createStore(w http.ResponseWriter, r *http.Request) {
 		OwnerID: authPayload.UserID,
 	}
 	result, err := s.dbStore.CreateStoreTx(r.Context(), arg)
-if err != nil {
-	if pqErr, ok := err.(*pq.Error); ok {
-		switch pqErr.Code.Name() {
-		case "unique_violation":
-			s.errorResponse(w, r, http.StatusConflict, "A store with the same AccountID already exists.")
-		default:
+	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok {
+			switch pqErr.Code.Name() {
+			case "unique_violation":
+				s.errorResponse(w, r, http.StatusConflict, "A store with the same AccountID already exists.")
+			default:
+				s.errorResponse(w, r, http.StatusInternalServerError, "failed to create new store")
+			}
+		} else {
 			s.errorResponse(w, r, http.StatusInternalServerError, "failed to create new store")
 		}
-	} else {
-		s.errorResponse(w, r, http.StatusInternalServerError, "failed to create new store")
-	}
 
-	log.Error().Err(err).Msg("error occurred")
-	return
-}
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
 
 	// return response
 	s.writeJSON(w, http.StatusCreated, envelop{
@@ -89,12 +90,12 @@ if err != nil {
 type addStoreItemRequestBody struct {
 	Name               string   `json:"name" validate:"required"`
 	Description        string   `json:"description" validate:"required"` // TODO: Check the DB schema for the NUMERIC type if it's enough to accommodate big price
-	Price              string   `json:"price" validate:"required"` // TODO: validate the value contain in the string is valid number
+	Price              string   `json:"price" validate:"required"`       // TODO: validate the value contain in the string is valid number
 	ImageURLs          []string `json:"image_urls" validate:"required"`
 	Category           string   `json:"category" validate:"required"` // TODO: change DB schema to tags
 	DiscountPercentage string   `json:"discount_percentage" validate:"required"`
 	SupplyQuantity     int64    `json:"supply_quantity" validate:"required"`
-	CoverImgURL string `json:"cover_img_url" validate:"required"`
+	CoverImgURL        string   `json:"cover_img_url" validate:"required"`
 }
 
 type addStoreItemPathVar struct {
@@ -144,7 +145,7 @@ func (s *StoreHub) addStoreItem(w http.ResponseWriter, r *http.Request) {
 		Category:           reqBody.Category,
 		SupplyQuantity:     reqBody.SupplyQuantity,
 		DiscountPercentage: reqBody.DiscountPercentage,
-		CoverImgUrl: reqBody.CoverImgURL,
+		CoverImgUrl:        reqBody.CoverImgURL,
 		Extra:              []byte("{}"),
 	}
 	item, err := s.dbStore.CreateStoreItem(r.Context(), arg)

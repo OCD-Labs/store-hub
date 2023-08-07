@@ -13,7 +13,6 @@ import (
 
 const createOrder = `-- name: CreateOrder :one
 INSERT INTO orders (
-  delivery_status,
   item_id,
   order_quantity,
   buyer_id,
@@ -23,12 +22,11 @@ INSERT INTO orders (
   payment_channel,
   payment_method
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9
+  $1, $2, $3, $4, $5, $6, $7, $8
 ) RETURNING id, delivery_status, delivered_on, expected_delivery_date, item_id, order_quantity, buyer_id, seller_id, store_id, delivery_fee, payment_channel, payment_method, created_at
 `
 
 type CreateOrderParams struct {
-	DeliveryStatus string `json:"delivery_status"`
 	ItemID         int64  `json:"item_id"`
 	OrderQuantity  int32  `json:"order_quantity"`
 	BuyerID        int64  `json:"buyer_id"`
@@ -41,7 +39,6 @@ type CreateOrderParams struct {
 
 func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
 	row := q.db.QueryRowContext(ctx, createOrder,
-		arg.DeliveryStatus,
 		arg.ItemID,
 		arg.OrderQuantity,
 		arg.BuyerID,
