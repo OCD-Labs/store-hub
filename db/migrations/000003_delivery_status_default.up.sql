@@ -1,0 +1,3 @@
+ALTER TABLE orders
+ALTER COLUMN delivery_status
+SET DEFAULT 'PENDING';
