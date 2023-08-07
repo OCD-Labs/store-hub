@@ -21,7 +21,7 @@ INSERT INTO stores (
   category
 ) VALUES (
   $1, $2, $3, $4, $5
-) RETURNING id, name, description, store_account_id, profile_image_url, is_verified, category, is_frozen, created_at, currency
+) RETURNING id, name, description, store_account_id, profile_image_url, is_verified, category, is_frozen, created_at
 `
 
 type CreateStoreParams struct {
@@ -51,7 +51,6 @@ func (q *Queries) CreateStore(ctx context.Context, arg CreateStoreParams) (Store
 		&i.Category,
 		&i.IsFrozen,
 		&i.CreatedAt,
-		&i.Currency,
 	)
 	return i, err
 }
@@ -68,7 +67,7 @@ func (q *Queries) DeleteStore(ctx context.Context, storeID int64) error {
 
 const getStoreByID = `-- name: GetStoreByID :one
 SELECT 
-  s.id, s.name, s.description, s.store_account_id, s.profile_image_url, s.is_verified, s.category, s.is_frozen, s.created_at, s.currency, 
+  s.id, s.name, s.description, s.store_account_id, s.profile_image_url, s.is_verified, s.category, s.is_frozen, s.created_at, 
   json_agg(json_build_object(
       'user', json_build_object('id', u.id, 'account_id', u.account_id, 'first_name', u.first_name, 'last_name', u.last_name, 'email', u.email),
       'store_owners', json_build_object('user_id', so.user_id, 'store_id', so.store_id, 'added_at', so.added_at)
@@ -95,7 +94,6 @@ type GetStoreByIDRow struct {
 	Category        string          `json:"category"`
 	IsFrozen        bool            `json:"is_frozen"`
 	CreatedAt       time.Time       `json:"created_at"`
-	Currency        string          `json:"currency"`
 	Owners          json.RawMessage `json:"owners"`
 }
 
@@ -112,14 +110,13 @@ func (q *Queries) GetStoreByID(ctx context.Context, storeID int64) (GetStoreByID
 		&i.Category,
 		&i.IsFrozen,
 		&i.CreatedAt,
-		&i.Currency,
 		&i.Owners,
 	)
 	return i, err
 }
 
 const getStoreByOwner = `-- name: GetStoreByOwner :many
-SELECT s.id, s.name, s.description, s.store_account_id, s.profile_image_url, s.is_verified, s.category, s.is_frozen, s.created_at, s.currency
+SELECT s.id, s.name, s.description, s.store_account_id, s.profile_image_url, s.is_verified, s.category, s.is_frozen, s.created_at
 FROM stores s
 JOIN store_owners so ON s.id = so.store_id
 WHERE so.user_id = $1
@@ -144,7 +141,6 @@ func (q *Queries) GetStoreByOwner(ctx context.Context, userID int64) ([]Store, e
 			&i.Category,
 			&i.IsFrozen,
 			&i.CreatedAt,
-			&i.Currency,
 		); err != nil {
 			return nil, err
 		}
@@ -170,7 +166,7 @@ SET
   is_frozen = COALESCE($6, is_frozen)
 WHERE 
   id = $7
-RETURNING id, name, description, store_account_id, profile_image_url, is_verified, category, is_frozen, created_at, currency
+RETURNING id, name, description, store_account_id, profile_image_url, is_verified, category, is_frozen, created_at
 `
 
 type UpdateStoreParams struct {
@@ -204,7 +200,6 @@ func (q *Queries) UpdateStore(ctx context.Context, arg UpdateStoreParams) (Store
 		&i.Category,
 		&i.IsFrozen,
 		&i.CreatedAt,
-		&i.Currency,
 	)
 	return i, err
 }

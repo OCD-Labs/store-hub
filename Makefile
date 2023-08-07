@@ -1,4 +1,5 @@
 DB_URL=postgres://root:fde24e52415e@localhost:5434/store_hub?sslmode=disable
+DB_URL=postgres://storehub_db_user:9iDzrJqajhSzbo3QEk8G9Oq94RYCCIyF@dpg-cibbac59aq03rjmp88og-a.oregon-postgres.render.com/storehub_db
 
 server:
 	go run ./main.go
@@ -22,10 +23,16 @@ dropdb:
 	docker exec -it store_hub_db dropdb store_hub
 
 migrateup:
-	migrate -path db/migration -database "$(DB_URL)" -verbose up
+	migrate -path db/migrations -database "$(DB_URL)" -verbose up
+
+migrateup1:
+	migrate -path db/migrations -database "$(DB_URL)" -verbose up 2
 
 migratedown:
-	migrate -path db/migration -database "$(DB_URL)" -verbose down
+	migrate -path db/migrations -database "$(DB_URL)" -verbose down
+
+migratedown1:
+	migrate -path db/migrations -database "$(DB_URL)" -verbose down 1
 
 test:
 	go test -v -cover -short ./...
@@ -35,4 +42,4 @@ dev:
 	@air -c ./.air.toml
 	@echo "Dev server started"
 
-.PHONY: server db_schema migration_file sqlc postgres createdb dropdb migrateup migratedown
+.PHONY: server db_schema migration_file sqlc postgres createdb dropdb migrateup migratedown migrateup1 migratedown1

@@ -26,6 +26,7 @@ type Item struct {
 	IsFrozen           bool            `json:"is_frozen"`
 	CreatedAt          time.Time       `json:"created_at"`
 	UpdatedAt          time.Time       `json:"updated_at"`
+	Currency           string          `json:"currency"`
 	CoverImgUrl        string          `json:"cover_img_url"`
 }
 
@@ -75,7 +76,6 @@ type Store struct {
 	Category        string    `json:"category"`
 	IsFrozen        bool      `json:"is_frozen"`
 	CreatedAt       time.Time `json:"created_at"`
-	Currency        string    `json:"currency"`
 }
 
 type StoreOwner struct {

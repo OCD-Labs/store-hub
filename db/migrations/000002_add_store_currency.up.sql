@@ -1,4 +1,4 @@
-ALTER TABLE "stores" ADD COLUMN "currency" varchar NOT NULL DEFAULT 'USD';
+ALTER TABLE "items" ADD COLUMN "currency" varchar NOT NULL DEFAULT 'NGN';
 ALTER TABLE "items" ADD COLUMN "cover_img_url" varchar NOT NULL DEFAULT 'http://res.cloudinary.com/duxnx9n5t/image/upload/v1690708857/raczxa9rcxlo35odjp5x.png';
 
 CREATE TABLE "orders" (
