@@ -22,12 +22,13 @@ INSERT INTO items (
   store_id,
   image_urls,
   category,
+  cover_img_url,
   discount_percentage,
   supply_quantity,
   extra
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9
-) RETURNING id, name, description, price, store_id, image_urls, category, discount_percentage, supply_quantity, extra, is_frozen, created_at, updated_at, cover_img_url
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+) RETURNING id, name, description, price, store_id, image_urls, category, discount_percentage, supply_quantity, extra, is_frozen, created_at, updated_at, currency, cover_img_url
 `
 
 type CreateStoreItemParams struct {
@@ -37,6 +38,7 @@ type CreateStoreItemParams struct {
 	StoreID            int64           `json:"store_id"`
 	ImageUrls          []string        `json:"image_urls"`
 	Category           string          `json:"category"`
+	CoverImgUrl        string          `json:"cover_img_url"`
 	DiscountPercentage string          `json:"discount_percentage"`
 	SupplyQuantity     int64           `json:"supply_quantity"`
 	Extra              json.RawMessage `json:"extra"`
@@ -50,6 +52,7 @@ func (q *Queries) CreateStoreItem(ctx context.Context, arg CreateStoreItemParams
 		arg.StoreID,
 		pq.Array(arg.ImageUrls),
 		arg.Category,
+		arg.CoverImgUrl,
 		arg.DiscountPercentage,
 		arg.SupplyQuantity,
 		arg.Extra,
@@ -69,6 +72,7 @@ func (q *Queries) CreateStoreItem(ctx context.Context, arg CreateStoreItemParams
 		&i.IsFrozen,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Currency,
 		&i.CoverImgUrl,
 	)
 	return i, err
@@ -90,7 +94,7 @@ func (q *Queries) DeleteItem(ctx context.Context, arg DeleteItemParams) error {
 }
 
 const getItem = `-- name: GetItem :one
-SELECT id, name, description, price, store_id, image_urls, category, discount_percentage, supply_quantity, extra, is_frozen, created_at, updated_at, cover_img_url FROM items
+SELECT id, name, description, price, store_id, image_urls, category, discount_percentage, supply_quantity, extra, is_frozen, created_at, updated_at, currency, cover_img_url FROM items
 WHERE id = $1 AND supply_quantity > 0
 `
 
@@ -111,6 +115,7 @@ func (q *Queries) GetItem(ctx context.Context, itemID int64) (Item, error) {
 		&i.IsFrozen,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Currency,
 		&i.CoverImgUrl,
 	)
 	return i, err
@@ -131,7 +136,7 @@ SET
   updated_at = COALESCE($10, updated_at)
 WHERE
   id = $11
-RETURNING id, name, description, price, store_id, image_urls, category, discount_percentage, supply_quantity, extra, is_frozen, created_at, updated_at, cover_img_url
+RETURNING id, name, description, price, store_id, image_urls, category, discount_percentage, supply_quantity, extra, is_frozen, created_at, updated_at, currency, cover_img_url
 `
 
 type UpdateItemParams struct {
@@ -177,6 +182,7 @@ func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, e
 		&i.IsFrozen,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Currency,
 		&i.CoverImgUrl,
 	)
 	return i, err

@@ -42,7 +42,7 @@ jobs:
         sudo mv migrate /usr/bin/
         which migrate
     
-    - name: Run database migration
+    - name: Run database migrations
       run: make migrateup
 
     - name: Test

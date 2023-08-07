@@ -6,11 +6,12 @@ INSERT INTO items (
   store_id,
   image_urls,
   category,
+  cover_img_url,
   discount_percentage,
   supply_quantity,
   extra
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 ) RETURNING *;
 
 -- name: GetItem :one
