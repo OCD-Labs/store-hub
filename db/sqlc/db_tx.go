@@ -33,6 +33,9 @@ type StoreTx interface {
 
 	// CreateUserTx creates a user row and schedules a verify email task on redis.
 	CreateUserTx(ctx context.Context, arg CreateUserTxParams) (CreateUserTxResult, error)
+
+	// ListSellerOrders do a fulltext search to list orders, and paginates accordingly
+	ListSellerOrders(ctx context.Context, arg ListSellerOrdersParams) ([]SellerOrder, pagination.Metadata, error)
 }
 
 // A SQLTx provides all functions to execute SQL queries and transactions.

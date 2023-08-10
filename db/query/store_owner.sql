@@ -12,8 +12,8 @@ DELETE FROM store_owners
 WHERE user_id = $1 AND store_id = $2;
 
 -- name: IsStoreOwner :one
-SELECT COUNT(*) AS ownership_count, access_level
+SELECT access_level
 FROM store_owners
 WHERE user_id = $1
-  AND store_id = $2
-GROUP BY access_level;
+  AND store_id = $2;
+

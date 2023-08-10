@@ -12,12 +12,9 @@ const alphabets = "abcdefghijklmnopqrstuvwxyz"
 const (
 	STOREOWNER       = "STORE-OWNER"
 	NORMALUSER       = "NORMAL-USER"
-	PENDINGSTATUS    = "PENDING"
-	PROCESSINGSTATUS = "PROCESSING"
-	SHIPPEDSTATUS    = "SHIPPED"
-	DELIVEREDSTATUS  = "DELIVERED"
-	CANCELLEDSTATUS  = "CANCELLED"
 )
+
+var DELIVERYSTATUS = []string{"PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "RETURNED"}
 
 func init() {
 	rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -76,4 +73,14 @@ func Extract(s string) string {
 // Concat concatenates the substring of the PASETO token string value.
 func Concat(s string) string {
 	return fmt.Sprintf("v2.local.%s.bnVsbA", s)
+}
+
+func IsValidStatus(status string) bool {
+	status = strings.TrimSpace(status)
+	for _, s := range DELIVERYSTATUS {
+		if s == status {
+			return true
+		}
+	}
+	return false
 }
