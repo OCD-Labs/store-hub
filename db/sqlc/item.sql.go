@@ -14,6 +14,24 @@ import (
 	"github.com/sqlc-dev/pqtype"
 )
 
+const checkItemStoreMatch = `-- name: CheckItemStoreMatch :one
+SELECT supply_quantity from items
+WHERE id = $1
+  AND store_id = $2
+`
+
+type CheckItemStoreMatchParams struct {
+	ItemID  int64 `json:"item_id"`
+	StoreID int64 `json:"store_id"`
+}
+
+func (q *Queries) CheckItemStoreMatch(ctx context.Context, arg CheckItemStoreMatchParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, checkItemStoreMatch, arg.ItemID, arg.StoreID)
+	var supply_quantity int64
+	err := row.Scan(&supply_quantity)
+	return supply_quantity, err
+}
+
 const createStoreItem = `-- name: CreateStoreItem :one
 INSERT INTO items (
   name,
@@ -128,14 +146,15 @@ SET
   name = COALESCE($2, name),
   price = COALESCE($3, price),
   image_urls = COALESCE($4, image_urls),
-  category = COALESCE($5, category),
-  discount_percentage = COALESCE($6, discount_percentage),
-  supply_quantity = COALESCE($7, supply_quantity),
-  extra = COALESCE($8, extra),
-  is_frozen = COALESCE($9, is_frozen),
-  updated_at = COALESCE($10, updated_at)
+  cover_img_url = COALESCE($5, cover_img_url),
+  category = COALESCE($6, category),
+  discount_percentage = COALESCE($7, discount_percentage),
+  supply_quantity = COALESCE($8, supply_quantity),
+  extra = COALESCE($9, extra),
+  is_frozen = COALESCE($10, is_frozen),
+  updated_at = COALESCE($11, updated_at)
 WHERE
-  id = $11
+  id = $12
 RETURNING id, name, description, price, store_id, image_urls, category, discount_percentage, supply_quantity, extra, is_frozen, created_at, updated_at, currency, cover_img_url
 `
 
@@ -144,6 +163,7 @@ type UpdateItemParams struct {
 	Name               sql.NullString        `json:"name"`
 	Price              sql.NullString        `json:"price"`
 	ImageUrls          []string              `json:"image_urls"`
+	CoverImgUrl        sql.NullString        `json:"cover_img_url"`
 	Category           sql.NullString        `json:"category"`
 	DiscountPercentage sql.NullString        `json:"discount_percentage"`
 	SupplyQuantity     sql.NullInt64         `json:"supply_quantity"`
@@ -159,6 +179,7 @@ func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, e
 		arg.Name,
 		arg.Price,
 		pq.Array(arg.ImageUrls),
+		arg.CoverImgUrl,
 		arg.Category,
 		arg.DiscountPercentage,
 		arg.SupplyQuantity,

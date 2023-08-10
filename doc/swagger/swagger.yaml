@@ -916,6 +916,229 @@ paths:
             $ref: "#/definitions/ErrorResponse"
       security:
         - Bearer: []
+  /seller/orders:
+    post:
+      summary: Create a new order
+      parameters:
+        - name: requestBody
+          in: body
+          description: Details of the order to be created.
+          required: true
+          schema:
+            $ref: "#/definitions/createOrderRequestBody"
+      responses:
+        201:
+          description: Created
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      order:
+                        $ref: '#/definitions/orderResponse'
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        403:
+          description: Forbidden
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        409:
+          description: Conflict
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+    get:
+      summary: List seller orders
+      parameters:
+        - in: query
+          name: item_name
+          description: Item name to search.
+          schema:
+            type: string
+        - in: query
+          name: created_at_start
+          description: The date to start the search from.
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: created_at_end
+          description: The date to end the search at.
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: payment_channel
+          description: Search orders by payment channels like NEAR, debit card, PayPal etc
+          schema:
+            type: string
+        - in: query
+          name: delivery_status
+          description: Search orders by what status they are in. {"PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "RETURNED"}
+          schema:
+            type: string
+        - in: query
+          name: page
+          description: The page number for pagination
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            maximum: 10000000
+        - in: query
+          name: page_size
+          description: The number of orders to include per page
+          schema:
+            type: integer
+            minimum: 1
+            default: 15
+            maximum: 20
+        - in: query
+          name: sort
+          description: The sorting criteria for the order (e.g "-id", "-item_name", "-created_at", "id", "item_name", "created_at")
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      order:
+                        type: array
+                        items:
+                          $ref: '#/definitions/orderResponse'
+                      metadata:
+                        $ref: '#/definitions/pagination'
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+  /seller/orders/{order_id}:
+    get:
+      summary: Get seller order by ID
+      parameters:
+        - in: path
+          name: order_id
+          schema:
+            type: integer
+          required: true
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      order:
+                        $ref: '#/definitions/orderResponse'
+        404:
+          description: Not Found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+    patch:
+      summary: Update seller order by ID
+      parameters:
+        - in: path
+          name: order_id
+          description: The order ID
+          schema:
+            type: integer
+            format: int64
+          required: true
+        - in: body
+          name: requestBody
+          description: The request body containing update details for an order with the ID.
+          required: true
+          schema:
+            type: object
+            properties:
+              delivered_on:
+                type: string
+                format: date-time
+              delivery_status:
+                type: string
+              expected_delivery_date:
+                type: string
+                format: date-time
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      order:
+                        $ref: '#/definitions/orderResponse'
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        404:
+          description: Not Found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
 
 definitions:
   createStoreRequestBody:
@@ -1108,6 +1331,8 @@ definitions:
         type: array
         items:
           type: string
+      cover_img_url:
+        type: string
       category:
         type: string
       discount_percentage:
@@ -1185,3 +1410,60 @@ definitions:
       is_email_verified:
         type: boolean
   
+  createOrderRequestBody:
+    type: object
+    properties:
+      item_id:
+        type: integer
+        minimum: 1
+      order_quantity:
+        type: integer
+        minimum: 1
+      buyer_id:
+        type: integer
+        minimum: 1
+      seller_id:
+        type: integer
+        minimum: 1
+      store_id:
+        type: integer
+        minimum: 1
+      delivery_fee:
+        type: string
+      payment_channel:
+        type: string
+      payment_method:
+        type: string
+
+  orderResponse:
+    type: object
+    properties:
+      id:
+        type: integer
+      delivery_status:
+        type: string
+      delivered_on:
+        type: string
+        format: date-time
+      expected_delivery_date:
+        type: string
+        format: date-time
+      item_id:
+        type: integer
+      order_quantity:
+        type: integer
+      buyer_id:
+        type: integer
+      seller_id:
+        type: integer
+      store_id:
+        type: integer
+      delivery_fee:
+        type: string
+      payment_channel:
+        type: string
+      payment_method:
+        type: string
+      created_at:
+        type: string
+        format: date-time

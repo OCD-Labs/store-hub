@@ -32,10 +32,10 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	mux.Handler(http.MethodPatch, "/api/v1/users/:user_id/stores/:store_id", s.authenticate(http.HandlerFunc(s.updateStoreProfile)))
 	mux.Handler(http.MethodDelete, "/api/v1/users/:user_id/stores/:store_id", s.authenticate(http.HandlerFunc(s.deleteStore)))
 
-	mux.Handler(http.MethodPost, "/api/v1/sellers/orders", s.authenticate(http.HandlerFunc(s.createOrder)))
-	mux.Handler(http.MethodGet, "/api/v1/sellers/orders", s.authenticate(http.HandlerFunc(s.listSellerOrders)))
-	mux.Handler(http.MethodGet, "/api/v1/sellers/orders/:order_id", s.authenticate(http.HandlerFunc(s.getSellerOrder)))
-	mux.Handler(http.MethodPatch, "/api/v1/sellers/orders/:order_id", s.authenticate(http.HandlerFunc(s.updateSellerOrder)))
+	mux.Handler(http.MethodPost, "/api/v1/seller/orders", s.authenticate(http.HandlerFunc(s.createOrder)))
+	mux.Handler(http.MethodGet, "/api/v1/seller/orders", s.authenticate(http.HandlerFunc(s.listSellerOrders)))
+	mux.Handler(http.MethodGet, "/api/v1/seller/orders/:order_id", s.authenticate(http.HandlerFunc(s.getSellerOrder)))
+	mux.Handler(http.MethodPatch, "/api/v1/seller/orders/:order_id", s.authenticate(http.HandlerFunc(s.updateSellerOrder)))
 
 	// user
 	mux.HandlerFunc(http.MethodPost, "/api/v1/users", s.createUser)

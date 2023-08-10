@@ -126,7 +126,6 @@ type ListSellerOrdersParams struct {
 	CreatedAtStart time.Time
 	CreatedAtEnd   time.Time
 	PaymentChannel string
-	Price          string
 	DeliveryStatus string
 	ItemName       string
 	SellerID       int64
@@ -158,7 +157,7 @@ func (q *SQLTx) ListSellerOrders(ctx context.Context, arg ListSellerOrdersParams
   		i.price AS item_price,
   		i.cover_img_url AS item_cover_img_url,
   		u.first_name AS buyer_first_name,
-  		u.last_name AS buyer_last_name,
+  		u.last_name AS buyer_last_name
 		FROM
 			orders o
 		JOIN
@@ -166,23 +165,12 @@ func (q *SQLTx) ListSellerOrders(ctx context.Context, arg ListSellerOrdersParams
 		JOIN
 			users u ON o.buyer_id = u.id
 		WHERE
-			(
-				($1 <> '' AND i.name ILIKE '%%' || $1 || '%%') OR
-				($2 <> '' AND o.status ILIKE '%%' || $2 || '%%') OR
-				($3 <> '' AND o.payment_channel ILIKE '%%' || $3 || '%%') OR
-				(o.created_at BETWEEN $4 AND $5) OR
-			)
-			AND o.seller_id = $6
-		ORDER by %s %s, id ASC
-		LIMIT $7 OFFSET $8`, arg.Filters.SortColumn(), arg.Filters.SortDirection(),
+			 o.seller_id = $1
+		ORDER by o.%s %s, o.id ASC
+		LIMIT $2 OFFSET $3`, arg.Filters.SortColumn(), arg.Filters.SortDirection(),
 	)
 
 	args := []interface{}{
-		arg.ItemName,
-		arg.DeliveryStatus,
-		arg.PaymentChannel,
-		arg.CreatedAtStart,
-		arg.CreatedAtEnd,
 		arg.SellerID,
 		arg.Filters.Limit(),
 		arg.Filters.Offset(),

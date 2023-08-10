@@ -114,7 +114,6 @@ func (s *StoreHub) addStoreItem(w http.ResponseWriter, r *http.Request) {
 	// parse request body
 	var reqBody addStoreItemRequestBody
 	if err := s.shouldBindBody(w, r, &reqBody); err != nil {
-		log.Error().Err(err).Msg("error occurred")
 		return
 	}
 
@@ -125,12 +124,18 @@ func (s *StoreHub) addStoreItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check ownership
-	check, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
+	_, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
 		StoreID: pathVar.StoreID,
 		UserID:  authPayload.UserID,
 	})
-	if check.OwnershipCount != 1 {
-		s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
+	if err != nil {
+		if err == sql.ErrNoRows {
+			s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
+			log.Error().Err(err).Msg("error occurred")
+			return
+		}
+
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to add item")
 		log.Error().Err(err).Msg("error occurred")
 		return
 	}
@@ -219,12 +224,18 @@ func (s *StoreHub) listOwnedStoreItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check ownership
-	check, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
+	_, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
 		StoreID: pathVar.StoreID,
 		UserID:  authPayload.UserID,
 	})
-	if check.OwnershipCount != 1 {
-		s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
+	if err != nil {
+		if err == sql.ErrNoRows {
+			s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
+			log.Error().Err(err).Msg("error occurred")
+			return
+		}
+
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to retrieve store items")
 		log.Error().Err(err).Msg("error occurred")
 		return
 	}
@@ -265,6 +276,7 @@ type updateStoreItemsRequestBody struct { // TODO: write custom validation tags 
 	Description        *string  `json:"description"`
 	Price              *string  `json:"price"`
 	ImageURLs          []string `json:"image_urls"`
+	CoverImgURL         *string `json:"cover_img_url"`
 	Category           *string  `json:"category"`
 	DiscountPercentage *string  `json:"discount_percentage"`
 	SupplyQuantity     *int64   `json:"supply_quantity"`
@@ -299,12 +311,18 @@ func (s *StoreHub) updateStoreItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check ownership
-	check, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
+	_, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
 		StoreID: pathVar.StoreID,
 		UserID:  authPayload.UserID,
 	})
-	if check.OwnershipCount != 1 {
-		s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
+	if err != nil {
+		if err == sql.ErrNoRows {
+			s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
+			log.Error().Err(err).Msg("error occurred")
+			return
+		}
+
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to update item details")
 		log.Error().Err(err).Msg("error occurred")
 		return
 	}
@@ -333,6 +351,12 @@ func (s *StoreHub) updateStoreItems(w http.ResponseWriter, r *http.Request) {
 	}
 	if reqBody.ImageURLs != nil {
 		arg.ImageUrls = reqBody.ImageURLs
+	}
+	if reqBody.CoverImgURL != nil {
+		arg.CoverImgUrl = sql.NullString{
+			String: *reqBody.CoverImgURL,
+			Valid: true,
+		}
 	}
 	if reqBody.Category != nil {
 		arg.Category = sql.NullString{
@@ -398,12 +422,18 @@ func (s *StoreHub) deleteStoreItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check ownership
-	check, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
+	_, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
 		StoreID: pathVar.StoreID,
 		UserID:  authPayload.UserID,
 	})
-	if check.OwnershipCount != 1 {
-		s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
+	if err != nil {
+		if err == sql.ErrNoRows {
+			s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
+			log.Error().Err(err).Msg("error occurred")
+			return
+		}
+
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to delete item")
 		log.Error().Err(err).Msg("error occurred")
 		return
 	}
@@ -458,17 +488,23 @@ func (s *StoreHub) addNewOwner(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check ownership
-	check, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
+	access_level, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
 		StoreID: pathVar.StoreID,
 		UserID:  authPayload.UserID,
 	})
-	if check.OwnershipCount != 1 {
-		s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
+	if err != nil {
+		if err == sql.ErrNoRows {
+			s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
+			log.Error().Err(err).Msg("error occurred")
+			return
+		}
+
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to add owner")
 		log.Error().Err(err).Msg("error occurred")
 		return
 	}
 
-	if check.AccessLevel != 1 {
+	if access_level != 1 {
 		s.errorResponse(w, r, http.StatusForbidden, "higher access level needed for this action")
 		log.Error().Err(err).Msg("error occurred")
 		return
@@ -483,7 +519,7 @@ func (s *StoreHub) addNewOwner(w http.ResponseWriter, r *http.Request) {
 	}
 
 	arg := db.CreateStoreOwnerParams{
-		AccessLevel: check.AccessLevel + 1,
+		AccessLevel: access_level + 1,
 		StoreID:     pathVar.StoreID,
 		UserID:      user.ID,
 	}
@@ -546,17 +582,23 @@ func (s *StoreHub) deleteOwner(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check ownership
-	check, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
+	access_level, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
 		StoreID: pathVar.StoreID,
 		UserID:  authPayload.UserID,
 	})
-	if check.OwnershipCount != 1 {
-		s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
+	if err != nil {
+		if err == sql.ErrNoRows {
+			s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
+			log.Error().Err(err).Msg("error occurred")
+			return
+		}
+
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to delete owner")
 		log.Error().Err(err).Msg("error occurred")
 		return
 	}
 
-	if check.AccessLevel != 1 {
+	if access_level != 1 {
 		s.errorResponse(w, r, http.StatusForbidden, "higher access level needed for this action")
 		log.Error().Err(err).Msg("error occurred")
 		return
@@ -604,17 +646,23 @@ func (s *StoreHub) deleteStore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check ownership
-	check, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
+	access_level, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
 		StoreID: pathVar.StoreID,
 		UserID:  authPayload.UserID,
 	})
-	if check.OwnershipCount != 1 {
-		s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
+	if err != nil {
+		if err == sql.ErrNoRows {
+			s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
+			log.Error().Err(err).Msg("error occurred")
+			return
+		}
+
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to delete store")
 		log.Error().Err(err).Msg("error occurred")
 		return
 	}
 
-	if check.AccessLevel != 1 {
+	if access_level != 1 {
 		s.errorResponse(w, r, http.StatusForbidden, "higher access level needed for this action")
 		log.Error().Err(err).Msg("error occurred")
 		return
@@ -697,12 +745,18 @@ func (s *StoreHub) updateStoreProfile(w http.ResponseWriter, r *http.Request) {
 	// }
 
 	// check ownership
-	check, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
+	_, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
 		StoreID: pathVar.StoreID,
 		UserID:  authPayload.UserID,
 	})
-	if check.OwnershipCount != 1 {
-		s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
+	if err != nil {
+		if err == sql.ErrNoRows {
+			s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
+			log.Error().Err(err).Msg("error occurred")
+			return
+		}
+
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to update store profile")
 		log.Error().Err(err).Msg("error occurred")
 		return
 	}

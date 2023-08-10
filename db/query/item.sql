@@ -25,6 +25,7 @@ SET
   name = COALESCE(sqlc.narg(name), name),
   price = COALESCE(sqlc.narg(price), price),
   image_urls = COALESCE(sqlc.narg(image_urls), image_urls),
+  cover_img_url = COALESCE(sqlc.narg(cover_img_url), cover_img_url),
   category = COALESCE(sqlc.narg(category), category),
   discount_percentage = COALESCE(sqlc.narg(discount_percentage), discount_percentage),
   supply_quantity = COALESCE(sqlc.narg(supply_quantity), supply_quantity),
@@ -38,3 +39,8 @@ RETURNING *;
 -- name: DeleteItem :exec
 DELETE FROM items
 WHERE store_id = sqlc.arg(store_id) AND id = sqlc.arg(item_id);
+
+-- name: CheckItemStoreMatch :one
+SELECT supply_quantity from items
+WHERE id = sqlc.arg(item_id)
+  AND store_id = sqlc.arg(store_id);

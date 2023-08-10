@@ -11,6 +11,7 @@ import (
 )
 
 type Querier interface {
+	CheckItemStoreMatch(ctx context.Context, arg CheckItemStoreMatchParams) (int64, error)
 	CheckSessionExistence(ctx context.Context, token string) (bool, error)
 	CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
@@ -30,7 +31,7 @@ type Querier interface {
 	GetUserByAccountID(ctx context.Context, accountID string) (User, error)
 	GetUserByEmail(ctx context.Context, userEmail string) (User, error)
 	GetUserByID(ctx context.Context, userID int64) (User, error)
-	IsStoreOwner(ctx context.Context, arg IsStoreOwnerParams) (IsStoreOwnerRow, error)
+	IsStoreOwner(ctx context.Context, arg IsStoreOwnerParams) (int16, error)
 	UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, error)
 	UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order, error)
 	UpdateStore(ctx context.Context, arg UpdateStoreParams) (Store, error)
