@@ -15,9 +15,8 @@ import (
 )
 
 type createOrderRequestBody struct {
-	ItemID int64 `json:"item_id" validate:"required,min=1"`
+	ItemID         int64  `json:"item_id" validate:"required,min=1"`
 	OrderQuantity  int32  `json:"order_quantity" validate:"required,min=1"`
-	BuyerID        int64  `json:"buyer_id" validate:"required,min=1"`
 	SellerID       int64  `json:"seller_id" validate:"required,min=1"`
 	StoreID        int64  `json:"store_id" validate:"required,min=1"`
 	DeliveryFee    string `json:"delivery_fee" validate:"required"`
@@ -33,7 +32,7 @@ func (s *StoreHub) createOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	supply_quantity, err := s.dbStore.CheckItemStoreMatch(r.Context(), db.CheckItemStoreMatchParams{
-		ItemID: reqBody.ItemID,
+		ItemID:  reqBody.ItemID,
 		StoreID: reqBody.StoreID,
 	})
 	if err != nil {
@@ -56,7 +55,7 @@ func (s *StoreHub) createOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err = s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
-		UserID: reqBody.SellerID,
+		UserID:  reqBody.SellerID,
 		StoreID: reqBody.StoreID,
 	})
 	if err != nil {
@@ -70,15 +69,17 @@ func (s *StoreHub) createOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	authPayload := s.contextGetToken(r)
+
 	order, err := s.dbStore.CreateOrder(r.Context(), db.CreateOrderParams{
-		ItemID: reqBody.ItemID,
-		OrderQuantity: reqBody.OrderQuantity,
-		BuyerID: reqBody.BuyerID,
-		SellerID: reqBody.SellerID,
-		StoreID: reqBody.StoreID,
-		DeliveryFee: reqBody.DeliveryFee,
+		ItemID:         reqBody.ItemID,
+		OrderQuantity:  reqBody.OrderQuantity,
+		BuyerID:        authPayload.UserID,
+		SellerID:       reqBody.SellerID,
+		StoreID:        reqBody.StoreID,
+		DeliveryFee:    reqBody.DeliveryFee,
 		PaymentChannel: reqBody.PaymentChannel,
-		PaymentMethod: reqBody.PaymentMethod,
+		PaymentMethod:  reqBody.PaymentMethod,
 	})
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok {
@@ -107,14 +108,14 @@ func (s *StoreHub) createOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 type listSellerOrdersQueryStr struct {
-	ItemName string `querystr:"item_name"`
+	ItemName       string    `querystr:"item_name"`
 	CreatedAtStart time.Time `querystr:"created_at_start"`
 	CreatedAtEnd   time.Time `querystr:"created_at_end"`
-	PaymentChannel string `querystr:"payment_channel"`
-	DeliveryStatus string `querystr:"delivery_status"`
-	Page     int    `querystr:"page" validate:"max=10000000"`
-	PageSize int    `querystr:"page_size" validate:"max=20"`
-	Sort     string `querystr:"sort"`
+	PaymentChannel string    `querystr:"payment_channel"`
+	DeliveryStatus string    `querystr:"delivery_status"`
+	Page           int       `querystr:"page" validate:"max=10000000"`
+	PageSize       int       `querystr:"page_size" validate:"max=20"`
+	Sort           string    `querystr:"sort"`
 }
 
 // listSellerOrders maps to endpoint "GET /seller/orders"
@@ -137,17 +138,18 @@ func (s *StoreHub) listSellerOrders(w http.ResponseWriter, r *http.Request) {
 	authPayload := s.contextGetToken(r)
 
 	// TODO: Add a proper range logic for createdAt search params
-
+	fmt.Printf("reqQueryStr: %+v\n", reqQueryStr)
 	arg := db.ListSellerOrdersParams{
-		SellerID: authPayload.UserID,
+		ItemName:       reqQueryStr.ItemName,
+		SellerID:       authPayload.UserID,
 		CreatedAtStart: reqQueryStr.CreatedAtStart,
-		CreatedAtEnd: reqQueryStr.CreatedAtEnd,
+		CreatedAtEnd:   reqQueryStr.CreatedAtEnd,
 		PaymentChannel: reqQueryStr.PaymentChannel,
 		DeliveryStatus: reqQueryStr.DeliveryStatus,
 		Filters: pagination.Filters{
-			Page: reqQueryStr.Page,
-			PageSize: reqQueryStr.PageSize,
-			Sort: reqQueryStr.Sort,
+			Page:         reqQueryStr.Page,
+			PageSize:     reqQueryStr.PageSize,
+			Sort:         reqQueryStr.Sort,
 			SortSafelist: []string{"-id", "-item_name", "-created_at", "order_id", "item_name", "created_at"},
 		},
 	}
@@ -186,7 +188,7 @@ func (s *StoreHub) getSellerOrder(w http.ResponseWriter, r *http.Request) {
 
 	order, err := s.dbStore.GetOrderForSeller(r.Context(), db.GetOrderForSellerParams{
 		SellerID: authPayload.UserID,
-		ID: pathVar.OrderID,
+		ID:       pathVar.OrderID,
 	})
 	if err != nil {
 		switch {
@@ -212,8 +214,8 @@ func (s *StoreHub) getSellerOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 type updateSellerOrderRequest struct {
-	DeliveredOn time.Time `json:"delivered_on"`
-	DeliveryStatus *string `json:"delivery_status"`
+	DeliveredOn          time.Time `json:"delivered_on"`
+	DeliveryStatus       *string   `json:"delivery_status"`
 	ExpectedDeliveryDate time.Time `json:"expected_delivery_date"`
 }
 
@@ -233,7 +235,9 @@ func (s *StoreHub) updateSellerOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	arg := db.UpdateOrderParams{}
+	arg := db.UpdateOrderParams{
+		OrderID: pathVars.OrderID,
+	}
 
 	if reqBody.DeliveryStatus != nil && *reqBody.DeliveryStatus != "" {
 		if !util.IsValidStatus(*reqBody.DeliveryStatus) {
@@ -242,19 +246,28 @@ func (s *StoreHub) updateSellerOrder(w http.ResponseWriter, r *http.Request) {
 		}
 		arg.DeliveryStatus = sql.NullString{
 			String: *reqBody.DeliveryStatus,
+			Valid:  true,
 		}
+	}
+
+	if reqBody.DeliveryStatus != nil && *reqBody.DeliveryStatus == "DELIVERED" {
+		if reqBody.DeliveredOn.IsZero() {
+			s.errorResponse(w, r, http.StatusBadRequest, "can't change order status to DELIVERED without its 'delivered_on' date")
+			return
+		}
+		arg.DeliveredOn = sql.NullTime{
+			Time:  reqBody.DeliveredOn,
+			Valid: true,
+		}
+	} else if !reqBody.DeliveredOn.IsZero() {
+		// If DeliveredOn is set but DeliveryStatus is not "DELIVERED"
+		s.errorResponse(w, r, http.StatusBadRequest, "can't set 'delivered_on' date if order status is not DELIVERED")
+		return
 	}
 
 	if !reqBody.ExpectedDeliveryDate.IsZero() {
 		arg.ExpectedDeliveryDate = sql.NullTime{
-			Time: reqBody.ExpectedDeliveryDate,
-			Valid: true,
-		}
-	}
-
-	if !reqBody.DeliveredOn.IsZero() && *reqBody.DeliveryStatus == "DELIVERED" {
-		arg.DeliveredOn = sql.NullTime{
-			Time: time.Now(),
+			Time:  reqBody.ExpectedDeliveryDate,
 			Valid: true,
 		}
 	}

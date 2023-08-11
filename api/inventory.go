@@ -276,7 +276,7 @@ type updateStoreItemsRequestBody struct { // TODO: write custom validation tags 
 	Description        *string  `json:"description"`
 	Price              *string  `json:"price"`
 	ImageURLs          []string `json:"image_urls"`
-	CoverImgURL         *string `json:"cover_img_url"`
+	CoverImgURL        *string  `json:"cover_img_url"`
 	Category           *string  `json:"category"`
 	DiscountPercentage *string  `json:"discount_percentage"`
 	SupplyQuantity     *int64   `json:"supply_quantity"`
@@ -355,7 +355,7 @@ func (s *StoreHub) updateStoreItems(w http.ResponseWriter, r *http.Request) {
 	if reqBody.CoverImgURL != nil {
 		arg.CoverImgUrl = sql.NullString{
 			String: *reqBody.CoverImgURL,
-			Valid: true,
+			Valid:  true,
 		}
 	}
 	if reqBody.Category != nil {

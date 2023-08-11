@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/julienschmidt/httprouter"
@@ -151,7 +152,17 @@ func (s *StoreHub) shouldBindQuery(w http.ResponseWriter, r *http.Request, obj i
 		}
 		value := values.Get(tag)
 
-		setValue(f, value)
+		if fType.Type == reflect.TypeOf(time.Time{}) {
+			parsedTime, err := time.Parse("2006-01-02", value)
+			fmt.Printf("parsedTime: %+v\n", parsedTime)
+			if err != nil {
+				fmt.Printf("err: %+v\n", err)
+				continue
+			}
+			f.Set(reflect.ValueOf(parsedTime))
+		} else {
+			setValue(f, value)
+		}
 	}
 
 	err = s.bindValidation(w, r, obj)
