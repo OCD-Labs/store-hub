@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/OCD-Labs/store-hub/pagination"
@@ -146,35 +147,64 @@ type SellerOrder struct {
 
 // ListSellerOrders do a fulltext search to list a seller orders, and paginates accordingly.
 func (q *SQLTx) ListSellerOrders(ctx context.Context, arg ListSellerOrdersParams) ([]SellerOrder, pagination.Metadata, error) {
-	stmt := fmt.Sprintf(`
-		SELECT
-			count(*) OVER() AS total_count,
-			o.id AS order_id,
-  		o.delivery_status,
-  		o.payment_channel,
-			o.created_at,
-  		i.name AS item_name,
-  		i.price AS item_price,
-  		i.cover_img_url AS item_cover_img_url,
-  		u.first_name AS buyer_first_name,
-  		u.last_name AS buyer_last_name
-		FROM
-			orders o
-		JOIN
-			items i ON o.item_id = i.id
-		JOIN
-			users u ON o.buyer_id = u.id
-		WHERE
-			 o.seller_id = $1
-		ORDER by o.%s %s, o.id ASC
-		LIMIT $2 OFFSET $3`, arg.Filters.SortColumn(), arg.Filters.SortDirection(),
-	)
+	var whereClauses []string
+	var args []interface{}
 
-	args := []interface{}{
-		arg.SellerID,
-		arg.Filters.Limit(),
-		arg.Filters.Offset(),
+	if arg.ItemName != "" {
+		whereClauses = append(whereClauses, fmt.Sprintf("i.name ILIKE '%%' || $%d || '%%'", len(args)+1))
+		args = append(args, arg.ItemName)
 	}
+	if arg.DeliveryStatus != "" {
+		whereClauses = append(whereClauses, fmt.Sprintf("o.delivery_status ILIKE '%%' || $%d || '%%'", len(args)+1))
+		args = append(args, arg.DeliveryStatus)
+	}
+	if arg.PaymentChannel != "" {
+		whereClauses = append(whereClauses, fmt.Sprintf("o.payment_channel ILIKE '%%' || $%d || '%%'", len(args)+1))
+		args = append(args, arg.PaymentChannel)
+	}
+	if !arg.CreatedAtStart.IsZero() && !arg.CreatedAtEnd.IsZero() {
+		whereClauses = append(whereClauses, fmt.Sprintf("o.created_at BETWEEN $%d AND $%d", len(args)+1, len(args)+2))
+
+		if arg.CreatedAtStart.After(arg.CreatedAtEnd) {
+			arg.CreatedAtStart, arg.CreatedAtEnd = arg.CreatedAtEnd, arg.CreatedAtStart
+		}
+
+		arg.CreatedAtEnd = arg.CreatedAtEnd.Add(time.Hour*23 + time.Minute*59 + time.Second*59)
+
+		args = append(args, arg.CreatedAtStart, arg.CreatedAtEnd)
+	}
+
+	whereClause := strings.Join(whereClauses, " OR ")
+
+	if whereClause == "" {
+		whereClause = "TRUE"
+	}
+
+	stmt := fmt.Sprintf(`
+    SELECT
+        count(*) OVER() AS total_count,
+        o.id AS order_id,
+        o.delivery_status,
+        o.payment_channel,
+        o.created_at,
+        i.name AS item_name,
+        i.price AS item_price,
+        i.cover_img_url AS item_cover_img_url,
+        u.first_name AS buyer_first_name,
+        u.last_name AS buyer_last_name
+    FROM
+        orders o
+    JOIN
+        items i ON o.item_id = i.id
+    JOIN
+        users u ON o.buyer_id = u.id
+    WHERE
+        (%s)
+        AND o.seller_id = $%d
+    ORDER by o.%s %s, o.id ASC
+    LIMIT $%d OFFSET $%d`, whereClause, len(args)+1, arg.Filters.SortColumn(), arg.Filters.SortDirection(), len(args)+2, len(args)+3)
+
+	args = append(args, arg.SellerID, arg.Filters.Limit(), arg.Filters.Offset())
 
 	rows, err := q.db.QueryContext(ctx, stmt, args...)
 	if err != nil {

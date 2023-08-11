@@ -10,8 +10,8 @@ import (
 const alphabets = "abcdefghijklmnopqrstuvwxyz"
 
 const (
-	STOREOWNER       = "STORE-OWNER"
-	NORMALUSER       = "NORMAL-USER"
+	STOREOWNER = "STORE-OWNER"
+	NORMALUSER = "NORMAL-USER"
 )
 
 var DELIVERYSTATUS = []string{"PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "RETURNED"}

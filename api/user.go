@@ -122,8 +122,6 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request) {
 		createUserArg.ProfileImageUrl.Valid = true
 	}
 
-	fmt.Printf("\n%+v\n", reqBody)
-
 	arg := db.CreateUserTxParams{
 		CreateUserParams: createUserArg,
 		AfterCreate: func(user db.User) error {
