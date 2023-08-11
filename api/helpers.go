@@ -154,9 +154,7 @@ func (s *StoreHub) shouldBindQuery(w http.ResponseWriter, r *http.Request, obj i
 
 		if fType.Type == reflect.TypeOf(time.Time{}) {
 			parsedTime, err := time.Parse("2006-01-02", value)
-			fmt.Printf("parsedTime: %+v\n", parsedTime)
-			if err != nil {
-				fmt.Printf("err: %+v\n", err)
+			if err != nil { // TODO: consider if ignoring the error is appropriate
 				continue
 			}
 			f.Set(reflect.ValueOf(parsedTime))

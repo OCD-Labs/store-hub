@@ -3,7 +3,6 @@ package api
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"net/http"
 
 	db "github.com/OCD-Labs/store-hub/db/sqlc"
@@ -692,7 +691,6 @@ func (s *StoreHub) updateStoreProfile(w http.ResponseWriter, r *http.Request) {
 	// parse path variables
 	var pathVar updateStoreProfilePathVar
 	if err := s.ShouldBindPathVars(w, r, &pathVar); err != nil {
-		fmt.Printf("pathVar: %v\n", pathVar)
 		return
 	}
 

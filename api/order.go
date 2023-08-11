@@ -138,7 +138,6 @@ func (s *StoreHub) listSellerOrders(w http.ResponseWriter, r *http.Request) {
 	authPayload := s.contextGetToken(r)
 
 	// TODO: Add a proper range logic for createdAt search params
-	fmt.Printf("reqQueryStr: %+v\n", reqQueryStr)
 	arg := db.ListSellerOrdersParams{
 		ItemName:       reqQueryStr.ItemName,
 		SellerID:       authPayload.UserID,
