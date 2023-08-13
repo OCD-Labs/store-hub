@@ -54,6 +54,16 @@ type Order struct {
 	CreatedAt            time.Time `json:"created_at"`
 }
 
+type Sale struct {
+	ID         int64     `json:"id"`
+	StoreID    int64     `json:"store_id"`
+	ItemID     int64     `json:"item_id"`
+	CustomerID int64     `json:"customer_id"`
+	SellerID   int64     `json:"seller_id"`
+	OrderID    int64     `json:"order_id"`
+	CreatedAt  time.Time `json:"created_at"`
+}
+
 type Session struct {
 	ID        uuid.UUID `json:"id"`
 	UserID    int64     `json:"user_id"`

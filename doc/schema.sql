@@ -1,6 +1,6 @@
 -- SQL dump generated using DBML (dbml-lang.org)
 -- Database: PostgreSQL
--- Generated at: 2023-08-13T14:56:30.824Z
+-- Generated at: 2023-08-13T20:40:39.271Z
 
 CREATE TABLE "users" (
   "id" bigserial PRIMARY KEY,
@@ -82,6 +82,7 @@ CREATE TABLE "orders" (
   "item_id" bigint NOT NULL,
   "order_quantity" int NOT NULL,
   "buyer_id" bigint NOT NULL,
+  "seller_id" bigint NOT NULL,
   "store_id" bigint NOT NULL,
   "delivery_fee" "NUMERIC(10, 2)" NOT NULL,
   "payment_channel" varchar NOT NULL,
@@ -91,8 +92,10 @@ CREATE TABLE "orders" (
 
 CREATE TABLE "sales" (
   "id" bigserial PRIMARY KEY,
+  "store_id" bigint NOT NULL,
   "item_id" bigint NOT NULL,
   "customer_id" bigint NOT NULL,
+  "seller_id" bigint NOT NULL,
   "order_id" bigint NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT (now())
 );
@@ -115,10 +118,16 @@ ALTER TABLE "orders" ADD FOREIGN KEY ("item_id") REFERENCES "items" ("id");
 
 ALTER TABLE "orders" ADD FOREIGN KEY ("buyer_id") REFERENCES "users" ("id");
 
+ALTER TABLE "orders" ADD FOREIGN KEY ("seller_id") REFERENCES "users" ("id");
+
 ALTER TABLE "orders" ADD FOREIGN KEY ("store_id") REFERENCES "stores" ("id");
+
+ALTER TABLE "sales" ADD FOREIGN KEY ("store_id") REFERENCES "stores" ("id");
 
 ALTER TABLE "sales" ADD FOREIGN KEY ("item_id") REFERENCES "items" ("id");
 
 ALTER TABLE "sales" ADD FOREIGN KEY ("customer_id") REFERENCES "users" ("id");
+
+ALTER TABLE "sales" ADD FOREIGN KEY ("seller_id") REFERENCES "users" ("id");
 
 ALTER TABLE "sales" ADD FOREIGN KEY ("order_id") REFERENCES "orders" ("id");
