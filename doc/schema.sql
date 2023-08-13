@@ -1,6 +1,6 @@
 -- SQL dump generated using DBML (dbml-lang.org)
 -- Database: PostgreSQL
--- Generated at: 2023-08-06T16:06:34.138Z
+-- Generated at: 2023-08-13T14:56:30.824Z
 
 CREATE TABLE "users" (
   "id" bigserial PRIMARY KEY,
@@ -89,6 +89,14 @@ CREATE TABLE "orders" (
   "created_at" timestamptz NOT NULL DEFAULT (now())
 );
 
+CREATE TABLE "sales" (
+  "id" bigserial PRIMARY KEY,
+  "item_id" bigint NOT NULL,
+  "customer_id" bigint NOT NULL,
+  "order_id" bigint NOT NULL,
+  "created_at" timestamptz NOT NULL DEFAULT (now())
+);
+
 CREATE INDEX ON "store_owners" ("user_id", "store_id");
 
 ALTER TABLE "sessions" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
@@ -108,3 +116,9 @@ ALTER TABLE "orders" ADD FOREIGN KEY ("item_id") REFERENCES "items" ("id");
 ALTER TABLE "orders" ADD FOREIGN KEY ("buyer_id") REFERENCES "users" ("id");
 
 ALTER TABLE "orders" ADD FOREIGN KEY ("store_id") REFERENCES "stores" ("id");
+
+ALTER TABLE "sales" ADD FOREIGN KEY ("item_id") REFERENCES "items" ("id");
+
+ALTER TABLE "sales" ADD FOREIGN KEY ("customer_id") REFERENCES "users" ("id");
+
+ALTER TABLE "sales" ADD FOREIGN KEY ("order_id") REFERENCES "orders" ("id");
