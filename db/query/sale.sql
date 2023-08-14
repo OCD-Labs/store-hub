@@ -10,5 +10,26 @@ INSERT INTO sales (
 ) RETURNING *;
 
 -- name: GetSale :one
-SELECT * FROM sales
-WHERE id = sqlc.arg(sale_id) AND store_id = sqlc.arg(store_id);
+SELECT 
+  s.id AS sale_id,
+  s.store_id,
+  s.created_at,
+  s.item_id,
+  i.name AS item_name,
+  s.customer_id,
+  u.account_id AS customer_account_id,
+  s.order_id,
+  o.created_at AS order_date,
+  o.delivered_on AS delivery_date
+FROM 
+  sales s
+JOIN
+  users u ON s.customer_id = u.id
+JOIN
+  items i ON s.item_id = i.id
+JOIN 
+  orders o ON s.order_id = o.id
+WHERE 
+  s.id = sqlc.arg(sale_id)
+  AND s.store_id = sqlc.arg(store_id)
+  AND s.seller_id = sqlc.arg(seller_id);

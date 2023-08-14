@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 )
 
 const createSale = `-- name: CreateSale :one
@@ -51,26 +52,64 @@ func (q *Queries) CreateSale(ctx context.Context, arg CreateSaleParams) (Sale, e
 }
 
 const getSale = `-- name: GetSale :one
-SELECT id, store_id, item_id, customer_id, seller_id, order_id, created_at FROM sales
-WHERE id = $1 AND store_id = $2
+SELECT 
+  s.id AS sale_id,
+  s.store_id,
+  s.created_at,
+  s.item_id,
+  i.name AS item_name,
+  s.customer_id,
+  u.account_id AS customer_account_id,
+  s.order_id,
+  o.created_at AS order_date,
+  o.delivered_on AS delivery_date
+FROM 
+  sales s
+JOIN
+  users u ON s.customer_id = u.id
+JOIN
+  items i ON s.item_id = i.id
+JOIN 
+  orders o ON s.order_id = o.id
+WHERE 
+  s.id = $1
+  AND s.store_id = $2
+  AND s.seller_id = $3
 `
 
 type GetSaleParams struct {
-	SaleID  int64 `json:"sale_id"`
-	StoreID int64 `json:"store_id"`
+	SaleID   int64 `json:"sale_id"`
+	StoreID  int64 `json:"store_id"`
+	SellerID int64 `json:"seller_id"`
 }
 
-func (q *Queries) GetSale(ctx context.Context, arg GetSaleParams) (Sale, error) {
-	row := q.db.QueryRowContext(ctx, getSale, arg.SaleID, arg.StoreID)
-	var i Sale
+type GetSaleRow struct {
+	SaleID            int64     `json:"sale_id"`
+	StoreID           int64     `json:"store_id"`
+	CreatedAt         time.Time `json:"created_at"`
+	ItemID            int64     `json:"item_id"`
+	ItemName          string    `json:"item_name"`
+	CustomerID        int64     `json:"customer_id"`
+	CustomerAccountID string    `json:"customer_account_id"`
+	OrderID           int64     `json:"order_id"`
+	OrderDate         time.Time `json:"order_date"`
+	DeliveryDate      time.Time `json:"delivery_date"`
+}
+
+func (q *Queries) GetSale(ctx context.Context, arg GetSaleParams) (GetSaleRow, error) {
+	row := q.db.QueryRowContext(ctx, getSale, arg.SaleID, arg.StoreID, arg.SellerID)
+	var i GetSaleRow
 	err := row.Scan(
-		&i.ID,
+		&i.SaleID,
 		&i.StoreID,
-		&i.ItemID,
-		&i.CustomerID,
-		&i.SellerID,
-		&i.OrderID,
 		&i.CreatedAt,
+		&i.ItemID,
+		&i.ItemName,
+		&i.CustomerID,
+		&i.CustomerAccountID,
+		&i.OrderID,
+		&i.OrderDate,
+		&i.DeliveryDate,
 	)
 	return i, err
 }
