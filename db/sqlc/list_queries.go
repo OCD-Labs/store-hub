@@ -247,6 +247,7 @@ type ListAllSellerSalesParams struct {
 	Filters           pagination.Filters
 }
 
+// ListAllSellerSales do a fulltext search to list a seller sales, and paginates accordingly.
 func (q SQLTx) ListAllSellerSales(ctx context.Context, arg ListAllSellerSalesParams) ([]GetSaleRow, pagination.Metadata, error) {
 	var whereClauses []string
 	var args []interface{}

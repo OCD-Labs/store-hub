@@ -271,7 +271,7 @@ func (s *StoreHub) updateSellerOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	updatedOrder, err := s.dbStore.UpdateOrder(r.Context(), arg)
+	updatedOrder, err := s.dbStore.UpdateOrderTx(r.Context(), arg)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
