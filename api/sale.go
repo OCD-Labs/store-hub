@@ -12,7 +12,8 @@ import (
 )
 
 type listAllSalesQueryStr struct {
-	ItemPrice         string    `querystr:"item_price"`
+	ItemPriceStart    string    `querystr:"item_price_start"`
+	ItemPriceEnd      string    `querystr:"item_price_end"`
 	ItemName          string    `querystr:"item_name"`
 	CustomerAccountID string    `querystr:"customer_account_id"`
 	DeliveryDateStart time.Time `querystr:"delivery_date_start"`
@@ -59,19 +60,20 @@ func (s *StoreHub) listAllSales(w http.ResponseWriter, r *http.Request) {
 	}
 
 	arg := db.ListAllSellerSalesParams{
-		ItemPrice: reqQueryStr.ItemPrice,
-		ItemName: reqQueryStr.ItemName,
+		ItemPriceStart:    reqQueryStr.ItemPriceStart,
+		ItemPriceEnd:      reqQueryStr.ItemPriceEnd,
+		ItemName:          reqQueryStr.ItemName,
 		CustomerAccountID: reqQueryStr.CustomerAccountID,
 		DeliveryDateStart: reqQueryStr.DeliveryDateStart,
-		DeliveryDateEnd: reqQueryStr.DeliveryDateEnd,
-		OrderDateStart: reqQueryStr.OrderDateStart,
-		OrderDateEnd: reqQueryStr.OrderDateEnd,
-		StoreID: pathVars.StoreID,
-		SellerID: authPayload.UserID,
+		DeliveryDateEnd:   reqQueryStr.DeliveryDateEnd,
+		OrderDateStart:    reqQueryStr.OrderDateStart,
+		OrderDateEnd:      reqQueryStr.OrderDateEnd,
+		StoreID:           pathVars.StoreID,
+		SellerID:          authPayload.UserID,
 		Filters: pagination.Filters{
-			Page: reqQueryStr.Page,
-			PageSize: reqQueryStr.PageSize,
-			Sort: reqQueryStr.Sort,
+			Page:         reqQueryStr.Page,
+			PageSize:     reqQueryStr.PageSize,
+			Sort:         reqQueryStr.Sort,
 			SortSafelist: []string{"-id", "-item_name", "-delivery_date", "-order_date", "-price", "id", "item_name", "delivery_date", "order_date", "price"},
 		},
 	}
@@ -103,7 +105,7 @@ type getSalePathVars struct {
 }
 
 // getSale maps to "GET /users/:user_id/stores/:store_id/sales/:sale_id"
-func (s *StoreHub) getSale(w http.ResponseWriter, r *http.Request)  {
+func (s *StoreHub) getSale(w http.ResponseWriter, r *http.Request) {
 	var pathVars getSalePathVars
 	if err := s.ShouldBindPathVars(w, r, &pathVars); err != nil {
 		return
@@ -116,8 +118,8 @@ func (s *StoreHub) getSale(w http.ResponseWriter, r *http.Request)  {
 	}
 
 	sale, err := s.dbStore.GetSale(r.Context(), db.GetSaleParams{
-		StoreID: pathVars.StoreID,
-		SaleID: pathVars.SaleID,
+		StoreID:  pathVars.StoreID,
+		SaleID:   pathVars.SaleID,
 		SellerID: authPayload.UserID,
 	})
 	if err != nil {

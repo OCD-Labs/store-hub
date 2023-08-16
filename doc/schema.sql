@@ -1,6 +1,6 @@
 -- SQL dump generated using DBML (dbml-lang.org)
 -- Database: PostgreSQL
--- Generated at: 2023-08-13T20:40:39.271Z
+-- Generated at: 2023-08-16T12:42:24.657Z
 
 CREATE TABLE "users" (
   "id" bigserial PRIMARY KEY,
@@ -96,7 +96,7 @@ CREATE TABLE "sales" (
   "item_id" bigint NOT NULL,
   "customer_id" bigint NOT NULL,
   "seller_id" bigint NOT NULL,
-  "order_id" bigint NOT NULL,
+  "order_id" bigint UNIQUE NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT (now())
 );
 

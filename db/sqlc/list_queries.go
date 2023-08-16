@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -235,7 +236,8 @@ func (q *SQLTx) ListSellerOrders(ctx context.Context, arg ListSellerOrdersParams
 }
 
 type ListAllSellerSalesParams struct {
-	ItemPrice         string
+	ItemPriceStart    string
+	ItemPriceEnd      string
 	ItemName          string
 	CustomerAccountID string
 	DeliveryDateStart time.Time
@@ -252,10 +254,25 @@ func (q SQLTx) ListAllSellerSales(ctx context.Context, arg ListAllSellerSalesPar
 	var whereClauses []string
 	var args []interface{}
 
-	if arg.ItemPrice != "" {
-		whereClauses = append(whereClauses, fmt.Sprintf("i.price ILIKE '%%' || $%d || '%%'", len(args)+1))
-		args = append(args, arg.ItemPrice)
+	if arg.ItemPriceStart != "" && arg.ItemPriceEnd != "" {
+		// Convert strings to float64
+		startPrice, startErr := strconv.ParseFloat(arg.ItemPriceStart, 64)
+		endPrice, endErr := strconv.ParseFloat(arg.ItemPriceEnd, 64)
+
+		// Check for valid float conversions
+		if startErr != nil || endErr != nil {
+			return nil, pagination.Metadata{}, fmt.Errorf("invalid price range values")
+		} else {
+			// Compare and swap if needed
+			if startPrice > endPrice {
+				startPrice, endPrice = endPrice, startPrice
+			}
+
+			whereClauses = append(whereClauses, "i.price BETWEEN $1 AND $2")
+			args = append(args, startPrice, endPrice)
+		}
 	}
+
 	if arg.ItemName != "" {
 		whereClauses = append(whereClauses, fmt.Sprintf("i.name ILIKE '%%' || $%d || '%%'", len(args)+1))
 		args = append(args, arg.ItemName)
@@ -281,6 +298,7 @@ func (q SQLTx) ListAllSellerSales(ctx context.Context, arg ListAllSellerSalesPar
 			s.created_at,
 			s.item_id,
 			i.name AS item_name,
+			i.price AS item_price,
 			s.customer_id,
 			u.account_id AS customer_account_id,
 			s.order_id,
@@ -322,6 +340,7 @@ func (q SQLTx) ListAllSellerSales(ctx context.Context, arg ListAllSellerSalesPar
 			&s.CreatedAt,
 			&s.ItemID,
 			&s.ItemName,
+			&s.ItemPrice,
 			&s.CustomerID,
 			&s.CustomerAccountID,
 			&s.OrderID,
@@ -350,6 +369,7 @@ func addDateRangeFilter(startDate, endDate time.Time, columnName string, whereCl
 			startDate, endDate = endDate, startDate
 		}
 
+		// TODO: this assumes that the end date will always be the start of the day, but nothing guarantees that.
 		endDate = endDate.Add(time.Hour*23 + time.Minute*59 + time.Second*59)
 
 		args = append(args, startDate, endDate)

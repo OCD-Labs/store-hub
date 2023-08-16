@@ -103,6 +103,6 @@ Table sales {
   item_id bigint [not null, ref: > I.id]
   customer_id bigint [not null, ref: > U.id]
   seller_id bigint [not null, ref: > U.id]
-  order_id bigint [not null, ref: > O.id]
+  order_id bigint [unique, not null, ref: > O.id]
   created_at timestamptz [not null, default: `now()`]
 }

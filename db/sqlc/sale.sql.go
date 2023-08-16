@@ -58,6 +58,7 @@ SELECT
   s.created_at,
   s.item_id,
   i.name AS item_name,
+  i.price AS item_price,
   s.customer_id,
   u.account_id AS customer_account_id,
   s.order_id,
@@ -89,6 +90,7 @@ type GetSaleRow struct {
 	CreatedAt         time.Time `json:"created_at"`
 	ItemID            int64     `json:"item_id"`
 	ItemName          string    `json:"item_name"`
+	ItemPrice         string    `json:"item_price"`
 	CustomerID        int64     `json:"customer_id"`
 	CustomerAccountID string    `json:"customer_account_id"`
 	OrderID           int64     `json:"order_id"`
@@ -105,6 +107,7 @@ func (q *Queries) GetSale(ctx context.Context, arg GetSaleParams) (GetSaleRow, e
 		&i.CreatedAt,
 		&i.ItemID,
 		&i.ItemName,
+		&i.ItemPrice,
 		&i.CustomerID,
 		&i.CustomerAccountID,
 		&i.OrderID,
@@ -112,4 +115,19 @@ func (q *Queries) GetSale(ctx context.Context, arg GetSaleParams) (GetSaleRow, e
 		&i.DeliveryDate,
 	)
 	return i, err
+}
+
+const saleExists = `-- name: SaleExists :one
+SELECT EXISTS (
+    SELECT 1
+    FROM sales
+    WHERE order_id = $1
+)
+`
+
+func (q *Queries) SaleExists(ctx context.Context, orderID int64) (bool, error) {
+	row := q.db.QueryRowContext(ctx, saleExists, orderID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }

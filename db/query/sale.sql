@@ -16,6 +16,7 @@ SELECT
   s.created_at,
   s.item_id,
   i.name AS item_name,
+  i.price AS item_price,
   s.customer_id,
   u.account_id AS customer_account_id,
   s.order_id,
@@ -33,3 +34,10 @@ WHERE
   s.id = sqlc.arg(sale_id)
   AND s.store_id = sqlc.arg(store_id)
   AND s.seller_id = sqlc.arg(seller_id);
+
+-- name: SaleExists :one
+SELECT EXISTS (
+    SELECT 1
+    FROM sales
+    WHERE order_id = sqlc.arg(order_id)
+);

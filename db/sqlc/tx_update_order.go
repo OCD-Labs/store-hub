@@ -15,17 +15,24 @@ func (dbTx SQLTx) UpdateOrderTx(ctx context.Context, arg UpdateOrderParams) (Ord
 		}
 
 		if order.DeliveryStatus == "DELIVERED" {
-			sArg := CreateSaleParams{
-				StoreID: order.StoreID,
-				ItemID: order.ItemID,
-				CustomerID: order.BuyerID,
-				SellerID: order.SellerID,
-				OrderID: order.ID,
-			}
-	
-			_, err = dbTx.CreateSale(ctx, sArg)
+			exist, err := dbTx.SaleExists(ctx, order.ID)
 			if err != nil {
 				return err
+			}
+
+			if !exist {
+				sArg := CreateSaleParams{
+					StoreID:    order.StoreID,
+					ItemID:     order.ItemID,
+					CustomerID: order.BuyerID,
+					SellerID:   order.SellerID,
+					OrderID:    order.ID,
+				}
+	
+				_, err = dbTx.CreateSale(ctx, sArg)
+				if err != nil {
+					return err
+				}
 			}
 		}
 

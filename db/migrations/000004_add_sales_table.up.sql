@@ -4,7 +4,7 @@ CREATE TABLE "sales" (
   "item_id" bigint NOT NULL,
   "customer_id" bigint NOT NULL,
   "seller_id" bigint NOT NULL,
-  "order_id" bigint NOT NULL,
+  "order_id" bigint UNIQUE NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT (now())
 );
 
