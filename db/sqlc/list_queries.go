@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -162,17 +163,8 @@ func (q *SQLTx) ListSellerOrders(ctx context.Context, arg ListSellerOrdersParams
 		whereClauses = append(whereClauses, fmt.Sprintf("o.payment_channel ILIKE '%%' || $%d || '%%'", len(args)+1))
 		args = append(args, arg.PaymentChannel)
 	}
-	if !arg.CreatedAtStart.IsZero() && !arg.CreatedAtEnd.IsZero() {
-		whereClauses = append(whereClauses, fmt.Sprintf("o.created_at BETWEEN $%d AND $%d", len(args)+1, len(args)+2))
 
-		if arg.CreatedAtStart.After(arg.CreatedAtEnd) {
-			arg.CreatedAtStart, arg.CreatedAtEnd = arg.CreatedAtEnd, arg.CreatedAtStart
-		}
-
-		arg.CreatedAtEnd = arg.CreatedAtEnd.Add(time.Hour*23 + time.Minute*59 + time.Second*59)
-
-		args = append(args, arg.CreatedAtStart, arg.CreatedAtEnd)
-	}
+	whereClauses, args = addDateRangeFilter(arg.CreatedAtStart, arg.CreatedAtEnd, "o.created_at", whereClauses, args)
 
 	whereClause := strings.Join(whereClauses, " OR ")
 
@@ -241,4 +233,146 @@ func (q *SQLTx) ListSellerOrders(ctx context.Context, arg ListSellerOrdersParams
 	metadata := pagination.CalcMetadata(totalRecords, arg.Filters.Page, arg.Filters.PageSize)
 
 	return sos, metadata, nil
+}
+
+type ListAllSellerSalesParams struct {
+	ItemPriceStart    string
+	ItemPriceEnd      string
+	ItemName          string
+	CustomerAccountID string
+	DeliveryDateStart time.Time
+	DeliveryDateEnd   time.Time
+	OrderDateStart    time.Time
+	OrderDateEnd      time.Time
+	StoreID           int64
+	SellerID          int64
+	Filters           pagination.Filters
+}
+
+// ListAllSellerSales do a fulltext search to list a seller sales, and paginates accordingly.
+func (q SQLTx) ListAllSellerSales(ctx context.Context, arg ListAllSellerSalesParams) ([]GetSaleRow, pagination.Metadata, error) {
+	var whereClauses []string
+	var args []interface{}
+
+	if arg.ItemPriceStart != "" && arg.ItemPriceEnd != "" {
+		// Convert strings to float64
+		startPrice, startErr := strconv.ParseFloat(arg.ItemPriceStart, 64)
+		endPrice, endErr := strconv.ParseFloat(arg.ItemPriceEnd, 64)
+
+		// Check for valid float conversions
+		if startErr != nil || endErr != nil {
+			return nil, pagination.Metadata{}, fmt.Errorf("invalid price range values")
+		} else {
+			// Compare and swap if needed
+			if startPrice > endPrice {
+				startPrice, endPrice = endPrice, startPrice
+			}
+
+			whereClauses = append(whereClauses, "i.price BETWEEN $1 AND $2")
+			args = append(args, startPrice, endPrice)
+		}
+	}
+
+	if arg.ItemName != "" {
+		whereClauses = append(whereClauses, fmt.Sprintf("i.name ILIKE '%%' || $%d || '%%'", len(args)+1))
+		args = append(args, arg.ItemName)
+	}
+	if arg.CustomerAccountID != "" {
+		whereClauses = append(whereClauses, fmt.Sprintf("u.account_id ILIKE '%%' || $%d || '%%'", len(args)+1))
+		args = append(args, arg.CustomerAccountID)
+	}
+	whereClauses, args = addDateRangeFilter(arg.DeliveryDateStart, arg.DeliveryDateEnd, "o.delivered_on", whereClauses, args)
+	whereClauses, args = addDateRangeFilter(arg.OrderDateStart, arg.OrderDateEnd, "o.created_at", whereClauses, args)
+
+	whereClause := strings.Join(whereClauses, " OR ")
+
+	if whereClause == "" {
+		whereClause = "TRUE"
+	}
+
+	stmt := fmt.Sprintf(`
+		SELECT 
+			count(*) OVER() AS total_count,
+			s.id AS sale_id,
+			s.store_id,
+			s.created_at,
+			s.item_id,
+			i.name AS item_name,
+			i.price AS item_price,
+			s.customer_id,
+			u.account_id AS customer_account_id,
+			s.order_id,
+			o.created_at AS order_date,
+			o.delivered_on AS delivery_date 
+		FROM
+			sales s
+		JOIN
+			users u ON s.customer_id = u.id
+		JOIN
+			items i ON s.item_id = i.id
+		JOIN
+			orders o ON s.order_id = o.id
+		WHERE
+			(%s)
+			AND s.store_id = $%d
+  		AND s.seller_id = $%d
+		ORDER by s.%s %s, s.id ASC
+		LIMIT $%d OFFSET $%d`, whereClause, len(args)+1, len(args)+2, arg.Filters.SortColumn(), arg.Filters.SortDirection(), len(args)+3, len(args)+4,
+	)
+
+	args = append(args, arg.StoreID, arg.SellerID, arg.Filters.Limit(), arg.Filters.Offset())
+
+	rows, err := q.db.QueryContext(ctx, stmt, args...)
+	if err != nil {
+		return nil, pagination.Metadata{}, err
+	}
+	defer rows.Close()
+
+	totalRecords := 0
+	ss := []GetSaleRow{}
+
+	for rows.Next() {
+		var s GetSaleRow
+		if err := rows.Scan(
+			&totalRecords,
+			&s.SaleID,
+			&s.StoreID,
+			&s.CreatedAt,
+			&s.ItemID,
+			&s.ItemName,
+			&s.ItemPrice,
+			&s.CustomerID,
+			&s.CustomerAccountID,
+			&s.OrderID,
+			&s.OrderDate,
+			&s.DeliveryDate,
+		); err != nil {
+			return nil, pagination.Metadata{}, err
+		}
+		ss = append(ss, s)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, pagination.Metadata{}, err
+	}
+
+	metadata := pagination.CalcMetadata(totalRecords, arg.Filters.Page, arg.Filters.PageSize)
+
+	return ss, metadata, nil
+}
+
+func addDateRangeFilter(startDate, endDate time.Time, columnName string, whereClauses []string, args []interface{}) ([]string, []interface{}) {
+	if !startDate.IsZero() && !endDate.IsZero() {
+		whereClauses = append(whereClauses, fmt.Sprintf("%s BETWEEN $%d AND $%d", columnName, len(args)+1, len(args)+2))
+
+		if startDate.After(endDate) {
+			startDate, endDate = endDate, startDate
+		}
+
+		// TODO: this assumes that the end date will always be the start of the day, but nothing guarantees that.
+		endDate = endDate.Add(time.Hour*23 + time.Minute*59 + time.Second*59)
+
+		args = append(args, startDate, endDate)
+	}
+	return whereClauses, args
 }

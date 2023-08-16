@@ -14,6 +14,7 @@ type Querier interface {
 	CheckItemStoreMatch(ctx context.Context, arg CheckItemStoreMatchParams) (int64, error)
 	CheckSessionExistence(ctx context.Context, token string) (bool, error)
 	CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error)
+	CreateSale(ctx context.Context, arg CreateSaleParams) (Sale, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateStore(ctx context.Context, arg CreateStoreParams) (Store, error)
 	CreateStoreItem(ctx context.Context, arg CreateStoreItemParams) (Item, error)
@@ -25,6 +26,7 @@ type Querier interface {
 	DeleteStoreOwner(ctx context.Context, arg DeleteStoreOwnerParams) error
 	GetItem(ctx context.Context, itemID int64) (Item, error)
 	GetOrderForSeller(ctx context.Context, arg GetOrderForSellerParams) (GetOrderForSellerRow, error)
+	GetSale(ctx context.Context, arg GetSaleParams) (GetSaleRow, error)
 	GetSession(ctx context.Context, id uuid.UUID) (Session, error)
 	GetStoreByID(ctx context.Context, storeID int64) (GetStoreByIDRow, error)
 	GetStoreByOwner(ctx context.Context, userID int64) ([]Store, error)
@@ -32,6 +34,7 @@ type Querier interface {
 	GetUserByEmail(ctx context.Context, userEmail string) (User, error)
 	GetUserByID(ctx context.Context, userID int64) (User, error)
 	IsStoreOwner(ctx context.Context, arg IsStoreOwnerParams) (int16, error)
+	SaleExists(ctx context.Context, orderID int64) (bool, error)
 	UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, error)
 	UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order, error)
 	UpdateStore(ctx context.Context, arg UpdateStoreParams) (Store, error)

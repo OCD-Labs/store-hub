@@ -20,8 +20,8 @@ type createOrderRequestBody struct {
 	SellerID       int64  `json:"seller_id" validate:"required,min=1"`
 	StoreID        int64  `json:"store_id" validate:"required,min=1"`
 	DeliveryFee    string `json:"delivery_fee" validate:"required"`
-	PaymentChannel string `json:"payment_channel" validate:"required"`
-	PaymentMethod  string `json:"payment_method" validate:"required"`
+	PaymentChannel string `json:"payment_channel" validate:"required,oneof=NEAR 'Debit Card' PayPal 'Credit Card'"`
+	PaymentMethod  string `json:"payment_method" validate:"required,oneof='Instant Pay' 'Pay on Delivery'"`
 }
 
 // createOrder maps to endpoint "POST /seller/orders"
@@ -271,7 +271,7 @@ func (s *StoreHub) updateSellerOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	updatedOrder, err := s.dbStore.UpdateOrder(r.Context(), arg)
+	updatedOrder, err := s.dbStore.UpdateOrderTx(r.Context(), arg) // TODO: Ensure that the DeliveredOn date is not before created_at value of an order.
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):

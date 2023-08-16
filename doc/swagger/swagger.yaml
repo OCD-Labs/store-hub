@@ -1145,6 +1145,177 @@ paths:
       security:
         - Bearer: []
 
+  /users/{user_id}/stores/{store_id}/sales:
+    get:
+      summary: List all sales for a user's store
+      parameters:
+        - name: user_id
+          in: path
+          description: The Id of the store owner
+          required: true
+          schema:
+            type: integer
+        - name: store_id
+          description: The Id of the store
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: item_price_start
+          in: query
+          description: The start price of the item to start the filter from.
+          schema:
+            type: string
+        - name: item_price_end
+          in: query
+          description: The end price of the item to stop the filter at.
+          schema:
+            type: string
+        - name: item_name
+          in: query
+          description: The name of item to filter for.
+          schema:
+            type: string
+        - name: customer_account_id
+          in: query
+          description: The NEAR account_id of the customer to filter for.
+          schema:
+            type: string
+        - name: delivery_date_start
+          in: query
+          description: The delivery date to start the filter from.
+          schema:
+            type: string
+            format: date-time
+        - name: delivery_date_end
+          in: query
+          description: The delivery date to end the filter from.
+          schema:
+            type: string
+            format: date-time
+        - name: order_date_start
+          in: query
+          description: The order date to start the filter from.
+          schema:
+            type: string
+            format: date-time
+        - name: order_date_end
+          in: query
+          description: The order date to end the filter from.
+          schema:
+            type: string
+            format: date-time
+        - name: page
+          in: query
+          description: The page number for pagination
+          schema:
+            type: integer
+        - name: page_size
+          in: query
+          description: The number of stores to include per page
+          schema:
+            type: integer
+        - name: sort
+          in: query
+          description: The sorting criteria for the stores (e.g., 'id', 'item_name', 'delivery_date', 'order_date', 'price', '-id', '-item_name', '-delivery_date', 'order_date', 'price').
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      sales:
+                        type: array
+                        items:
+                          $ref: '#/definitions/Sale'
+                      metadata:
+                        $ref: '#/definitions/pagination'
+        400:
+          description: Bad request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+
+  /users/{user_id}/stores/{store_id}/sales/{sale_id}:
+    get:
+      summary: Get details of a sale for a user's store
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: store_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: sale_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        200:
+          description: Ok
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      sale:
+                        $ref: '#/definitions/Sale'
+        400:
+          description: Bad request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        404:
+          description: Sale not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+
 definitions:
   createStoreRequestBody:
     type: object
@@ -1434,8 +1605,16 @@ definitions:
         type: string
       payment_channel:
         type: string
+        enum:
+          - NEAR
+          - Debit Card
+          - PayPal
+          - Credit Card
       payment_method:
         type: string
+        enum:
+          - Instant Pay
+          - Pay on Delivery
 
   orderResponse:
     type: object
@@ -1467,5 +1646,34 @@ definitions:
       payment_method:
         type: string
       created_at:
+        type: string
+        format: date-time
+
+  Sale:
+    type: object
+    properties:
+      sale_id:
+        type: integer
+      store_id:
+        type: integer
+      created_at:
+        type: string
+        format: date-time
+      item_id:
+        type: integer
+      item_name:
+        type: string
+      item_price:
+        type: string
+      customer_id:
+        type: integer
+      customer_account_id:
+        type: string
+      order_id:
+        type: integer
+      order_date:
+        type: string
+        format: date-time
+      delivery_date:
         type: string
         format: date-time
