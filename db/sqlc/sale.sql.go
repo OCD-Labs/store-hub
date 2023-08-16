@@ -120,6 +120,20 @@ func (q *Queries) GetSale(ctx context.Context, arg GetSaleParams) (GetSaleRow, e
 	return i, err
 }
 
+const reduceSaleCount = `-- name: ReduceSaleCount :exec
+SELECT reduce_sale_count($1, $2)
+`
+
+type ReduceSaleCountParams struct {
+	StoreID int64 `json:"store_id"`
+	ItemID  int64 `json:"item_id"`
+}
+
+func (q *Queries) ReduceSaleCount(ctx context.Context, arg ReduceSaleCountParams) error {
+	_, err := q.db.ExecContext(ctx, reduceSaleCount, arg.StoreID, arg.ItemID)
+	return err
+}
+
 const saleExists = `-- name: SaleExists :one
 SELECT EXISTS (
     SELECT 1

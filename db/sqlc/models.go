@@ -64,6 +64,12 @@ type Sale struct {
 	CreatedAt  time.Time `json:"created_at"`
 }
 
+type SaleOverview struct {
+	StoreID       int64 `json:"store_id"`
+	ItemID        int64 `json:"item_id"`
+	NumberOfSales int32 `json:"number_of_sales"`
+}
+
 type Session struct {
 	ID        uuid.UUID `json:"id"`
 	UserID    int64     `json:"user_id"`

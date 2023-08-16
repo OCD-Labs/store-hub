@@ -42,3 +42,6 @@ SELECT EXISTS (
     FROM sales
     WHERE order_id = sqlc.arg(order_id)
 );
+
+-- name: ReduceSaleCount :exec
+SELECT reduce_sale_count(sqlc.arg(store_id), sqlc.arg(item_id));

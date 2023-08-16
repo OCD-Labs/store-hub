@@ -36,6 +36,16 @@ func (dbTx SQLTx) UpdateOrderTx(ctx context.Context, arg UpdateOrderParams) (Ord
 			}
 		}
 
+		if order.DeliveryStatus == "RETURNED" {
+			err = dbTx.ReduceSaleCount(ctx, ReduceSaleCountParams{
+				StoreID: order.StoreID,
+				ItemID: order.ItemID,
+			})
+			if err != nil {
+				return err
+			}
+		}
+
 		return nil
 	})
 
