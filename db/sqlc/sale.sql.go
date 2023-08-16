@@ -59,6 +59,7 @@ SELECT
   s.item_id,
   i.name AS item_name,
   i.price AS item_price,
+  i.cover_img_url AS item_cover_img_url,
   s.customer_id,
   u.account_id AS customer_account_id,
   s.order_id,
@@ -91,6 +92,7 @@ type GetSaleRow struct {
 	ItemID            int64     `json:"item_id"`
 	ItemName          string    `json:"item_name"`
 	ItemPrice         string    `json:"item_price"`
+	ItemCoverImgUrl   string    `json:"item_cover_img_url"`
 	CustomerID        int64     `json:"customer_id"`
 	CustomerAccountID string    `json:"customer_account_id"`
 	OrderID           int64     `json:"order_id"`
@@ -108,6 +110,7 @@ func (q *Queries) GetSale(ctx context.Context, arg GetSaleParams) (GetSaleRow, e
 		&i.ItemID,
 		&i.ItemName,
 		&i.ItemPrice,
+		&i.ItemCoverImgUrl,
 		&i.CustomerID,
 		&i.CustomerAccountID,
 		&i.OrderID,

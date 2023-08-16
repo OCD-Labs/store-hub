@@ -17,6 +17,7 @@ SELECT
   s.item_id,
   i.name AS item_name,
   i.price AS item_price,
+  i.cover_img_url AS item_cover_img_url,
   s.customer_id,
   u.account_id AS customer_account_id,
   s.order_id,
