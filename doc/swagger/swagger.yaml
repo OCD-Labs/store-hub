@@ -1665,6 +1665,8 @@ definitions:
         type: string
       item_price:
         type: string
+      item_cover_img_url:
+        type: string
       customer_id:
         type: integer
       customer_account_id:
