@@ -35,9 +35,8 @@ type Querier interface {
 	GetUserByID(ctx context.Context, userID int64) (User, error)
 	IsStoreOwner(ctx context.Context, arg IsStoreOwnerParams) (int16, error)
 	ReduceSaleCount(ctx context.Context, arg ReduceSaleCountParams) error
-	SaleExists(ctx context.Context, orderID int64) (bool, error)
 	UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, error)
-	UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order, error)
+	UpdateSellerOrder(ctx context.Context, arg UpdateSellerOrderParams) (Order, error)
 	UpdateStore(ctx context.Context, arg UpdateStoreParams) (Store, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 }

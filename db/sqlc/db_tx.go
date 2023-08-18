@@ -25,8 +25,8 @@ type StoreTx interface {
 	// CreateStoreTx creates a store and its ownership data.
 	CreateStoreTx(ctx context.Context, arg CreateStoreTxParams) (CreateStoreTxResult, error)
 
-	// UpdateOrderTx updates a order row, create a sale row if order is DELIVERED.
-	UpdateOrderTx(ctx context.Context, arg UpdateOrderParams) (Order, error)
+	// UpdateSellerOrderTx updates a order row, create a sale row if order is DELIVERED.
+	UpdateSellerOrderTx(ctx context.Context, arg UpdateSellerOrderParams) (GetOrderForSellerRow, error)
 
 	// ListAllStores do a fulltext search to list stores, and paginates accordingly.
 	ListAllStores(ctx context.Context, arg ListAllStoresParams) ([]Store, pagination.Metadata, error)

@@ -75,6 +75,7 @@ func Concat(s string) string {
 	return fmt.Sprintf("v2.local.%s.bnVsbA", s)
 }
 
+// IsValidStatus check if status exists in DELIVERYSTATUS
 func IsValidStatus(status string) bool {
 	status = strings.TrimSpace(status)
 	for _, s := range DELIVERYSTATUS {
@@ -83,4 +84,27 @@ func IsValidStatus(status string) bool {
 		}
 	}
 	return false
+}
+
+// ConvertToPercentage converts a float64 value to a formatted percentage string.
+func ConvertToPercentage(value float64) string {
+	return fmt.Sprintf("%.2f%%", value)
+}
+
+// CanChangeStatus checks if the nextStatus is one of the allowed statuses for that currentStatus.
+func CanChangeStatus(currentStatus, nextStatus string) bool {
+	switch currentStatus {
+	case "PENDING":
+		return nextStatus == "PROCESSING" || nextStatus == "SHIPPED" || nextStatus == "DELIVERED" || nextStatus == "CANCELLED"
+	case "PROCESSING":
+		return nextStatus == "SHIPPED" || nextStatus == "DELIVERED" || nextStatus == "CANCELLED"
+	case "SHIPPED":
+		return nextStatus == "DELIVERED" || nextStatus == "CANCELLED"
+	case "DELIVERED":
+		return nextStatus == "CANCELLED"
+	case "CANCELLED":
+		return nextStatus == "RETURNED"
+	default:
+		return false
+	}
 }

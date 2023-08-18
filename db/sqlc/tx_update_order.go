@@ -1,53 +1,73 @@
 package db
 
-import "context"
+import (
+	"context"
+	"fmt"
 
-// UpdateOrderTx updates a order row, create a sale row if order is DELIVERED.
-func (dbTx SQLTx) UpdateOrderTx(ctx context.Context, arg UpdateOrderParams) (Order, error) {
-	var order Order
+	"github.com/OCD-Labs/store-hub/util"
+)
 
-	err := dbTx.execTx(ctx, func(q *Queries) error {
-		var err error
+// UpdateSellerOrderTx updates a order row, create a sale row if order is DELIVERED.
+func (dbTx SQLTx) UpdateSellerOrderTx(ctx context.Context, arg UpdateSellerOrderParams) (GetOrderForSellerRow, error) {
+	var sellerOrder GetOrderForSellerRow
+	var err error
 
-		order, err = dbTx.UpdateOrder(ctx, arg)
-		if err != nil {
-			return err
-		}
+	sellerOrder, err = dbTx.GetOrderForSeller(ctx, GetOrderForSellerParams{
+		OrderID:  arg.OrderID,
+		SellerID: arg.SellerID,
+	})
+	if err != nil {
+		return sellerOrder, err
+	}
 
-		if order.DeliveryStatus == "DELIVERED" {
-			exist, err := dbTx.SaleExists(ctx, order.ID)
+	if sellerOrder.DeliveryStatus != arg.DeliveryStatus.String && util.CanChangeStatus(sellerOrder.DeliveryStatus, arg.DeliveryStatus.String) {
+		err = dbTx.execTx(ctx, func(q *Queries) error {
+			var o Order
+
+			o, err = dbTx.UpdateSellerOrder(ctx, arg)
 			if err != nil {
 				return err
 			}
 
-			if !exist {
+			if o.DeliveryStatus == "DELIVERED" {
 				sArg := CreateSaleParams{
-					StoreID:    order.StoreID,
-					ItemID:     order.ItemID,
-					CustomerID: order.BuyerID,
-					SellerID:   order.SellerID,
-					OrderID:    order.ID,
+					StoreID:    o.StoreID,
+					ItemID:     o.ItemID,
+					CustomerID: o.BuyerID,
+					SellerID:   o.SellerID,
+					OrderID:    o.ID,
 				}
-	
+
 				_, err = dbTx.CreateSale(ctx, sArg)
 				if err != nil {
 					return err
 				}
 			}
-		}
 
-		if order.DeliveryStatus == "RETURNED" {
-			err = dbTx.ReduceSaleCount(ctx, ReduceSaleCountParams{
-				StoreID: order.StoreID,
-				ItemID: order.ItemID,
-			})
-			if err != nil {
-				return err
+			if o.DeliveryStatus == "RETURNED" {
+				fmt.Println(o.StoreID)
+				fmt.Println(o.ItemID)
+				fmt.Println(o.ID)
+				
+				err = dbTx.ReduceSaleCount(ctx, ReduceSaleCountParams{
+					StoreID: o.StoreID,
+					ItemID:  o.ItemID,
+					OrderID: o.ID,
+				})
+				if err != nil {
+					return err
+				}
 			}
-		}
 
-		return nil
-	})
+			sellerOrder.DeliveredOn = o.DeliveredOn
+			sellerOrder.ExpectedDeliveryDate = o.ExpectedDeliveryDate
+			sellerOrder.DeliveryStatus = o.DeliveryStatus
 
-	return order, err
+			return nil
+		})
+	} else {
+		return sellerOrder, nil
+	}
+
+	return sellerOrder, err
 }

@@ -36,12 +36,5 @@ WHERE
   AND s.store_id = sqlc.arg(store_id)
   AND s.seller_id = sqlc.arg(seller_id);
 
--- name: SaleExists :one
-SELECT EXISTS (
-    SELECT 1
-    FROM sales
-    WHERE order_id = sqlc.arg(order_id)
-);
-
 -- name: ReduceSaleCount :exec
-SELECT reduce_sale_count(sqlc.arg(store_id), sqlc.arg(item_id));
+SELECT reduce_sale(sqlc.arg(store_id), sqlc.arg(item_id), sqlc.arg(order_id));
