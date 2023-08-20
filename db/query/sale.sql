@@ -36,9 +36,25 @@ WHERE
   AND s.store_id = sqlc.arg(store_id)
   AND s.seller_id = sqlc.arg(seller_id);
 
--- name: SaleExists :one
-SELECT EXISTS (
-    SELECT 1
-    FROM sales
-    WHERE order_id = sqlc.arg(order_id)
-);
+-- name: ReduceSalesOverview :exec
+SELECT reduce_sale(sqlc.arg(store_id), sqlc.arg(item_id), sqlc.arg(order_id));
+
+-- name: GetStoreMetrics :one
+WITH TodaySales AS (
+    SELECT 
+        SUM(o.order_quantity) AS today_sales_count,
+        SUM(o.order_quantity * i.price) AS today_sales_revenue    FROM sales s
+    JOIN orders o ON s.order_id = o.id
+    JOIN items i ON s.item_id = i.id
+    WHERE s.store_id = sqlc.arg(store_id) AND DATE(s.created_at) = CURRENT_DATE
+)
+
+SELECT 
+    COALESCE(CAST((SELECT today_sales_count FROM TodaySales) AS TEXT), '0') AS sales_today,
+    COALESCE(CAST(SUM(o.order_quantity * i.price) AS TEXT), '0') AS total_sales_revenue,
+    COUNT(DISTINCT s.customer_id) AS total_customers,
+    COALESCE(SUM(o.order_quantity), 0) AS total_items_sold
+FROM sales s
+LEFT JOIN orders o ON s.order_id = o.id
+LEFT JOIN items i ON s.item_id = i.id
+WHERE s.store_id = sqlc.arg(store_id);

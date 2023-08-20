@@ -101,7 +101,7 @@ WHERE
 `
 
 type GetOrderForSellerParams struct {
-	ID       int64 `json:"id"`
+	OrderID  int64 `json:"order_id"`
 	SellerID int64 `json:"seller_id"`
 }
 
@@ -130,7 +130,7 @@ type GetOrderForSellerRow struct {
 }
 
 func (q *Queries) GetOrderForSeller(ctx context.Context, arg GetOrderForSellerParams) (GetOrderForSellerRow, error) {
-	row := q.db.QueryRowContext(ctx, getOrderForSeller, arg.ID, arg.SellerID)
+	row := q.db.QueryRowContext(ctx, getOrderForSeller, arg.OrderID, arg.SellerID)
 	var i GetOrderForSellerRow
 	err := row.Scan(
 		&i.OrderID,
@@ -158,30 +158,32 @@ func (q *Queries) GetOrderForSeller(ctx context.Context, arg GetOrderForSellerPa
 	return i, err
 }
 
-const updateOrder = `-- name: UpdateOrder :one
+const updateSellerOrder = `-- name: UpdateSellerOrder :one
 UPDATE orders
 SET
   delivered_on = COALESCE($1, delivered_on),
   delivery_status = COALESCE($2, delivery_status),
   expected_delivery_date = COALESCE($3, expected_delivery_date)
 WHERE
-  id = $4
+  id = $4 AND seller_id = $5
 RETURNING id, delivery_status, delivered_on, expected_delivery_date, item_id, order_quantity, buyer_id, seller_id, store_id, delivery_fee, payment_channel, payment_method, created_at
 `
 
-type UpdateOrderParams struct {
+type UpdateSellerOrderParams struct {
 	DeliveredOn          sql.NullTime   `json:"delivered_on"`
 	DeliveryStatus       sql.NullString `json:"delivery_status"`
 	ExpectedDeliveryDate sql.NullTime   `json:"expected_delivery_date"`
 	OrderID              int64          `json:"order_id"`
+	SellerID             int64          `json:"seller_id"`
 }
 
-func (q *Queries) UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order, error) {
-	row := q.db.QueryRowContext(ctx, updateOrder,
+func (q *Queries) UpdateSellerOrder(ctx context.Context, arg UpdateSellerOrderParams) (Order, error) {
+	row := q.db.QueryRowContext(ctx, updateSellerOrder,
 		arg.DeliveredOn,
 		arg.DeliveryStatus,
 		arg.ExpectedDeliveryDate,
 		arg.OrderID,
+		arg.SellerID,
 	)
 	var i Order
 	err := row.Scan(

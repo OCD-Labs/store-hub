@@ -25,8 +25,8 @@ type StoreTx interface {
 	// CreateStoreTx creates a store and its ownership data.
 	CreateStoreTx(ctx context.Context, arg CreateStoreTxParams) (CreateStoreTxResult, error)
 
-	// UpdateOrderTx updates a order row, create a sale row if order is DELIVERED.
-	UpdateOrderTx(ctx context.Context, arg UpdateOrderParams) (Order, error)
+	// UpdateSellerOrderTx updates a order row, create a sale row if order is DELIVERED.
+	UpdateSellerOrderTx(ctx context.Context, arg UpdateSellerOrderParams) (GetOrderForSellerRow, error)
 
 	// ListAllStores do a fulltext search to list stores, and paginates accordingly.
 	ListAllStores(ctx context.Context, arg ListAllStoresParams) ([]Store, pagination.Metadata, error)
@@ -42,6 +42,9 @@ type StoreTx interface {
 
 	// ListAllSellerSales do a fulltext search to list a seller sales, and paginates accordingly.
 	ListAllSellerSales(ctx context.Context, arg ListAllSellerSalesParams) ([]GetSaleRow, pagination.Metadata, error)
+
+	// ListSalesOverview do a full search to list a store's sales overview, and paginates accordingly.
+	ListSalesOverview(ctx context.Context, arg SalesOverviewParams) ([]SaleOverviewResult, pagination.Metadata, error)
 }
 
 // A SQLTx provides all functions to execute SQL queries and transactions.

@@ -187,7 +187,7 @@ func (s *StoreHub) getSellerOrder(w http.ResponseWriter, r *http.Request) {
 
 	order, err := s.dbStore.GetOrderForSeller(r.Context(), db.GetOrderForSellerParams{
 		SellerID: authPayload.UserID,
-		ID:       pathVar.OrderID,
+		OrderID:  pathVar.OrderID,
 	})
 	if err != nil {
 		switch {
@@ -234,8 +234,11 @@ func (s *StoreHub) updateSellerOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	arg := db.UpdateOrderParams{
-		OrderID: pathVars.OrderID,
+	authPayload := s.contextGetToken(r)
+
+	arg := db.UpdateSellerOrderParams{
+		OrderID:  pathVars.OrderID,
+		SellerID: authPayload.UserID,
 	}
 
 	if reqBody.DeliveryStatus != nil && *reqBody.DeliveryStatus != "" {
@@ -271,7 +274,7 @@ func (s *StoreHub) updateSellerOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	updatedOrder, err := s.dbStore.UpdateOrderTx(r.Context(), arg) // TODO: Ensure that the DeliveredOn date is not before created_at value of an order.
+	updatedOrder, err := s.dbStore.UpdateSellerOrderTx(r.Context(), arg) // TODO: Ensure that the DeliveredOn date is not before created_at value of an order.
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):

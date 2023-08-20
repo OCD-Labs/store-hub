@@ -39,8 +39,9 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	mux.Handler(http.MethodPatch, "/api/v1/seller/orders/:order_id", s.authenticate(http.HandlerFunc(s.updateSellerOrder)))
 
 	// sales
-	mux.Handler(http.MethodGet, "/api/v1/users/:user_id/stores/:store_id/sales", s.authenticate(http.HandlerFunc(s.listAllSales)))
+	mux.Handler(http.MethodGet, "/api/v1/users/:user_id/stores/:store_id/sales", s.authenticate(http.HandlerFunc(s.listStoreSales)))
 	mux.Handler(http.MethodGet, "/api/v1/users/:user_id/stores/:store_id/sales/:sale_id", s.authenticate(http.HandlerFunc(s.getSale)))
+	mux.Handler(http.MethodGet, "/api/v1/users/:user_id/stores/:store_id/sales-overview", s.authenticate(http.HandlerFunc(s.listSalesOverview)))
 
 	// user
 	mux.HandlerFunc(http.MethodPost, "/api/v1/users", s.createUser)

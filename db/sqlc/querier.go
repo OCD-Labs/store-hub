@@ -30,13 +30,14 @@ type Querier interface {
 	GetSession(ctx context.Context, id uuid.UUID) (Session, error)
 	GetStoreByID(ctx context.Context, storeID int64) (GetStoreByIDRow, error)
 	GetStoreByOwner(ctx context.Context, userID int64) ([]Store, error)
+	GetStoreMetrics(ctx context.Context, storeID int64) (GetStoreMetricsRow, error)
 	GetUserByAccountID(ctx context.Context, accountID string) (User, error)
 	GetUserByEmail(ctx context.Context, userEmail string) (User, error)
 	GetUserByID(ctx context.Context, userID int64) (User, error)
 	IsStoreOwner(ctx context.Context, arg IsStoreOwnerParams) (int16, error)
-	SaleExists(ctx context.Context, orderID int64) (bool, error)
+	ReduceSalesOverview(ctx context.Context, arg ReduceSalesOverviewParams) error
 	UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, error)
-	UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order, error)
+	UpdateSellerOrder(ctx context.Context, arg UpdateSellerOrderParams) (Order, error)
 	UpdateStore(ctx context.Context, arg UpdateStoreParams) (Store, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 }
