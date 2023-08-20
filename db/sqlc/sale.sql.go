@@ -120,17 +120,57 @@ func (q *Queries) GetSale(ctx context.Context, arg GetSaleParams) (GetSaleRow, e
 	return i, err
 }
 
-const reduceSaleCount = `-- name: ReduceSaleCount :exec
+const getStoreMetrics = `-- name: GetStoreMetrics :one
+WITH TodaySales AS (
+    SELECT 
+        SUM(o.order_quantity) AS today_sales_count,
+        SUM(o.order_quantity * i.price) AS today_sales_revenue    FROM sales s
+    JOIN orders o ON s.order_id = o.id
+    JOIN items i ON s.item_id = i.id
+    WHERE s.store_id = $1 AND DATE(s.created_at) = CURRENT_DATE
+)
+
+SELECT 
+    COALESCE(CAST((SELECT today_sales_count FROM TodaySales) AS TEXT), '0') AS sales_today,
+    COALESCE(CAST(SUM(o.order_quantity * i.price) AS TEXT), '0') AS total_sales_revenue,
+    COUNT(DISTINCT s.customer_id) AS total_customers,
+    COALESCE(SUM(o.order_quantity), 0) AS total_items_sold
+FROM sales s
+LEFT JOIN orders o ON s.order_id = o.id
+LEFT JOIN items i ON s.item_id = i.id
+WHERE s.store_id = $1
+`
+
+type GetStoreMetricsRow struct {
+	SalesToday        interface{} `json:"sales_today"`
+	TotalSalesRevenue interface{} `json:"total_sales_revenue"`
+	TotalCustomers    int64       `json:"total_customers"`
+	TotalItemsSold    interface{} `json:"total_items_sold"`
+}
+
+func (q *Queries) GetStoreMetrics(ctx context.Context, storeID int64) (GetStoreMetricsRow, error) {
+	row := q.db.QueryRowContext(ctx, getStoreMetrics, storeID)
+	var i GetStoreMetricsRow
+	err := row.Scan(
+		&i.SalesToday,
+		&i.TotalSalesRevenue,
+		&i.TotalCustomers,
+		&i.TotalItemsSold,
+	)
+	return i, err
+}
+
+const reduceSalesOverview = `-- name: ReduceSalesOverview :exec
 SELECT reduce_sale($1, $2, $3)
 `
 
-type ReduceSaleCountParams struct {
-	StoreID int64 `json:"store_id"`
-	ItemID  int64 `json:"item_id"`
-	OrderID int64 `json:"order_id"`
+type ReduceSalesOverviewParams struct {
+	StoreID interface{} `json:"store_id"`
+	ItemID  interface{} `json:"item_id"`
+	OrderID interface{} `json:"order_id"`
 }
 
-func (q *Queries) ReduceSaleCount(ctx context.Context, arg ReduceSaleCountParams) error {
-	_, err := q.db.ExecContext(ctx, reduceSaleCount, arg.StoreID, arg.ItemID, arg.OrderID)
+func (q *Queries) ReduceSalesOverview(ctx context.Context, arg ReduceSalesOverviewParams) error {
+	_, err := q.db.ExecContext(ctx, reduceSalesOverview, arg.StoreID, arg.ItemID, arg.OrderID)
 	return err
 }

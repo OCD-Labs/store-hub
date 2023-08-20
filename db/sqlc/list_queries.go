@@ -363,6 +363,125 @@ func (q SQLTx) ListAllSellerSales(ctx context.Context, arg ListAllSellerSalesPar
 	return ss, metadata, nil
 }
 
+type SalesOverviewParams struct {
+	ItemName     string
+	RevenueStart string
+	RevenueEnd   string
+	StoreID      int64
+	Filters      pagination.Filters
+}
+
+type SaleOverviewResult struct {
+	SaleID          int64  `json:"sale_id"`
+	NumberOfSales   int64  `json:"number_of_sales"`
+	SalesPercentage string `json:"sales_percentage"`
+	Revenue         string `json:"revenue"`
+	ItemID          int64  `json:"item_id"`
+	StoreID         int64  `json:"store_id"`
+	ItemName        string `json:"item_name"`
+	ItemPrice       string `json:"item_price"`
+	ItemCoverImgUrl string `json:"item_cover_img_url"`
+}
+
+// ListSalesOverview do a full search to list a store's sales overview, and paginates accordingly.
+func (dbTx SQLTx) ListSalesOverview(ctx context.Context, arg SalesOverviewParams) ([]SaleOverviewResult, pagination.Metadata, error) {
+	var whereClauses []string
+	var args []interface{}
+
+	if arg.ItemName != "" {
+		whereClauses = append(whereClauses, fmt.Sprintf("i.name ILIKE '%%' || $%d || '%%'", len(args)+1))
+		args = append(args, arg.ItemName)
+	}
+
+	whereClauses, args = addFloatRangeFilter(arg.RevenueStart, arg.RevenueEnd, "so.revenue", whereClauses, args)
+
+	whereClause := strings.Join(whereClauses, " OR ")
+
+	if whereClause == "" {
+		whereClause = "TRUE"
+	}
+
+	stmt := fmt.Sprintf(`
+	SELECT 
+		count(*) OVER() AS total_count,
+		so.*,
+		i.name AS item_name,
+		i.cover_img_url AS item_cover_img_url,
+		i.price AS item_price
+	FROM
+		sales_overview so
+	JOIN
+		items i ON so.item_id = i.id
+	WHERE
+		(%s)
+		AND so.store_id = $%d
+	ORDER by so.%s %s, so.id ASC
+	LIMIT $%d OFFSET $%d`, whereClause, len(args)+1, arg.Filters.SortColumn(), arg.Filters.SortDirection(), len(args)+2, len(args)+3,
+	)
+
+	args = append(args, arg.StoreID, arg.Filters.Limit(), arg.Filters.Offset())
+
+	rows, err := dbTx.db.QueryContext(ctx, stmt, args...)
+	if err != nil {
+		return nil, pagination.Metadata{}, err
+	}
+	defer rows.Close()
+
+	totalRecords := 0
+	sors := []SaleOverviewResult{}
+
+	for rows.Next() {
+		var sor SaleOverviewResult
+		if err := rows.Scan(
+			&totalRecords,
+			&sor.SaleID,
+			&sor.NumberOfSales,
+			&sor.SalesPercentage,
+			&sor.Revenue,
+			&sor.ItemID,
+			&sor.StoreID,
+			&sor.ItemName,
+			&sor.ItemCoverImgUrl,
+			&sor.ItemPrice,
+		); err != nil {
+			return nil, pagination.Metadata{}, err
+		}
+
+		sor.SalesPercentage = convertToPercentage(sor.SalesPercentage)
+		sors = append(sors, sor)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, pagination.Metadata{}, err
+	}
+
+	metadata := pagination.CalcMetadata(totalRecords, arg.Filters.Page, arg.Filters.PageSize)
+
+	return sors, metadata, nil
+}
+
+func addFloatRangeFilter(startVal, endVal, columnName string, whereClauses []string, args []interface{}) ([]string, []interface{}) {
+	if startVal != "" && endVal != "" {
+		// Convert strings to float64
+		startFloat, startErr := strconv.ParseFloat(startVal, 64)
+		endFloat, endErr := strconv.ParseFloat(endVal, 64)
+
+		// Check for valid float conversions
+		if startErr != nil || endErr != nil {
+			return whereClauses, args
+		} else {
+			// Compare and swap if needed
+			if startFloat > endFloat {
+				startFloat, endFloat = endFloat, startFloat
+			}
+
+			whereClauses = append(whereClauses, fmt.Sprintf("%s BETWEEN $%d AND $%d", columnName, len(args)+1, len(args)+2))
+			args = append(args, startFloat, endFloat)
+		}
+	}
+
+	return whereClauses, args
+}
+
 func addDateRangeFilter(startDate, endDate time.Time, columnName string, whereClauses []string, args []interface{}) ([]string, []interface{}) {
 	if !startDate.IsZero() && !endDate.IsZero() {
 		whereClauses = append(whereClauses, fmt.Sprintf("%s BETWEEN $%d AND $%d", columnName, len(args)+1, len(args)+2))
@@ -377,4 +496,13 @@ func addDateRangeFilter(startDate, endDate time.Time, columnName string, whereCl
 		args = append(args, startDate, endDate)
 	}
 	return whereClauses, args
+}
+
+// convertToPercentage converts a string representation of a float64 value to a formatted percentage string.
+func convertToPercentage(valueStr string) string {
+	value, err := strconv.ParseFloat(valueStr, 64)
+	if err != nil {
+		return valueStr
+	}
+	return fmt.Sprintf("%.1f%%", value)
 }

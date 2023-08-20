@@ -31,7 +31,7 @@ type listAllSalesPathVars struct {
 }
 
 // maps to endpoint "GET /users/{user_id}/stores/{store_id}/sales".
-func (s *StoreHub) listAllSales(w http.ResponseWriter, r *http.Request) {
+func (s *StoreHub) listStoreSales(w http.ResponseWriter, r *http.Request) {
 	var reqQueryStr listAllSalesQueryStr
 	if err := s.shouldBindQuery(w, r, &reqQueryStr); err != nil {
 		return
@@ -85,6 +85,13 @@ func (s *StoreHub) listAllSales(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	storeMetrics, err := s.dbStore.GetStoreMetrics(r.Context(), pathVars.StoreID)
+	if err != nil {
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to fetch store metrics")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
 	// return response
 	s.writeJSON(w, http.StatusOK, envelop{
 		"status": "success",
@@ -93,6 +100,7 @@ func (s *StoreHub) listAllSales(w http.ResponseWriter, r *http.Request) {
 			"result": envelop{
 				"sales":    sales,
 				"metadata": pagination,
+				"store_metrics": storeMetrics,
 			},
 		},
 	}, nil)
@@ -140,6 +148,98 @@ func (s *StoreHub) getSale(w http.ResponseWriter, r *http.Request) {
 			"message": "found a sale",
 			"result": envelop{
 				"sale": sale,
+			},
+		},
+	}, nil)
+}
+
+type listSalesOverviewPathVars struct {
+	StoreID int64 `path:"store_id" validate:"required,min=1"`
+	UserID  int64 `path:"user_id" validate:"required,min=1"`
+}
+
+type listSalesOverviewQueryStr struct {
+	ItemName     string `querystr:"item_name"`
+	RevenueStart string `querystr:"revenue_start"`
+	RevenueEnd   string `querystr:"revenue_end"`
+	Page         int    `querystr:"page" validate:"max=10000000"`
+	PageSize     int    `querystr:"page_size" validate:"max=20"`
+	Sort         string `querystr:"sort"`
+}
+
+// listSalesOverview maps to "GET /users/:user_id/stores/:store_id/sales-overview"
+func (s *StoreHub) listSalesOverview(w http.ResponseWriter, r *http.Request) {
+	var pathVars listSalesOverviewPathVars
+	if err := s.ShouldBindPathVars(w, r, &pathVars); err != nil {
+		return
+	}
+
+	authPayload := s.contextGetToken(r) // authorize
+	if pathVars.UserID != authPayload.UserID {
+		s.errorResponse(w, r, http.StatusUnauthorized, "mismatch user")
+		return
+	}
+
+	// check ownership
+	_, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
+		StoreID: pathVars.StoreID,
+		UserID:  authPayload.UserID,
+	})
+	if err != nil {
+		if err == sql.ErrNoRows {
+			s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
+			log.Error().Err(err).Msg("error occurred")
+			return
+		}
+
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to list sales overview")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	var reqQueryStr listSalesOverviewQueryStr
+	if err := s.shouldBindQuery(w, r, &reqQueryStr); err != nil {
+		return
+	}
+
+	if reqQueryStr.Page < 1 {
+		reqQueryStr.Page = 1
+	}
+	if reqQueryStr.PageSize < 1 {
+		reqQueryStr.PageSize = 15
+	}
+	if reqQueryStr.Sort == "" {
+		reqQueryStr.Sort = "-revenue"
+	}
+
+	arg := db.SalesOverviewParams{
+		ItemName: reqQueryStr.ItemName,
+		RevenueStart: reqQueryStr.RevenueStart,
+		RevenueEnd: reqQueryStr.RevenueEnd,
+		StoreID: pathVars.StoreID,
+		Filters: pagination.Filters{
+			Page: reqQueryStr.Page,
+			PageSize: reqQueryStr.PageSize,
+			Sort: reqQueryStr.Sort,
+			SortSafelist: []string{"number_of_sales", "revenue", "-number_of_sales", "-revenue"},
+		},
+	}
+
+	saleOverview, pagination, err := s.dbStore.ListSalesOverview(r.Context(), arg)
+	if err != nil {
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to list sales overview")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	// return response
+	s.writeJSON(w, http.StatusOK, envelop{
+		"status": "success",
+		"data": envelop{
+			"message": "found your sales overview",
+			"result": envelop{
+				"sales_overview": saleOverview,
+				"metadata": pagination,
 			},
 		},
 	}, nil)

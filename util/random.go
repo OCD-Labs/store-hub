@@ -86,11 +86,6 @@ func IsValidStatus(status string) bool {
 	return false
 }
 
-// ConvertToPercentage converts a float64 value to a formatted percentage string.
-func ConvertToPercentage(value float64) string {
-	return fmt.Sprintf("%.2f%%", value)
-}
-
 // CanChangeStatus checks if the nextStatus is one of the allowed statuses for that currentStatus.
 func CanChangeStatus(currentStatus, nextStatus string) bool {
 	switch currentStatus {

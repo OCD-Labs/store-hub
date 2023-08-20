@@ -1,5 +1,5 @@
--- Create the sale_overview table
-CREATE TABLE "sale_overview" (
+-- Create the sales_overview table
+CREATE TABLE "sales_overview" (
     "id" bigserial PRIMARY KEY,
     "number_of_sales" bigint NOT NULL DEFAULT 0,
     "sales_percentage" NUMERIC(6, 4) NOT NULL DEFAULT 0,
@@ -10,8 +10,8 @@ CREATE TABLE "sale_overview" (
     FOREIGN KEY ("store_id") REFERENCES "stores" ("id")
 );
 
--- Create the update_sale_overview function
-CREATE OR REPLACE FUNCTION update_sale_overview()
+-- Create the update_sales_overview function
+CREATE OR REPLACE FUNCTION update_sales_overview()
 RETURNS TRIGGER AS $$
 DECLARE
     orderQty int;
@@ -25,10 +25,10 @@ BEGIN
     JOIN items i ON o.item_id = i.id
     WHERE o.id = NEW.order_id;
 
-    -- Check if the item and store combination already exists in sale_overview
-    IF EXISTS (SELECT 1 FROM sale_overview WHERE item_id = NEW.item_id AND store_id = NEW.store_id) THEN
+    -- Check if the item and store combination already exists in sales_overview
+    IF EXISTS (SELECT 1 FROM sales_overview WHERE item_id = NEW.item_id AND store_id = NEW.store_id) THEN
         -- Update the existing record
-        UPDATE sale_overview
+        UPDATE sales_overview
         SET 
             number_of_sales = number_of_sales + orderQty,
             sales_percentage = ((number_of_sales + orderQty) / supplyQuantity) * 100,
@@ -36,7 +36,7 @@ BEGIN
         WHERE item_id = NEW.item_id AND store_id = NEW.store_id;
     ELSE
         -- Insert a new record
-        INSERT INTO sale_overview (number_of_sales, sales_percentage, revenue, item_id, store_id)
+        INSERT INTO sales_overview (number_of_sales, sales_percentage, revenue, item_id, store_id)
         VALUES (
             orderQty,
             (orderQty / supplyQuantity) * 100,
@@ -50,14 +50,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create the trigger to call the update_sale_overview function after a sale is inserted
-CREATE TRIGGER trigger_update_sale_overview
+-- Create the trigger to call the update_sales_overview function after a sale is inserted
+CREATE TRIGGER trigger_update_sales_overview
 AFTER INSERT ON sales
 FOR EACH ROW
-EXECUTE FUNCTION update_sale_overview();
+EXECUTE FUNCTION update_sales_overview();
 
--- Create the reduce_sale_count function
-CREATE OR REPLACE FUNCTION reduce_sale(item_id_arg bigint, store_id_arg bigint, order_id_arg bigint)
+-- Create the reduce_sales_overview function
+CREATE OR REPLACE FUNCTION reduce_sales_overview(item_id_arg bigint, store_id_arg bigint, order_id_arg bigint)
 RETURNS void AS $$
 DECLARE
     orderQty int;
@@ -72,7 +72,7 @@ BEGIN
     WHERE o.id = order_id_arg;
 
     -- Reduce the number of sales by the order quantity
-    UPDATE sale_overview
+    UPDATE sales_overview
     SET 
         number_of_sales = GREATEST(number_of_sales - orderQty, 0), -- Ensure it doesn't go below 0
         sales_percentage = (GREATEST(number_of_sales - orderQty, 0) / supplyQuantity) * 100,

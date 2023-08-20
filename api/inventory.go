@@ -12,7 +12,8 @@ import (
 )
 
 // TODO: Create index on search columns like category, tag price etc.
-//TODO: When listing storefront items for a store, discuss catering for out of stock and delete items.
+// TODO: When listing storefront items for a store, discuss catering for out of stock and delete items.
+// TODO: push the boundary of th NUMERIC db type. Find out the limit of value will break db column with NUMERIC type.
 
 type createStoreRequestBody struct {
 	Name            string `json:"name" validate:"required"`

@@ -64,7 +64,7 @@ type Sale struct {
 	CreatedAt  time.Time `json:"created_at"`
 }
 
-type SaleOverview struct {
+type SalesOverview struct {
 	ID              int64  `json:"id"`
 	NumberOfSales   int64  `json:"number_of_sales"`
 	SalesPercentage string `json:"sales_percentage"`

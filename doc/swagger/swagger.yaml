@@ -4,8 +4,8 @@ info:
   description: "
   Rediscovery e-commerce et blockchain—server."
   version: "1.0.0"
-host: "localhost:6780"
-# host: "store-hub-djxu.onrender.com"
+# host: "localhost:6780"
+host: "store-hub-djxu.onrender.com"
 basePath: "/api/v1"
 schemes:
   - "https"
@@ -1147,7 +1147,7 @@ paths:
 
   /users/{user_id}/stores/{store_id}/sales:
     get:
-      summary: List all sales for a user's store
+      summary: List all sales for a store
       parameters:
         - name: user_id
           in: path
@@ -1242,6 +1242,8 @@ paths:
                           $ref: '#/definitions/Sale'
                       metadata:
                         $ref: '#/definitions/pagination'
+                      store_metrics:
+                        $ref: '#/definitions/StoreMetrics'
         400:
           description: Bad request
           schema:
@@ -1259,7 +1261,7 @@ paths:
 
   /users/{user_id}/stores/{store_id}/sales/{sale_id}:
     get:
-      summary: Get details of a sale for a user's store
+      summary: Get details of a sale for a store
       parameters:
         - name: user_id
           in: path
@@ -1307,6 +1309,84 @@ paths:
             $ref: "#/definitions/ErrorResponse"
         404:
           description: Sale not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+  /users/{user_id}/stores/{store_id}/sales-overview:
+    get:
+      summary: Get sales overview for a store
+      parameters:
+        - name: user_id
+          in: path
+          description: The Id of the store owner
+          required: true
+          type: integer
+        - name: store_id
+          in: path
+          description: The Id of the store
+          required: true
+          type: integer
+        - name: item_name
+          in: query
+          description: Filter by item name
+          type: string
+        - name: revenue_start
+          in: query
+          description: Filter by minimum revenue
+          type: string
+        - name: revenue_end
+          in: query
+          description: Filter by maximum revenue
+          type: string
+        - name: page
+          in: query
+          description: Page number
+          type: integer
+        - name: page_size
+          in: query
+          description: Number of items per page
+          type: integer
+        - name: sort
+          in: query
+          description: Sorting criteria (e.g 'number_of_sales', 'revenue', '-number_of_sales', '-revenue')
+          type: string
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      sales_overview:
+                        type: array
+                        items:
+                          $ref: '#/definitions/SaleOverview'
+                      metadata:
+                        $ref: '#/definitions/pagination'
+        400:
+          description: Bad request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        403:
+          description: Forbidden
           schema:
             $ref: "#/definitions/ErrorResponse"
         500:
@@ -1679,3 +1759,42 @@ definitions:
       delivery_date:
         type: string
         format: date-time
+
+  SaleOverview:
+    type: object
+    properties:
+      sale_id:
+        type: integer
+      number_of_sales:
+        type: integer
+      sales_percentage:
+        type: string
+      revenue:
+        type: string
+      item_id:
+        type: integer
+      store_id:
+        type: integer
+      item_name:
+        type: string
+      item_price:
+        type: string
+      item_cover_img_url:
+        type: string
+
+  StoreMetrics:
+    type: object
+    properties:
+      sales_today:
+        type: integer
+        description: Number of sales made today
+      total_sales_revenue:
+        type: number
+        format: double
+        description: Total revenue from all sales
+      total_customers:
+        type: integer
+        description: Total number of customers
+      total_items_sold:
+        type: integer
+        description: Total number of items sold

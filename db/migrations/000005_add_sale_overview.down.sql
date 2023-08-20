@@ -1,10 +1,10 @@
 -- Drop the trigger
-DROP TRIGGER IF EXISTS trigger_update_sale_overview ON sales;
+DROP TRIGGER IF EXISTS trigger_update_sales_overview ON sales;
 
 -- Drop the function
-DROP FUNCTION IF EXISTS update_sale_overview();
-DROP FUNCTION IF EXISTS reduce_sale(bigint, bigint);
+DROP FUNCTION IF EXISTS update_sales_overview();
+DROP FUNCTION IF EXISTS reduce_sales_overview(bigint, bigint, bigint);
 
 
--- Drop the sale_overview table
-DROP TABLE IF EXISTS sale_overview;
+-- Drop the sales_overview table
+DROP TABLE IF EXISTS sales_overview;

@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/OCD-Labs/store-hub/util"
 )
@@ -45,11 +44,7 @@ func (dbTx SQLTx) UpdateSellerOrderTx(ctx context.Context, arg UpdateSellerOrder
 			}
 
 			if o.DeliveryStatus == "RETURNED" {
-				fmt.Println(o.StoreID)
-				fmt.Println(o.ItemID)
-				fmt.Println(o.ID)
-				
-				err = dbTx.ReduceSaleCount(ctx, ReduceSaleCountParams{
+				err = dbTx.ReduceSalesOverview(ctx, ReduceSalesOverviewParams{
 					StoreID: o.StoreID,
 					ItemID:  o.ItemID,
 					OrderID: o.ID,
