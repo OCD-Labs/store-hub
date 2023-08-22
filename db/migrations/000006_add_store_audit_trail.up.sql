@@ -1,6 +1,6 @@
 ALTER TABLE store_owners ADD COLUMN is_primary boolean NOT NULL DEFAULT false;
 ALTER TABLE store_owners DROP COLUMN access_level;
-ALTER TABLE store_owners ADD COLUMN access_levels int[] NOT NULL DEFAULT '{}';
+ALTER TABLE store_owners ADD COLUMN access_levels int ARRAY NOT NULL DEFAULT '{}';
 
 
 CREATE TABLE "store_audit_trail" (

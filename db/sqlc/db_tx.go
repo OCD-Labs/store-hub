@@ -25,6 +25,9 @@ type StoreTx interface {
 	// CreateStoreTx creates a store and its ownership data.
 	CreateStoreTx(ctx context.Context, arg CreateStoreTxParams) (CreateStoreTxResult, error)
 
+	// AddCoOwner adds a co-owner to a store.
+	AddCoOwnerAccess(ctx context.Context, arg AddCoOwnerAccessParams) (StoreOwner, error)
+
 	// UpdateSellerOrderTx updates a order row, create a sale row if order is DELIVERED.
 	UpdateSellerOrderTx(ctx context.Context, arg UpdateSellerOrderParams) (GetOrderForSellerRow, error)
 

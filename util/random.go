@@ -7,9 +7,14 @@ import (
 	"time"
 )
 
-const alphabets = "abcdefghijklmnopqrstuvwxyz"
-
 const (
+	_ = iota // ignore the first value
+	FULLACCESS
+	PRODUCTINVENTORYACCESS
+	SALESACCESS
+	ORDERSACCESS
+	FINANCIALACCESS
+	alphabets  = "abcdefghijklmnopqrstuvwxyz"
 	STOREOWNER = "STORE-OWNER"
 	NORMALUSER = "NORMAL-USER"
 )
@@ -102,4 +107,14 @@ func CanChangeStatus(currentStatus, nextStatus string) bool {
 	default:
 		return false
 	}
+}
+
+// NumberExists checks if number exist in the slice
+func NumberExists(slice []int32, number int) bool {
+	for _, v := range slice {
+			if v == int32(number) {
+					return true
+			}
+	}
+	return false
 }

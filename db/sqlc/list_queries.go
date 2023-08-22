@@ -131,6 +131,7 @@ type ListSellerOrdersParams struct {
 	DeliveryStatus string
 	ItemName       string
 	SellerID       int64
+	StoreID        int64
 	Filters        pagination.Filters
 }
 
@@ -193,10 +194,11 @@ func (q *SQLTx) ListSellerOrders(ctx context.Context, arg ListSellerOrdersParams
     WHERE
         (%s)
         AND o.seller_id = $%d
+				AND o.store_id = $%d
     ORDER by o.%s %s, o.id ASC
-    LIMIT $%d OFFSET $%d`, whereClause, len(args)+1, arg.Filters.SortColumn(), arg.Filters.SortDirection(), len(args)+2, len(args)+3)
+    LIMIT $%d OFFSET $%d`, whereClause, len(args)+1, len(args)+2, arg.Filters.SortColumn(), arg.Filters.SortDirection(), len(args)+3, len(args)+4)
 
-	args = append(args, arg.SellerID, arg.Filters.Limit(), arg.Filters.Offset())
+	args = append(args, arg.SellerID, arg.StoreID, arg.Filters.Limit(), arg.Filters.Offset())
 
 	rows, err := q.db.QueryContext(ctx, stmt, args...)
 	if err != nil {

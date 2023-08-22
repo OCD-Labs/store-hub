@@ -27,11 +27,25 @@ WHERE
 GROUP BY 
   s.id;
 
--- name: GetStoreByOwner :many
-SELECT s.*
-FROM stores s
-JOIN store_owners so ON s.id = so.store_id
-WHERE so.user_id = sqlc.arg(user_id);
+-- name: ListUserStoresWithAccess :many
+SELECT 
+    s.id AS store_id,
+    s.name AS store_name,
+    s.description AS store_description,
+    s.profile_image_url AS store_image,
+    s.store_account_id,
+    s.is_verified,
+    s.category,
+    s.is_frozen,
+    s.created_at AS store_created_at,
+    so.access_levels AS user_access_levels
+FROM 
+    stores s
+JOIN 
+    store_owners so ON s.id = so.store_id
+WHERE 
+    so.user_id = sqlc.arg(user_id);
+
 
 
 -- name: UpdateStore :one

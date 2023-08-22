@@ -98,8 +98,8 @@ func (s *StoreHub) listStoreSales(w http.ResponseWriter, r *http.Request) {
 		"data": envelop{
 			"message": "found some sales",
 			"result": envelop{
-				"sales":    sales,
-				"metadata": pagination,
+				"sales":         sales,
+				"metadata":      pagination,
 				"store_metrics": storeMetrics,
 			},
 		},
@@ -180,23 +180,6 @@ func (s *StoreHub) listSalesOverview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// check ownership
-	_, err := s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
-		StoreID: pathVars.StoreID,
-		UserID:  authPayload.UserID,
-	})
-	if err != nil {
-		if err == sql.ErrNoRows {
-			s.errorResponse(w, r, http.StatusForbidden, "access to store denied")
-			log.Error().Err(err).Msg("error occurred")
-			return
-		}
-
-		s.errorResponse(w, r, http.StatusInternalServerError, "failed to list sales overview")
-		log.Error().Err(err).Msg("error occurred")
-		return
-	}
-
 	var reqQueryStr listSalesOverviewQueryStr
 	if err := s.shouldBindQuery(w, r, &reqQueryStr); err != nil {
 		return
@@ -213,14 +196,14 @@ func (s *StoreHub) listSalesOverview(w http.ResponseWriter, r *http.Request) {
 	}
 
 	arg := db.SalesOverviewParams{
-		ItemName: reqQueryStr.ItemName,
+		ItemName:     reqQueryStr.ItemName,
 		RevenueStart: reqQueryStr.RevenueStart,
-		RevenueEnd: reqQueryStr.RevenueEnd,
-		StoreID: pathVars.StoreID,
+		RevenueEnd:   reqQueryStr.RevenueEnd,
+		StoreID:      pathVars.StoreID,
 		Filters: pagination.Filters{
-			Page: reqQueryStr.Page,
-			PageSize: reqQueryStr.PageSize,
-			Sort: reqQueryStr.Sort,
+			Page:         reqQueryStr.Page,
+			PageSize:     reqQueryStr.PageSize,
+			Sort:         reqQueryStr.Sort,
 			SortSafelist: []string{"number_of_sales", "revenue", "-number_of_sales", "-revenue"},
 		},
 	}
@@ -239,7 +222,7 @@ func (s *StoreHub) listSalesOverview(w http.ResponseWriter, r *http.Request) {
 			"message": "found your sales overview",
 			"result": envelop{
 				"sales_overview": saleOverview,
-				"metadata": pagination,
+				"metadata":       pagination,
 			},
 		},
 	}, nil)

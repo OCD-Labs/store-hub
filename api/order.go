@@ -18,22 +18,30 @@ type createOrderRequestBody struct {
 	ItemID         int64  `json:"item_id" validate:"required,min=1"`
 	OrderQuantity  int32  `json:"order_quantity" validate:"required,min=1"`
 	SellerID       int64  `json:"seller_id" validate:"required,min=1"`
-	StoreID        int64  `json:"store_id" validate:"required,min=1"`
 	DeliveryFee    string `json:"delivery_fee" validate:"required"`
 	PaymentChannel string `json:"payment_channel" validate:"required,oneof=NEAR 'Debit Card' PayPal 'Credit Card'"`
 	PaymentMethod  string `json:"payment_method" validate:"required,oneof='Instant Pay' 'Pay on Delivery'"`
 }
 
-// createOrder maps to endpoint "POST /seller/orders"
+type createOrderPathVars struct {
+	StoreID int64 `path:"store_id" validate:"required,min=1"`
+}
+
+// createOrder maps to endpoint "POST /stores/{store_id}/orders"
 func (s *StoreHub) createOrder(w http.ResponseWriter, r *http.Request) {
 	var reqBody createOrderRequestBody
 	if err := s.shouldBindBody(w, r, &reqBody); err != nil {
 		return
 	}
 
+	var pathVar createOrderPathVars
+	if err := s.ShouldBindPathVars(w, r, &pathVar); err != nil {
+		return
+	}
+
 	supply_quantity, err := s.dbStore.CheckItemStoreMatch(r.Context(), db.CheckItemStoreMatchParams{
 		ItemID:  reqBody.ItemID,
-		StoreID: reqBody.StoreID,
+		StoreID: pathVar.StoreID,
 	})
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -48,24 +56,27 @@ func (s *StoreHub) createOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if supply_quantity < int64(reqBody.OrderQuantity) {
-		s.errorResponse(w, r, http.StatusForbidden, "failed to create orders")
+		s.errorResponse(w, r, http.StatusForbidden, "item is out of stock")
 		err = fmt.Errorf("order quantity %d is greater than supply %d", reqBody.OrderQuantity, supply_quantity)
 		log.Error().Err(err).Msg("error occurred")
 		return
 	}
 
-	_, err = s.dbStore.IsStoreOwner(r.Context(), db.IsStoreOwnerParams{
-		UserID:  reqBody.SellerID,
-		StoreID: reqBody.StoreID,
+	store_access, err := s.dbStore.GetUserAccessLevelsForStore(r.Context(), db.GetUserAccessLevelsForStoreParams{
+		StoreID: pathVar.StoreID,
+		UserID: reqBody.SellerID,
 	})
 	if err != nil {
 		if err == sql.ErrNoRows {
-			s.errorResponse(w, r, http.StatusNotFound, "user is not the owner of the store")
-			log.Error().Err(err).Msg("error occurred")
+			s.errorResponse(w, r, http.StatusForbidden, "Seller ID is not store owner")
 			return
 		}
-
-		s.errorResponse(w, r, http.StatusInternalServerError, "failed to create order")
+		s.errorResponse(w, r, http.StatusInternalServerError, "Error fetching access levels")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+	if !util.NumberExists(store_access, util.FULLACCESS) {
+		s.errorResponse(w, r, http.StatusForbidden, "wrong store owner")
 		return
 	}
 
@@ -76,7 +87,7 @@ func (s *StoreHub) createOrder(w http.ResponseWriter, r *http.Request) {
 		OrderQuantity:  reqBody.OrderQuantity,
 		BuyerID:        authPayload.UserID,
 		SellerID:       reqBody.SellerID,
-		StoreID:        reqBody.StoreID,
+		StoreID:        pathVar.StoreID,
 		DeliveryFee:    reqBody.DeliveryFee,
 		PaymentChannel: reqBody.PaymentChannel,
 		PaymentMethod:  reqBody.PaymentMethod,
@@ -118,7 +129,11 @@ type listSellerOrdersQueryStr struct {
 	Sort           string    `querystr:"sort"`
 }
 
-// listSellerOrders maps to endpoint "GET /seller/orders"
+type listSellerOrdersPathVars struct {
+	StoreID int64 `path:"store_id" validate:"required,min=1"`
+}
+
+// listSellerOrders maps to endpoint "GET /stores/{store_id}/orders"
 func (s *StoreHub) listSellerOrders(w http.ResponseWriter, r *http.Request) {
 	var reqQueryStr listSellerOrdersQueryStr
 	if err := s.shouldBindQuery(w, r, &reqQueryStr); err != nil {
@@ -135,12 +150,18 @@ func (s *StoreHub) listSellerOrders(w http.ResponseWriter, r *http.Request) {
 		reqQueryStr.Sort = "-id"
 	}
 
+	var pathVar listSellerOrdersPathVars
+	if err := s.ShouldBindPathVars(w, r, &pathVar); err != nil {
+		return
+	}
+
 	authPayload := s.contextGetToken(r)
 
 	// TODO: Add a proper range logic for createdAt search params
 	arg := db.ListSellerOrdersParams{
 		ItemName:       reqQueryStr.ItemName,
 		SellerID:       authPayload.UserID,
+		StoreID:        pathVar.StoreID,
 		CreatedAtStart: reqQueryStr.CreatedAtStart,
 		CreatedAtEnd:   reqQueryStr.CreatedAtEnd,
 		PaymentChannel: reqQueryStr.PaymentChannel,
@@ -174,9 +195,10 @@ func (s *StoreHub) listSellerOrders(w http.ResponseWriter, r *http.Request) {
 
 type getSellerOrderPathVars struct {
 	OrderID int64 `path:"order_id" validate:"required,min=1"`
+	StoreID int64 `path:"store_id" validate:"required,min=1"`
 }
 
-// getSellerOrder maps to endpoint "GET /seller/orders/{order_id}"
+// getSellerOrder maps to endpoint "GET /stores/{store_id}/orders/{order_id}"
 func (s *StoreHub) getSellerOrder(w http.ResponseWriter, r *http.Request) {
 	var pathVar getSellerOrderPathVars
 	if err := s.ShouldBindPathVars(w, r, &pathVar); err != nil {
@@ -188,6 +210,7 @@ func (s *StoreHub) getSellerOrder(w http.ResponseWriter, r *http.Request) {
 	order, err := s.dbStore.GetOrderForSeller(r.Context(), db.GetOrderForSellerParams{
 		SellerID: authPayload.UserID,
 		OrderID:  pathVar.OrderID,
+		StoreID:  pathVar.StoreID,
 	})
 	if err != nil {
 		switch {
@@ -220,9 +243,10 @@ type updateSellerOrderRequest struct {
 
 type updateSellerOrderPathVars struct {
 	OrderID int64 `path:"order_id" validate:"required,min=1"`
+	StoreID int64 `path:"store_id" validate:"required,min=1"`
 }
 
-// getSellerOrder maps to endpoint "PATCH /seller/orders/{order_id}"
+// getSellerOrder maps to endpoint "PATCH /stores/{store_id}/orders/{order_id}"
 func (s *StoreHub) updateSellerOrder(w http.ResponseWriter, r *http.Request) {
 	var pathVars updateSellerOrderPathVars
 	if err := s.ShouldBindPathVars(w, r, &pathVars); err != nil {
@@ -239,7 +263,12 @@ func (s *StoreHub) updateSellerOrder(w http.ResponseWriter, r *http.Request) {
 	arg := db.UpdateSellerOrderParams{
 		OrderID:  pathVars.OrderID,
 		SellerID: authPayload.UserID,
+		StoreID:  pathVars.StoreID,
 	}
+
+	fmt.Printf("pathVars.OrderID: %v\n", pathVars.OrderID)
+	fmt.Printf("authPayload.UserID: %v\n", authPayload.UserID)
+	fmt.Printf("pathVars.StoreID: %v\n", pathVars.StoreID)
 
 	if reqBody.DeliveryStatus != nil && *reqBody.DeliveryStatus != "" {
 		if !util.IsValidStatus(*reqBody.DeliveryStatus) {

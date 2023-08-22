@@ -35,7 +35,7 @@ func (s *StoreHub) listUserStores(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// db query
-	stores, err := s.dbStore.GetStoreByOwner(r.Context(), authPayload.UserID)
+	stores, err := s.dbStore.ListUserStoresWithAccess(r.Context(), authPayload.UserID)
 	if err != nil {
 		s.errorResponse(w, r, http.StatusInternalServerError, "failed to retrieve stores")
 		log.Error().Err(err).Msg("error occurred")
