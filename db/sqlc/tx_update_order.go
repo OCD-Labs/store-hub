@@ -14,12 +14,14 @@ func (dbTx SQLTx) UpdateSellerOrderTx(ctx context.Context, arg UpdateSellerOrder
 	sellerOrder, err = dbTx.GetOrderForSeller(ctx, GetOrderForSellerParams{
 		OrderID:  arg.OrderID,
 		SellerID: arg.SellerID,
+		StoreID: arg.StoreID,
 	})
 	if err != nil {
 		return sellerOrder, err
 	}
 
 	if sellerOrder.DeliveryStatus != arg.DeliveryStatus.String && util.CanChangeStatus(sellerOrder.DeliveryStatus, arg.DeliveryStatus.String) {
+
 		err = dbTx.execTx(ctx, func(q *Queries) error {
 			var o Order
 

@@ -42,7 +42,7 @@ JOIN
 JOIN
   users u ON o.buyer_id = u.id
 WHERE 
-  o.id = sqlc.arg(order_id) AND o.seller_id = sqlc.arg(seller_id);
+  o.id = sqlc.arg(order_id) AND o.seller_id = sqlc.arg(seller_id) AND o.store_id = sqlc.arg(store_id);
 
 -- name: UpdateSellerOrder :one
 UPDATE orders
@@ -51,5 +51,5 @@ SET
   delivery_status = COALESCE(sqlc.narg(delivery_status), delivery_status),
   expected_delivery_date = COALESCE(sqlc.narg(expected_delivery_date), expected_delivery_date)
 WHERE
-  id = sqlc.arg(order_id) AND seller_id = sqlc.arg(seller_id)
+  id = sqlc.arg(order_id) AND seller_id = sqlc.arg(seller_id) AND store_id = sqlc.arg(store_id)
 RETURNING *;

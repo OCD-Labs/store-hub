@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 
+	"github.com/OCD-Labs/store-hub/util"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -14,7 +15,7 @@ func (s *StoreHub) setupRoutes() http.Handler {
 
 	mux.HandlerFunc(http.MethodPost, "/api/v1/ping/:user_id/:store_id", s.healthcheck)
 
-	// store
+	// storefront
 	mux.HandlerFunc(http.MethodGet, "/api/v1/stores", http.HandlerFunc(s.discoverStores))
 	mux.HandlerFunc(http.MethodGet, "/api/v1/stores/:store_id/items", http.HandlerFunc(s.listStoreItems))
 	mux.HandlerFunc(http.MethodGet, "/api/v1/stores/:store_id/items/:item_id", http.HandlerFunc(s.getStoreItems))
@@ -22,26 +23,198 @@ func (s *StoreHub) setupRoutes() http.Handler {
 
 	// inventory
 	mux.Handler(http.MethodPost, "/api/v1/users/:user_id/stores", s.authenticate(http.HandlerFunc(s.createStore)))
-	mux.Handler(http.MethodPost, "/api/v1/users/:user_id/stores/:store_id/items", s.authenticate(http.HandlerFunc(s.addStoreItem)))
-	mux.Handler(http.MethodGet, "/api/v1/users/:user_id/stores/:store_id/items", s.authenticate(http.HandlerFunc(s.listOwnedStoreItems)))
-	mux.Handler(http.MethodPatch, "/api/v1/users/:user_id/stores/:store_id/items/:item_id", s.authenticate(http.HandlerFunc(s.updateStoreItems)))
-	mux.Handler(http.MethodPost, "/api/v1/users/:user_id/store/:store_id/owners", s.authenticate(http.HandlerFunc(s.addNewOwner)))
+	mux.Handler(
+		http.MethodPost,
+		"/api/v1/users/:user_id/stores/:store_id/items",
+		s.authenticate(
+			s.CheckAccessLevel(
+				util.FULLACCESS,
+				util.PRODUCTINVENTORYACCESS,
+			)(
+				http.HandlerFunc(s.addStoreItem),
+			),
+		),
+	)
+	mux.Handler(
+		http.MethodGet,
+		"/api/v1/users/:user_id/stores/:store_id/items",
+		s.authenticate(
+			s.CheckAccessLevel(
+				util.FULLACCESS,
+				util.PRODUCTINVENTORYACCESS,
+			)(
+				http.HandlerFunc(s.listOwnedStoreItems),
+			),
+		),
+	)
+	mux.Handler(
+		http.MethodPatch,
+		"/api/v1/users/:user_id/stores/:store_id/items/:item_id",
+		s.authenticate(
+			s.CheckAccessLevel(
+				util.FULLACCESS,
+				util.PRODUCTINVENTORYACCESS,
+			)(
+				http.HandlerFunc(s.updateStoreItems),
+			),
+		),
+	)
+	mux.Handler(
+		http.MethodPost,
+		"/api/v1/users/:user_id/store/:store_id/access",
+		s.authenticate(
+			s.CheckAccessLevel(
+				util.FULLACCESS,
+			)(
+				http.HandlerFunc(s.grantStoreAccess),
+			),
+		),
+	)
 	mux.Handler(http.MethodGet, "/api/v1/users/:user_id/stores", s.authenticate(http.HandlerFunc(s.listUserStores)))
-	mux.Handler(http.MethodDelete, "/api/v1/users/:user_id/stores/:store_id/items/:item_id", s.authenticate(http.HandlerFunc(s.deleteStoreItems)))
-	mux.Handler(http.MethodDelete, "/api/v1/users/:user_id/store/:store_id/owners", s.authenticate(http.HandlerFunc(s.deleteOwner)))
-	mux.Handler(http.MethodPatch, "/api/v1/users/:user_id/stores/:store_id", s.authenticate(http.HandlerFunc(s.updateStoreProfile)))
-	mux.Handler(http.MethodDelete, "/api/v1/users/:user_id/stores/:store_id", s.authenticate(http.HandlerFunc(s.deleteStore)))
+	mux.Handler(
+		http.MethodDelete,
+		"/api/v1/users/:user_id/stores/:store_id/items/:item_id",
+		s.authenticate(
+			s.CheckAccessLevel(
+				util.FULLACCESS,
+				util.PRODUCTINVENTORYACCESS,
+			)(
+				http.HandlerFunc(s.deleteStoreItems),
+			),
+		),
+	)
+	mux.Handler(
+		http.MethodPatch,
+		"/api/v1/users/:user_id/store/:store_id/revoke-access",
+		s.authenticate(
+			s.CheckAccessLevel(
+				util.FULLACCESS,
+			)(
+				http.HandlerFunc(s.revokeUserAccess),
+			),
+		),
+	)
+	mux.Handler(
+		http.MethodPatch,
+		"/api/v1/users/:user_id/store/:store_id/add-access",
+		s.authenticate(
+			s.CheckAccessLevel(
+				util.FULLACCESS,
+			)(
+				http.HandlerFunc(s.addUserAccess),
+			),
+		),
+	)
+	mux.Handler(
+		http.MethodDelete,
+		"/api/v1/users/:user_id/store/:store_id/access",
+		s.authenticate(
+			s.CheckAccessLevel(
+				util.FULLACCESS,
+			)(
+				http.HandlerFunc(s.revokeAllUserAccess),
+			),
+		),
+	)
+	mux.Handler(
+		http.MethodPatch,
+		"/api/v1/users/:user_id/stores/:store_id",
+		s.authenticate(
+			s.CheckAccessLevel(
+				util.FULLACCESS,
+			)(
+				http.HandlerFunc(s.updateStoreProfile),
+			),
+		),
+	)
+	mux.Handler(
+		http.MethodDelete,
+		"/api/v1/users/:user_id/stores/:store_id",
+		s.authenticate(
+			s.CheckAccessLevel(
+				util.FULLACCESS,
+			)(
+				http.HandlerFunc(s.deleteStore),
+			),
+		),
+	)
 
 	// orders
-	mux.Handler(http.MethodPost, "/api/v1/seller/orders", s.authenticate(http.HandlerFunc(s.createOrder)))
-	mux.Handler(http.MethodGet, "/api/v1/seller/orders", s.authenticate(http.HandlerFunc(s.listSellerOrders)))
-	mux.Handler(http.MethodGet, "/api/v1/seller/orders/:order_id", s.authenticate(http.HandlerFunc(s.getSellerOrder)))
-	mux.Handler(http.MethodPatch, "/api/v1/seller/orders/:order_id", s.authenticate(http.HandlerFunc(s.updateSellerOrder)))
+	mux.Handler(http.MethodPost, "/api/v1/stores/:store_id/orders", s.authenticate(http.HandlerFunc(s.createOrder)))
+	mux.Handler(
+		http.MethodGet,
+		"/api/v1/stores/:store_id/orders",
+		s.authenticate(
+			s.CheckAccessLevel(
+				util.FULLACCESS,
+				util.ORDERSACCESS,
+			)(
+				http.HandlerFunc(s.listSellerOrders),
+			),
+		),
+	)
+	mux.Handler(
+		http.MethodGet,
+		"/api/v1/stores/:store_id/orders/:order_id",
+		s.authenticate(
+			s.CheckAccessLevel(
+				util.FULLACCESS,
+				util.ORDERSACCESS,
+			)(
+				http.HandlerFunc(s.getSellerOrder),
+			),
+		),
+	)
+	mux.Handler(
+		http.MethodPatch,
+		"/api/v1/stores/:store_id/orders/:order_id",
+		s.authenticate(
+			s.CheckAccessLevel(
+				util.FULLACCESS,
+				util.ORDERSACCESS,
+			)(
+				http.HandlerFunc(s.updateSellerOrder),
+			),
+		),
+	)
 
 	// sales
-	mux.Handler(http.MethodGet, "/api/v1/users/:user_id/stores/:store_id/sales", s.authenticate(http.HandlerFunc(s.listStoreSales)))
-	mux.Handler(http.MethodGet, "/api/v1/users/:user_id/stores/:store_id/sales/:sale_id", s.authenticate(http.HandlerFunc(s.getSale)))
-	mux.Handler(http.MethodGet, "/api/v1/users/:user_id/stores/:store_id/sales-overview", s.authenticate(http.HandlerFunc(s.listSalesOverview)))
+	mux.Handler(
+		http.MethodGet,
+		"/api/v1/users/:user_id/stores/:store_id/sales",
+		s.authenticate(
+			s.CheckAccessLevel(
+				util.FULLACCESS,
+				util.SALESACCESS,
+			)(
+				http.HandlerFunc(s.listStoreSales),
+			),
+		),
+	)
+	mux.Handler(
+		http.MethodGet,
+		"/api/v1/users/:user_id/stores/:store_id/sales/:sale_id",
+		s.authenticate(
+			s.CheckAccessLevel(
+				util.FULLACCESS,
+				util.SALESACCESS,
+			)(
+				http.HandlerFunc(s.getSale),
+			),
+		),
+	)
+	mux.Handler(
+		http.MethodGet,
+		"/api/v1/users/:user_id/stores/:store_id/sales-overview",
+		s.authenticate(
+			s.CheckAccessLevel(
+				util.FULLACCESS,
+				util.SALESACCESS,
+			)(
+				http.HandlerFunc(s.listSalesOverview),
+			),
+		),
+	)
 
 	// user
 	mux.HandlerFunc(http.MethodPost, "/api/v1/users", s.createUser)

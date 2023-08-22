@@ -355,7 +355,7 @@ paths:
             $ref: "#/definitions/ErrorResponse"
       security:
         - Bearer: []
-  /users/{user_id}/store/{store_id}/owners:
+  /users/{user_id}/store/{store_id}/access:
     post:
       summary: Add a new store owner
       parameters:
@@ -384,6 +384,10 @@ paths:
                 type: string
                 minLength: 2
                 maxLength: 64
+              new_access_level:
+                type: integer
+                minLength: 1
+                maxLength: 5
       responses:
         201:
           description: Created
@@ -400,7 +404,7 @@ paths:
                   result:
                     type: object
                     properties:
-                      owner:
+                      store_owner:
                         $ref: '#/definitions/storeOwner'
         400:
           description: Bad Request
@@ -414,6 +418,10 @@ paths:
           description: Forbidden
           schema:
             $ref: "#/definitions/ErrorResponse"
+        404:
+          description: Not Found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
         409:
           description: Conflict
           schema:
@@ -425,7 +433,7 @@ paths:
       security:
         - Bearer: []
     delete:
-      summary: Remove a user from store ownership
+      summary: Revoke all access a user has on a store
       parameters:
         - in: path
           name: user_id
@@ -457,16 +465,6 @@ paths:
       responses:
         204:
           description: No Content
-          schema:
-            type: object
-            properties:
-              status:
-                type: string
-              data:
-                type: object
-                properties:
-                  message:
-                    type: string
         400:
           description: Bad Request
           schema:
@@ -477,6 +475,156 @@ paths:
             $ref: "#/definitions/ErrorResponse"
         403:
           description: Forbidden
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        404:
+          description: Not Found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+  /users/{user_id}/store/{store_id}/revoke-access:
+    patch:
+      summary: Revoke user particular access to a store.
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The ID of the user
+        - in: path
+          name: store_id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The ID of the store
+        - name: requestBody
+          in: body
+          description: New Owner details
+          required: true
+          schema:
+            type: object
+            properties:
+              account_id:
+                type: string
+                minLength: 2
+                maxLength: 64
+              access_level:
+                type: integer
+                minLength: 1
+                maxLength: 5
+      responses:
+        201:
+          description: Created
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      store_owner:
+                        $ref: '#/definitions/storeOwner'
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        403:
+          description: Forbidden
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        404:
+          description: Not Found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+  /users/{user_id}/store/{store_id}/add-access:
+    patch:
+      summary: Grant user aother access to a store.
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The ID of the user
+        - in: path
+          name: store_id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The ID of the store
+        - name: requestBody
+          in: body
+          description: New Owner details
+          required: true
+          schema:
+            type: object
+            properties:
+              account_id:
+                type: string
+                minLength: 2
+                maxLength: 64
+              new_access_level:
+                type: integer
+                minLength: 1
+                maxLength: 5
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      store_owner:
+                        $ref: '#/definitions/storeOwner'
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        403:
+          description: Forbidden
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        404:
+          description: Not Found
           schema:
             $ref: "#/definitions/ErrorResponse"
         500:
@@ -916,10 +1064,16 @@ paths:
             $ref: "#/definitions/ErrorResponse"
       security:
         - Bearer: []
-  /seller/orders:
+  /stores/{store_id}/orders:
     post:
       summary: Create a new order
       parameters:
+        - in: path
+          name: store_id
+          description: The store Id to create a store for
+          schema:
+            type: integer
+          required: true
         - name: requestBody
           in: body
           description: Details of the order to be created.
@@ -965,6 +1119,12 @@ paths:
     get:
       summary: List seller orders
       parameters:
+        - in: path
+          name: store_id
+          description: The store Id to fetch its orders.
+          schema:
+            type: integer
+          required: true
         - in: query
           name: item_name
           description: Item name to search.
@@ -1045,10 +1205,16 @@ paths:
             $ref: "#/definitions/ErrorResponse"
       security:
         - Bearer: []
-  /seller/orders/{order_id}:
+  /stores/{store_id}/orders/{order_id}:
     get:
       summary: Get seller order by ID
       parameters:
+        - in: path
+          name: store_id
+          description: The store Id to fetch the order from.
+          schema:
+            type: integer
+          required: true
         - in: path
           name: order_id
           schema:
@@ -1085,6 +1251,12 @@ paths:
     patch:
       summary: Update seller order by ID
       parameters:
+        - in: path
+          name: store_id
+          description: The store Id the order belongs.
+          schema:
+            type: integer
+          required: true
         - in: path
           name: order_id
           description: The order ID
@@ -1460,6 +1632,10 @@ definitions:
       created_at:
         type: string
         format: date-time
+      user_access_levels:
+        type: array
+        items:
+          type: integer
 
   storeOwner:
     type: object
@@ -1676,9 +1852,6 @@ definitions:
         type: integer
         minimum: 1
       seller_id:
-        type: integer
-        minimum: 1
-      store_id:
         type: integer
         minimum: 1
       delivery_fee:

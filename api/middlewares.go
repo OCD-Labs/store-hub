@@ -2,13 +2,17 @@ package api
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
+	db "github.com/OCD-Labs/store-hub/db/sqlc"
 	"github.com/OCD-Labs/store-hub/token"
+	"github.com/julienschmidt/httprouter"
 	"github.com/rs/zerolog/log"
 )
 
@@ -179,4 +183,62 @@ func (s *StoreHub) recoverPanic(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (s *StoreHub) CheckAccessLevel(requiredAccessLevels ...int32) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Get user from context
+			authPayload := s.contextGetToken(r)
+
+			// Get storeID from URL parameter using httprouter
+			params := httprouter.ParamsFromContext(r.Context())
+			storeIDStr := params.ByName("store_id")
+
+			// Convert storeID string to integer
+			storeID, err := strconv.Atoi(storeIDStr)
+			if err != nil {
+				s.errorResponse(w, r, http.StatusBadRequest, "Invalid store ID")
+				return
+			}
+
+			// Check user's access levels for the store
+			accessLevels, err := s.dbStore.GetUserAccessLevelsForStore(r.Context(), db.GetUserAccessLevelsForStoreParams{
+				UserID:  authPayload.UserID,
+				StoreID: int64(storeID),
+			})
+			if err != nil {
+				// Check if the error is a "not found" error
+				if err == sql.ErrNoRows {
+					s.errorResponse(w, r, http.StatusForbidden, "User does not have access to this store")
+					return
+				}
+				// Handle other errors as internal server errors
+				s.errorResponse(w, r, http.StatusInternalServerError, "Error fetching access levels")
+				log.Error().Err(err).Msg("error occurred")
+				return
+			}
+
+			// Check if user has any of the required access levels
+			hasAccess := false
+			for _, requiredAccess := range requiredAccessLevels {
+				for _, userAccess := range accessLevels {
+					if userAccess == requiredAccess {
+						hasAccess = true
+						break
+					}
+				}
+				if hasAccess {
+					break
+				}
+			}
+
+			if !hasAccess {
+				s.errorResponse(w, r, http.StatusUnauthorized, "Unauthorized")
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
 }

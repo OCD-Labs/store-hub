@@ -32,10 +32,11 @@ func (store *SQLTx) CreateStoreTx(ctx context.Context, arg CreateStoreTxParams) 
 			return err
 		}
 
-		owner, err := q.CreateStoreOwner(ctx, CreateStoreOwnerParams{
-			UserID:      arg.OwnerID,
-			StoreID:     result.Store.ID,
-			AccessLevel: 1,
+		owner, err := q.AddCoOwnerAccess(ctx, AddCoOwnerAccessParams{
+			UserID:       arg.OwnerID,
+			StoreID:      result.Store.ID,
+			AccessLevels: []int32{1},
+			IsPrimary:    true,
 		})
 		if err != nil {
 			return err
