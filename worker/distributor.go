@@ -14,6 +14,12 @@ type TaskDistributor interface {
 		payload *PayloadSendVerifyEmail,
 		opts ...asynq.Option,
 	) error
+
+	DistributeTaskSendAccessInvitation(
+		ctx context.Context,
+		payload *PayloadSendAccessInvitation,
+		opts ...asynq.Option,
+	) error
 }
 
 // RedisTaskDistributor defines and wrap a asynq client

@@ -12,12 +12,12 @@ INSERT INTO store_owners (
 DELETE FROM store_owners
 WHERE user_id = $1 AND store_id = $2;
 
--- name: RevokeAccess :one
+-- name: RevokeAccess :exec
 UPDATE store_owners 
-SET access_levels = ARRAY_REMOVE(access_levels, sqlc.arg(access_level_to_revoke))
+SET access_levels = ARRAY_REMOVE(access_levels, sqlc.arg(access_level_to_revoke)::int)
 WHERE 
   user_id = sqlc.arg(user_id) AND store_id = sqlc.arg(store_id)
-RETURNING *;
+;
 
 -- name: GetUserAccessLevelsForStore :one
 SELECT access_levels
@@ -32,3 +32,8 @@ SET
 WHERE 
   store_id = sqlc.arg(store_id) AND user_id = sqlc.arg(user_id)
 RETURNING *;
+
+-- name: GetStoreOwnersByStoreID :many
+SELECT *
+FROM store_owners
+WHERE store_id = sqlc.arg(store_id);

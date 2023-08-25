@@ -127,7 +127,7 @@ func (s *StoreHub) bindValidation(
 			})
 		}
 
-		s.errorResponse(w, r, http.StatusBadRequest, validationErrors)
+		s.logAndRespond(w, r, http.StatusBadRequest, validationErrors, err)
 
 		return err
 	}
@@ -258,4 +258,24 @@ func (s *StoreHub) errorResponse(
 			Msg("failed to write response body")
 		w.WriteHeader(500)
 	}
+}
+
+// logAndRespond logs the error and sends the response.
+func (s *StoreHub) logAndRespond(
+	w http.ResponseWriter,
+	r *http.Request,
+	statusCode int,
+	message interface{},
+	err error,
+) {
+	// Log the error
+	if err != nil {
+		log.Error().Err(err).
+			Str("request_method", r.Method).
+			Str("request_url", r.URL.String()).
+			Msg("Error processing request")
+	}
+
+	// Send the response
+	s.errorResponse(w, r, statusCode, message)
 }

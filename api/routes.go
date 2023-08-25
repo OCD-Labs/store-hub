@@ -60,63 +60,6 @@ func (s *StoreHub) setupRoutes() http.Handler {
 		),
 	)
 	mux.Handler(
-		http.MethodPost,
-		"/api/v1/users/:user_id/store/:store_id/access",
-		s.authenticate(
-			s.CheckAccessLevel(
-				util.FULLACCESS,
-			)(
-				http.HandlerFunc(s.grantStoreAccess),
-			),
-		),
-	)
-	mux.Handler(http.MethodGet, "/api/v1/users/:user_id/stores", s.authenticate(http.HandlerFunc(s.listUserStores)))
-	mux.Handler(
-		http.MethodDelete,
-		"/api/v1/users/:user_id/stores/:store_id/items/:item_id",
-		s.authenticate(
-			s.CheckAccessLevel(
-				util.FULLACCESS,
-				util.PRODUCTINVENTORYACCESS,
-			)(
-				http.HandlerFunc(s.deleteStoreItems),
-			),
-		),
-	)
-	mux.Handler(
-		http.MethodPatch,
-		"/api/v1/users/:user_id/store/:store_id/revoke-access",
-		s.authenticate(
-			s.CheckAccessLevel(
-				util.FULLACCESS,
-			)(
-				http.HandlerFunc(s.revokeUserAccess),
-			),
-		),
-	)
-	mux.Handler(
-		http.MethodPatch,
-		"/api/v1/users/:user_id/store/:store_id/add-access",
-		s.authenticate(
-			s.CheckAccessLevel(
-				util.FULLACCESS,
-			)(
-				http.HandlerFunc(s.addUserAccess),
-			),
-		),
-	)
-	mux.Handler(
-		http.MethodDelete,
-		"/api/v1/users/:user_id/store/:store_id/access",
-		s.authenticate(
-			s.CheckAccessLevel(
-				util.FULLACCESS,
-			)(
-				http.HandlerFunc(s.revokeAllUserAccess),
-			),
-		),
-	)
-	mux.Handler(
 		http.MethodPatch,
 		"/api/v1/users/:user_id/stores/:store_id",
 		s.authenticate(
@@ -135,6 +78,59 @@ func (s *StoreHub) setupRoutes() http.Handler {
 				util.FULLACCESS,
 			)(
 				http.HandlerFunc(s.deleteStore),
+			),
+		),
+	)
+	mux.Handler(http.MethodGet, "/api/v1/users/:user_id/stores", s.authenticate(http.HandlerFunc(s.listUserStores)))
+	mux.Handler(
+		http.MethodDelete,
+		"/api/v1/users/:user_id/stores/:store_id/items/:item_id",
+		s.authenticate(
+			s.CheckAccessLevel(
+				util.FULLACCESS,
+				util.PRODUCTINVENTORYACCESS,
+			)(
+				http.HandlerFunc(s.deleteStoreItems),
+			),
+		),
+	)
+	mux.Handler(
+		http.MethodPost,
+		"/api/v1/inventory/stores/:store_id/send-access-invitation",
+		s.authenticate(
+			s.CheckAccessLevel(
+				util.FULLACCESS,
+			)(
+				http.HandlerFunc(s.sendAccessInvitation),
+			),
+		),
+	)
+	mux.Handler(
+		http.MethodPost,
+		"/api/v1/inventory/stores/:store_id/accept-access-invitation",
+		s.authenticate(
+			http.HandlerFunc(s.grantStoreAccess),
+		),
+	)
+	mux.Handler(
+		http.MethodPatch,
+		"/api/v1/inventory/stores/:store_id/revoke-access",
+		s.authenticate(
+			s.CheckAccessLevel(
+				util.FULLACCESS,
+			)(
+				http.HandlerFunc(s.revokeUserAccess),
+			),
+		),
+	)
+	mux.Handler(
+		http.MethodDelete,
+		"/api/v1/inventory/stores/:store_id/revoke-all-access",
+		s.authenticate(
+			s.CheckAccessLevel(
+				util.FULLACCESS,
+			)(
+				http.HandlerFunc(s.revokeAllUserAccess),
 			),
 		),
 	)

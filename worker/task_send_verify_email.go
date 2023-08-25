@@ -65,10 +65,10 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(
 
 	user, err := processor.dbStore.GetUserByID(ctx, payload.UserID)
 	if err != nil {
-		return fmt.Errorf("failed to get error: %w", err)
+		return fmt.Errorf("failed to get user: %w", err)
 	}
 
-	token, tokenpayload, err := processor.tokenMaker.CreateToken(user.ID, user.AccountID, 25*time.Minute)
+	token, tokenpayload, err := processor.tokenMaker.CreateToken(user.ID, user.AccountID, 25*time.Minute, nil)
 	if err != nil {
 		return err
 	}
@@ -94,7 +94,7 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(
 	}
 
 	verifyURL := fmt.Sprintf(
-		"https://%s/api/v1/verify_email?email=%s&secret_code=%s",
+		"https://%s/api/v1/verify-email?email=%s&secret_code=%s",
 		processor.configs.APIHost,
 		user.Email,
 		verifyEmailSession.Token,

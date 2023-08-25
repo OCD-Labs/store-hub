@@ -25,7 +25,7 @@ migrateup:
 	migrate -path db/migrations -database "$(DB_URL)" -verbose up
 
 migrateup1:
-	migrate -path db/migrations -database "$(DB_URL)" -verbose up 2
+	migrate -path db/migrations -database "$(DB_URL)" -verbose up 1
 
 migratedown:
 	migrate -path db/migrations -database "$(DB_URL)" -verbose down

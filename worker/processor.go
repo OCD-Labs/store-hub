@@ -27,6 +27,9 @@ type TaskProcessor interface {
 
 	// ProcessTaskSendVerifyEmail processes a TaskSendVerifyEmail task.
 	ProcessTaskSendVerifyEmail(context.Context, *asynq.Task) error
+
+	// ProcessTaskSendVerifyEmail processes a TaskSendAccessInvitationEmail task.
+	ProcessTaskSendAccessInvitation(ctx context.Context, task *asynq.Task) error
 }
 
 type RedisTaskProcessor struct {
@@ -75,6 +78,7 @@ func NewRedisTaskProcessor(
 func (processor *RedisTaskProcessor) Start() error {
 	mux := asynq.NewServeMux()
 	mux.HandleFunc(TaskSendVerifyEmail, processor.ProcessTaskSendVerifyEmail)
+	mux.HandleFunc(TaskSendAccessInvitationEmail, processor.ProcessTaskSendAccessInvitation)
 	// mux.HandleFunc(TaskSendResetPasswordEmail, processor.ProcessTaskSendResetPasswordEmail)
 	return processor.server.Start(mux)
 }
