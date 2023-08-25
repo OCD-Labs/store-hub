@@ -64,7 +64,7 @@ func (s *StoreHub) createOrder(w http.ResponseWriter, r *http.Request) {
 
 	store_access, err := s.dbStore.GetUserAccessLevelsForStore(r.Context(), db.GetUserAccessLevelsForStoreParams{
 		StoreID: pathVar.StoreID,
-		UserID: reqBody.SellerID,
+		UserID:  reqBody.SellerID,
 	})
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -265,10 +265,6 @@ func (s *StoreHub) updateSellerOrder(w http.ResponseWriter, r *http.Request) {
 		SellerID: authPayload.UserID,
 		StoreID:  pathVars.StoreID,
 	}
-
-	fmt.Printf("pathVars.OrderID: %v\n", pathVars.OrderID)
-	fmt.Printf("authPayload.UserID: %v\n", authPayload.UserID)
-	fmt.Printf("pathVars.StoreID: %v\n", pathVars.StoreID)
 
 	if reqBody.DeliveryStatus != nil && *reqBody.DeliveryStatus != "" {
 		if !util.IsValidStatus(*reqBody.DeliveryStatus) {

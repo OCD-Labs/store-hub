@@ -25,6 +25,12 @@ type StoreTx interface {
 	// CreateStoreTx creates a store and its ownership data.
 	CreateStoreTx(ctx context.Context, arg CreateStoreTxParams) (CreateStoreTxResult, error)
 
+	// AddCoOwnerAccessTx creates/update a user's access for a store.
+	AddCoOwnerAccessTx(ctx context.Context, arg AddCoOwnerAccessTxParams) (StoreOwner, error)
+
+	// RevokeAccessTx deletes all user's access to a store.
+	RevokeAccessTx(ctx context.Context, arg RevokeAccessTxParams) ([]StoreOwner, error)
+
 	// AddCoOwner adds a co-owner to a store.
 	AddCoOwnerAccess(ctx context.Context, arg AddCoOwnerAccessParams) (StoreOwner, error)
 

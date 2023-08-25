@@ -14,7 +14,7 @@ func (dbTx SQLTx) UpdateSellerOrderTx(ctx context.Context, arg UpdateSellerOrder
 	sellerOrder, err = dbTx.GetOrderForSeller(ctx, GetOrderForSellerParams{
 		OrderID:  arg.OrderID,
 		SellerID: arg.SellerID,
-		StoreID: arg.StoreID,
+		StoreID:  arg.StoreID,
 	})
 	if err != nil {
 		return sellerOrder, err

@@ -158,7 +158,7 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// access token
-	token, _, err := s.tokenMaker.CreateToken(result.User.ID, reqBody.AccountID, 24*time.Hour)
+	token, _, err := s.tokenMaker.CreateToken(result.User.ID, reqBody.AccountID, 24*time.Hour, nil)
 	if err != nil {
 		s.errorResponse(w, r, http.StatusInternalServerError, "failed to generate access token")
 		log.Error().Err(err).Msg("error occurred")
@@ -231,7 +231,7 @@ func (s *StoreHub) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, _, err := s.tokenMaker.CreateToken(user.ID, user.AccountID, 24*time.Hour)
+	token, _, err := s.tokenMaker.CreateToken(user.ID, user.AccountID, 24*time.Hour, nil)
 	if err != nil {
 		s.errorResponse(w, r, http.StatusInternalServerError, "failed to generate access token")
 		log.Error().Err(err).Msg("error occurred")
@@ -254,10 +254,7 @@ func (s *StoreHub) login(w http.ResponseWriter, r *http.Request) {
 func (s *StoreHub) logout(w http.ResponseWriter, r *http.Request) {
 	authPayload := s.contextGetToken(r)
 
-	expiredAt := authPayload.ExpiredAt
-	duration := time.Until(expiredAt)
-
-	err := s.cache.BlacklistSession(r.Context(), authPayload.ID.String(), duration)
+	err := s.cache.BlacklistSession(r.Context(), authPayload.ID.String(), time.Until(authPayload.ExpiredAt))
 	if err != nil {
 		s.errorResponse(w, r, http.StatusInternalServerError, "failed to blacklist access token")
 		log.Error().Err(err).Msg("error occurred")

@@ -112,9 +112,9 @@ func CanChangeStatus(currentStatus, nextStatus string) bool {
 // NumberExists checks if number exist in the slice
 func NumberExists(slice []int32, number int) bool {
 	for _, v := range slice {
-			if v == int32(number) {
-					return true
-			}
+		if v == int32(number) {
+			return true
+		}
 	}
 	return false
 }

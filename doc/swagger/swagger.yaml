@@ -26,7 +26,6 @@ paths:
       parameters:
         - name: id
           in: path
-          description: User ID
           required: true
           type: integer
           minimum: 1
@@ -355,222 +354,10 @@ paths:
             $ref: "#/definitions/ErrorResponse"
       security:
         - Bearer: []
-  /users/{user_id}/store/{store_id}/access:
+  /inventory/stores/{store_id}/send-access-invitation:
     post:
-      summary: Add a new store owner
+      summary: Send access invitation for a store to a potential co-owner
       parameters:
-        - in: path
-          name: user_id
-          required: true
-          schema:
-            type: integer
-            minimum: 1
-          description: The ID of the user
-        - in: path
-          name: store_id
-          required: true
-          schema:
-            type: integer
-            minimum: 1
-          description: The ID of the store
-        - name: requestBody
-          in: body
-          description: New Owner details
-          required: true
-          schema:
-            type: object
-            properties:
-              account_id:
-                type: string
-                minLength: 2
-                maxLength: 64
-              new_access_level:
-                type: integer
-                minLength: 1
-                maxLength: 5
-      responses:
-        201:
-          description: Created
-          schema:
-            type: object
-            properties:
-              status:
-                type: string
-              data:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  result:
-                    type: object
-                    properties:
-                      store_owner:
-                        $ref: '#/definitions/storeOwner'
-        400:
-          description: Bad Request
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        401:
-          description: Unauthorized
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        403:
-          description: Forbidden
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        404:
-          description: Not Found
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        409:
-          description: Conflict
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        500:
-          description: Internal Server Error
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-      security:
-        - Bearer: []
-    delete:
-      summary: Revoke all access a user has on a store
-      parameters:
-        - in: path
-          name: user_id
-          required: true
-          schema:
-            type: integer
-            minimum: 1
-          description: The ID of the user
-        - in: path
-          name: store_id
-          required: true
-          schema:
-            type: integer
-            minimum: 1
-          description: The ID of the store
-        - name: requestBody
-          in: body
-          description: Store details
-          required: true
-          schema:
-            type: object
-            properties:
-              account_id:
-                type: string
-                minLength: 2
-                maxLength: 64
-            required:
-              - account_id
-      responses:
-        204:
-          description: No Content
-        400:
-          description: Bad Request
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        401:
-          description: Unauthorized
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        403:
-          description: Forbidden
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        404:
-          description: Not Found
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        500:
-          description: Internal Server Error
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-      security:
-        - Bearer: []
-  /users/{user_id}/store/{store_id}/revoke-access:
-    patch:
-      summary: Revoke user particular access to a store.
-      parameters:
-        - in: path
-          name: user_id
-          required: true
-          schema:
-            type: integer
-            minimum: 1
-          description: The ID of the user
-        - in: path
-          name: store_id
-          required: true
-          schema:
-            type: integer
-            minimum: 1
-          description: The ID of the store
-        - name: requestBody
-          in: body
-          description: New Owner details
-          required: true
-          schema:
-            type: object
-            properties:
-              account_id:
-                type: string
-                minLength: 2
-                maxLength: 64
-              access_level:
-                type: integer
-                minLength: 1
-                maxLength: 5
-      responses:
-        201:
-          description: Created
-          schema:
-            type: object
-            properties:
-              status:
-                type: string
-              data:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  result:
-                    type: object
-                    properties:
-                      store_owner:
-                        $ref: '#/definitions/storeOwner'
-        400:
-          description: Bad Request
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        401:
-          description: Unauthorized
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        403:
-          description: Forbidden
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        404:
-          description: Not Found
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        500:
-          description: Internal Server Error
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-      security:
-        - Bearer: []
-  /users/{user_id}/store/{store_id}/add-access:
-    patch:
-      summary: Grant user aother access to a store.
-      parameters:
-        - in: path
-          name: user_id
-          required: true
-          schema:
-            type: integer
-            minimum: 1
-          description: The ID of the user
         - in: path
           name: store_id
           required: true
@@ -606,11 +393,197 @@ paths:
                 properties:
                   message:
                     type: string
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        403:
+          description: Forbidden
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        404:
+          description: Not Found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+  /inventory/stores/{store_id}/accept-access-invitation:
+    post:
+      summary: Accept access invitation to co-owner a store
+      parameters:
+        - in: path
+          name: store_id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The ID of the store
+        - name: sth_code
+          in: query
+          description: secret token
+          required: true
+          schema:
+            type: string
+      responses:
+        201:
+          description: Created
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
                   result:
                     type: object
                     properties:
-                      store_owner:
+                      co_owner_access:
                         $ref: '#/definitions/storeOwner'
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        404:
+          description: Not Found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        409:
+          description: Conflict
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+  /inventory/stores/{store_id}/revoke-access:
+    patch:
+      summary: Revoke user particular access to a store.
+      parameters:
+        - in: path
+          name: store_id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The ID of the store
+        - name: requestBody
+          in: body
+          description: New Owner details
+          required: true
+          schema:
+            type: object
+            properties:
+              account_id:
+                type: string
+                minLength: 2
+                maxLength: 64
+              access_level:
+                type: integer
+                minLength: 1
+                maxLength: 5
+      responses:
+        201:
+          description: OK
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      store_ownes:
+                        type: array
+                        items:
+                          $ref: '#/definitions/storeOwner'
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        403:
+          description: Forbidden
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        404:
+          description: Not Found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+  /inventory/stores/{store_id}/revoke-all-access:
+    delete:
+      summary: Revoke all access a user has on a store
+      parameters:
+        - in: path
+          name: store_id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The ID of the store
+        - name: requestBody
+          in: body
+          description: Store details
+          required: true
+          schema:
+            type: object
+            properties:
+              account_id:
+                type: string
+                minLength: 2
+                maxLength: 64
+            required:
+              - account_id
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      store_ownes:
+                        type: array
+                        items:
+                          $ref: '#/definitions/storeOwner'
         400:
           description: Bad Request
           schema:

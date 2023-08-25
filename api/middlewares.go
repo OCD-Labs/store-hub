@@ -118,7 +118,6 @@ func (s *StoreHub) authenticate(next http.Handler) http.Handler {
 			case errors.Is(err, token.ErrExpiredToken):
 				s.errorResponse(w, r, http.StatusBadRequest, token.ErrExpiredToken.Error())
 			case errors.Is(err, token.ErrInvalidToken):
-				fmt.Println(authHeader)
 				s.errorResponse(w, r, http.StatusBadRequest, token.ErrInvalidToken.Error())
 			default:
 				s.errorResponse(w, r, http.StatusInternalServerError, "failed to verify secret code")

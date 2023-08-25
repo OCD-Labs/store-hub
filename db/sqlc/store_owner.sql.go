@@ -75,6 +75,41 @@ func (q *Queries) AddToCoOwnerAccess(ctx context.Context, arg AddToCoOwnerAccess
 	return i, err
 }
 
+const getStoreOwnersByStoreID = `-- name: GetStoreOwnersByStoreID :many
+SELECT user_id, store_id, added_at, is_primary, access_levels
+FROM store_owners
+WHERE store_id = $1
+`
+
+func (q *Queries) GetStoreOwnersByStoreID(ctx context.Context, storeID int64) ([]StoreOwner, error) {
+	rows, err := q.db.QueryContext(ctx, getStoreOwnersByStoreID, storeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []StoreOwner{}
+	for rows.Next() {
+		var i StoreOwner
+		if err := rows.Scan(
+			&i.UserID,
+			&i.StoreID,
+			&i.AddedAt,
+			&i.IsPrimary,
+			pq.Array(&i.AccessLevels),
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUserAccessLevelsForStore = `-- name: GetUserAccessLevelsForStore :one
 SELECT access_levels
 FROM store_owners
@@ -94,31 +129,22 @@ func (q *Queries) GetUserAccessLevelsForStore(ctx context.Context, arg GetUserAc
 	return access_levels, err
 }
 
-const revokeAccess = `-- name: RevokeAccess :one
+const revokeAccess = `-- name: RevokeAccess :exec
 UPDATE store_owners 
-SET access_levels = ARRAY_REMOVE(access_levels, $1)
+SET access_levels = ARRAY_REMOVE(access_levels, $1::int)
 WHERE 
   user_id = $2 AND store_id = $3
-RETURNING user_id, store_id, added_at, is_primary, access_levels
 `
 
 type RevokeAccessParams struct {
-	AccessLevelToRevoke interface{} `json:"access_level_to_revoke"`
-	UserID              int64       `json:"user_id"`
-	StoreID             int64       `json:"store_id"`
+	AccessLevelToRevoke int32 `json:"access_level_to_revoke"`
+	UserID              int64 `json:"user_id"`
+	StoreID             int64 `json:"store_id"`
 }
 
-func (q *Queries) RevokeAccess(ctx context.Context, arg RevokeAccessParams) (StoreOwner, error) {
-	row := q.db.QueryRowContext(ctx, revokeAccess, arg.AccessLevelToRevoke, arg.UserID, arg.StoreID)
-	var i StoreOwner
-	err := row.Scan(
-		&i.UserID,
-		&i.StoreID,
-		&i.AddedAt,
-		&i.IsPrimary,
-		pq.Array(&i.AccessLevels),
-	)
-	return i, err
+func (q *Queries) RevokeAccess(ctx context.Context, arg RevokeAccessParams) error {
+	_, err := q.db.ExecContext(ctx, revokeAccess, arg.AccessLevelToRevoke, arg.UserID, arg.StoreID)
+	return err
 }
 
 const revokeAllAccess = `-- name: RevokeAllAccess :exec

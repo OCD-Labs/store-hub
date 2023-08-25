@@ -41,7 +41,7 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to connect to DB")
 	}
 
-	runDBMigrations(configs.MigrationURL, configs.DBSource)
+	runDBMigrations(configs.MigrationURL, configs.DBSource, configs)
 	dbStore := db.NewSQLTx(dbConn)
 
 	cache, err := cache.NewRedisCache(configs.RedisAddress)
@@ -89,14 +89,16 @@ func runTaskProcessor(config util.Configs, redisOpt asynq.RedisClientOpt, store 
 	}
 }
 
-func runDBMigrations(migrationURL string, dbSource string) {
+func runDBMigrations(migrationURL string, dbSource string, configs util.Configs) {
 	migration, err := migrate.New(migrationURL, dbSource)
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot create a new migrate instance")
 	}
 
-	if err := migration.Up(); err != nil && err != migrate.ErrNoChange {
-		log.Fatal().Err(err).Msg("failed to run migrateup")
+	if configs.Env == "production" {
+		if err := migration.Up(); err != nil && err != migrate.ErrNoChange {
+			log.Fatal().Err(err).Msg("failed to run migrateup")
+		}
 	}
 
 	log.Info().Msg("db migrated successfully")
