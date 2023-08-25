@@ -416,7 +416,7 @@ paths:
       security:
         - Bearer: []
   /inventory/stores/{store_id}/accept-access-invitation:
-    post:
+    get:
       summary: Accept access invitation to co-owner a store
       parameters:
         - in: path

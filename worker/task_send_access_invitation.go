@@ -121,7 +121,7 @@ func (processor *RedisTaskProcessor) ProcessTaskSendAccessInvitation(ctx context
 	accessLevelDescription, detailedExplanation := generateAccessLevelInfo(int(payload.AccessLevel))
 	subject := fmt.Sprintf("Invitation to Manage %s", store.Name)
 	content := fmt.Sprintf(`
-Dear %s, <br> <br>
+Hello %s, <br> <br>
 
 %s has invited you to join %s on StoreHub with %s privileges. This will allow you to %s. <br>
 
