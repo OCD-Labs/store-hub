@@ -121,16 +121,16 @@ func (processor *RedisTaskProcessor) ProcessTaskSendAccessInvitation(ctx context
 	accessLevelDescription, detailedExplanation := generateAccessLevelInfo(int(payload.AccessLevel))
 	subject := fmt.Sprintf("Invitation to Manage %s", store.Name)
 	content := fmt.Sprintf(`
-Dear %s,
+Dear %s, <br> <br>
 
-%s has invited you to join %s on StoreHub with %s privileges. This will allow you to %s.
+%s has invited you to join %s on StoreHub with %s privileges. This will allow you to %s. <br>
 
-<a href="%s">Click here</a> to accept the invitation and start managing %s.
+<a href="%s">Click here</a> to accept the invitation and start managing %s. <br>
 
-If you did not expect this invitation or believe it's an error, please ignore this email or contact our support.
+If you did not expect this invitation or believe it's an error, please ignore this email or contact our support.<br><br>
 
-Best,
-StoreHub Team
+Best,<br>
+StoreHub Team<br>
 	`, payload.InviteeAccountID, inviter.AccountID, store.Name, accessLevelDescription, detailedExplanation, acceptInvitationURL, store.Name)
 
 	to := []string{payload.InviteeEmail}
