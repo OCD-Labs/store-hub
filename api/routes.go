@@ -106,7 +106,7 @@ func (s *StoreHub) setupRoutes() http.Handler {
 		),
 	)
 	mux.Handler(
-		http.MethodPost,
+		http.MethodGet,
 		"/api/v1/inventory/stores/:store_id/accept-access-invitation",
 		s.authenticate(
 			http.HandlerFunc(s.grantStoreAccess),
