@@ -49,7 +49,13 @@ func (s *StoreHub) grantStoreAccess(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenExtra := payload.Extra.(*worker.TokenExtra)
+	var tokenExtra worker.TokenExtra
+	err = token.ExtractExtra(payload, &tokenExtra)
+	if err != nil {
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to verify token")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
 
 	coOwnerAccess, err := s.dbStore.AddCoOwnerAccessTx(r.Context(), db.AddCoOwnerAccessTxParams{
 		StoreID:     tokenExtra.StoreID,
@@ -133,7 +139,7 @@ func (s *StoreHub) revokeAllUserAccess(w http.ResponseWriter, r *http.Request) {
 	s.writeJSON(w, http.StatusOK, envelop{
 		"status": "success",
 		"data": envelop{
-			"message": "user access updated",
+			"message":      "user access updated",
 			"store_owners": storeOwners,
 		},
 	}, nil)
@@ -183,7 +189,7 @@ func (s *StoreHub) revokeUserAccess(w http.ResponseWriter, r *http.Request) {
 	s.writeJSON(w, http.StatusOK, envelop{
 		"status": "success",
 		"data": envelop{
-			"message": "user access updated",
+			"message":      "user access updated",
 			"store_owners": storeOwners,
 		},
 	}, nil)

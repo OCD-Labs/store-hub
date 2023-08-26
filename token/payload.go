@@ -2,6 +2,7 @@
 package token
 
 import (
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -49,6 +50,22 @@ func NewPayload(userID int64, account_id string, duration time.Duration, extra i
 func (payload *Payload) Valid() error {
 	if time.Now().After(payload.ExpiredAt) {
 		return ErrExpiredToken
+	}
+
+	return nil
+}
+
+// ExtractExtra extracts the Extra field from a given Payload into the provided interface.
+func ExtractExtra(payload *Payload, target interface{}) error {
+	// Step 1: Marshal payload.Extra back into a byte slice
+	extraBytes, err := json.Marshal(payload.Extra)
+	if err != nil {
+		return errors.New("failed to marshal payload.Extra")
+	}
+
+	// Step 2: Unmarshal the byte slice into the provided target interface
+	if err := json.Unmarshal(extraBytes, target); err != nil {
+		return errors.New("failed to unmarshal into target interface")
 	}
 
 	return nil
