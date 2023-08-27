@@ -38,7 +38,7 @@ type StoreTx interface {
 	UpdateSellerOrderTx(ctx context.Context, arg UpdateSellerOrderParams) (GetOrderForSellerRow, error)
 
 	// ListAllStores do a fulltext search to list stores, and paginates accordingly.
-	ListAllStores(ctx context.Context, arg ListAllStoresParams) ([]Store, pagination.Metadata, error)
+	ListAllStores(ctx context.Context, arg ListAllStoresParams) ([]StoreAndOwnersResult, pagination.Metadata, error)
 
 	// ListStoreItems do a fulltext search to list store items, and paginates accordingly.
 	ListStoreItems(ctx context.Context, arg ListStoreItemsParams) ([]Item, pagination.Metadata, error)

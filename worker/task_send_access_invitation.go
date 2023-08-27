@@ -123,7 +123,7 @@ func (processor *RedisTaskProcessor) ProcessTaskSendAccessInvitation(ctx context
 	content := fmt.Sprintf(`
 Hello %s, <br> <br>
 
-%s has invited you to join %s on StoreHub with %s privileges. This will allow you to %s. <br>
+%s has invited you to join %s on StoreHub with %s privileges. %s. <br>
 
 <a href="%s">Click here</a> to accept the invitation and start managing %s. <br>
 

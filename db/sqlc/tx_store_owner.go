@@ -14,10 +14,10 @@ type AddCoOwnerAccessTxParams struct {
 }
 
 // AddCoOwnerAccessTx creates/update a user's access for a store.
-func (store *SQLTx) AddCoOwnerAccessTx(ctx context.Context, arg AddCoOwnerAccessTxParams) (StoreOwner, error) {
+func (dbTx *SQLTx) AddCoOwnerAccessTx(ctx context.Context, arg AddCoOwnerAccessTxParams) (StoreOwner, error) {
 	var coOwnerAccess StoreOwner
 
-	err := store.execTx(ctx, func(q *Queries) error {
+	err := dbTx.execTx(ctx, func(q *Queries) error {
 		var err error
 
 		// check access is granted to an existing user.

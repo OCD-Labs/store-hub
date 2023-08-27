@@ -80,5 +80,3 @@ BEGIN
     WHERE item_id = item_id_arg AND store_id = store_id_arg;
 END;
 $$ LANGUAGE plpgsql;
-
-

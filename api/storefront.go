@@ -17,7 +17,7 @@ type discoverStoreQueryStr struct {
 	Sort      string `querystr:"sort"`
 }
 
-// discoverStoreByOwner maps to endpoint "GET /stores?<query_string>"
+// discoverStores maps to endpoint "GET /stores?<query_string>"
 func (s *StoreHub) discoverStores(w http.ResponseWriter, r *http.Request) {
 	// parse request
 	var reqQueryStr discoverStoreQueryStr

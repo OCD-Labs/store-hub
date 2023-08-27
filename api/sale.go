@@ -27,10 +27,9 @@ type listAllSalesQueryStr struct {
 
 type listAllSalesPathVars struct {
 	StoreID int64 `path:"store_id" validate:"required,min=1"`
-	UserID  int64 `path:"user_id" validate:"required,min=1"`
 }
 
-// maps to endpoint "GET /users/{user_id}/stores/{store_id}/sales".
+// maps to endpoint "GET /inventory/stores/{store_id}/sales".
 func (s *StoreHub) listStoreSales(w http.ResponseWriter, r *http.Request) {
 	var reqQueryStr listAllSalesQueryStr
 	if err := s.shouldBindQuery(w, r, &reqQueryStr); err != nil {
@@ -54,10 +53,6 @@ func (s *StoreHub) listStoreSales(w http.ResponseWriter, r *http.Request) {
 
 	// authorise
 	authPayload := s.contextGetToken(r)
-	if pathVars.UserID != authPayload.UserID {
-		s.errorResponse(w, r, http.StatusUnauthorized, "mismatch user")
-		return
-	}
 
 	arg := db.ListAllSellerSalesParams{
 		ItemPriceStart:    reqQueryStr.ItemPriceStart,
@@ -108,11 +103,10 @@ func (s *StoreHub) listStoreSales(w http.ResponseWriter, r *http.Request) {
 
 type getSalePathVars struct {
 	StoreID int64 `path:"store_id" validate:"required,min=1"`
-	UserID  int64 `path:"user_id" validate:"required,min=1"`
 	SaleID  int64 `path:"sale_id" validate:"required,min=1"`
 }
 
-// getSale maps to "GET /users/:user_id/stores/:store_id/sales/:sale_id"
+// getSale maps to "GET /inventory/stores/:store_id/sales/:sale_id"
 func (s *StoreHub) getSale(w http.ResponseWriter, r *http.Request) {
 	var pathVars getSalePathVars
 	if err := s.ShouldBindPathVars(w, r, &pathVars); err != nil {
@@ -120,10 +114,6 @@ func (s *StoreHub) getSale(w http.ResponseWriter, r *http.Request) {
 	}
 
 	authPayload := s.contextGetToken(r)
-	if pathVars.UserID != authPayload.UserID {
-		s.errorResponse(w, r, http.StatusUnauthorized, "mismatch user")
-		return
-	}
 
 	sale, err := s.dbStore.GetSale(r.Context(), db.GetSaleParams{
 		StoreID:  pathVars.StoreID,
@@ -155,7 +145,6 @@ func (s *StoreHub) getSale(w http.ResponseWriter, r *http.Request) {
 
 type listSalesOverviewPathVars struct {
 	StoreID int64 `path:"store_id" validate:"required,min=1"`
-	UserID  int64 `path:"user_id" validate:"required,min=1"`
 }
 
 type listSalesOverviewQueryStr struct {
@@ -167,16 +156,10 @@ type listSalesOverviewQueryStr struct {
 	Sort         string `querystr:"sort"`
 }
 
-// listSalesOverview maps to "GET /users/:user_id/stores/:store_id/sales-overview"
+// listSalesOverview maps to "GET /inventory/stores/:store_id/sales-overview"
 func (s *StoreHub) listSalesOverview(w http.ResponseWriter, r *http.Request) {
 	var pathVars listSalesOverviewPathVars
 	if err := s.ShouldBindPathVars(w, r, &pathVars); err != nil {
-		return
-	}
-
-	authPayload := s.contextGetToken(r) // authorize
-	if pathVars.UserID != authPayload.UserID {
-		s.errorResponse(w, r, http.StatusUnauthorized, "mismatch user")
 		return
 	}
 

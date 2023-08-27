@@ -13,9 +13,12 @@ INSERT INTO stores (
 SELECT 
   s.*, 
   json_agg(json_build_object(
-      'user', json_build_object('id', u.id, 'account_id', u.account_id, 'first_name', u.first_name, 'last_name', u.last_name, 'email', u.email),
-      'store_owners', json_build_object('user_id', so.user_id, 'store_id', so.store_id, 'added_at', so.added_at)
-  )) AS owners
+      'account_id', u.account_id,
+      'profile_img_url', u.profile_image_url,
+      'access_levels', so.access_levels,
+      'is_original_owner', so.is_primary,
+      'added_at', so.added_at
+  )) AS store_owners
 FROM 
   stores AS s
 JOIN 

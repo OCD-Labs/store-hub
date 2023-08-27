@@ -25,57 +25,26 @@ type ValidationError struct {
 	Error string `json:"error"`
 }
 
-// shouldBindBody reads/parses & validates request body.
+// shouldBindBody reads, parses, and validates the request body.
 func (s *StoreHub) shouldBindBody(w http.ResponseWriter, r *http.Request, obj interface{}) error {
 	// Restrict r.Body to 1MB
 	maxBytes := 1_048_578
 	r.Body = http.MaxBytesReader(w, r.Body, int64(maxBytes))
 
 	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields() // Disallow unknown fields
 
-	// Disallow unknown fields.
-	decoder.DisallowUnknownFields()
-	err := decoder.Decode(obj)
-
-	if err != nil {
-		// expected error types
-		var syntaxError *json.SyntaxError
-		var unmarshalTypeError *json.UnmarshalTypeError
-		var invalidUnmarshalError *json.InvalidUnmarshalError
-
-		switch {
-		case errors.As(err, &syntaxError):
-			return fmt.Errorf("request body contains badly-formatted JSON (at character %d)", syntaxError.Offset)
-		case errors.Is(err, io.ErrUnexpectedEOF):
-			return fmt.Errorf("request body contains badly-formatted JSON")
-		case errors.As(err, &unmarshalTypeError):
-			if unmarshalTypeError.Field != "" {
-				return fmt.Errorf("request body contains badly-formatted JSON for the field: %q", unmarshalTypeError.Field)
-			}
-			return fmt.Errorf("request body contains badly-formatted JSON ((at character %d))", unmarshalTypeError.Offset)
-		case errors.Is(err, io.EOF):
-			return fmt.Errorf("empty request body")
-		case errors.As(err, &invalidUnmarshalError):
-			panic(err)
-		case strings.HasPrefix(err.Error(), "json: unknown field "):
-			field := strings.TrimPrefix(err.Error(), "json: unknown field ")
-			return fmt.Errorf("request body contains unknown field: %s", field)
-		case err.Error() == "http: request body too large":
-			return fmt.Errorf("request body must not be larger than %d bytes", maxBytes)
-		default:
-			return err
-		}
+	if err := decoder.Decode(obj); err != nil {
+		return s.handleDecodeError(w, r, err, maxBytes)
 	}
 
-	// ensure r.Body is one json object
-	err = decoder.Decode(&struct{}{})
-	if err != io.EOF {
-		return fmt.Errorf("request body must contain only a single JSON")
+	// Ensure r.Body is one JSON object
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		s.errorResponse(w, r, http.StatusBadRequest, "request body must contain only a single JSON object.")
+		return err
 	}
 
-	err = s.bindValidation(w, r, obj)
-
-	return err
+	return s.bindValidation(w, r, obj)
 }
 
 // writeJSON writes and sends JSON response.
@@ -278,4 +247,38 @@ func (s *StoreHub) logAndRespond(
 
 	// Send the response
 	s.errorResponse(w, r, statusCode, message)
+}
+
+// handleDecodeError processes JSON decoding errors and sends appropriate responses.
+func (s *StoreHub) handleDecodeError(w http.ResponseWriter, r *http.Request, err error, maxBytes int) error {
+	var syntaxError *json.SyntaxError
+	var unmarshalTypeError *json.UnmarshalTypeError
+	var invalidUnmarshalError *json.InvalidUnmarshalError
+
+	switch {
+	case errors.Is(err, io.ErrUnexpectedEOF):
+		err = fmt.Errorf("request body contains badly-formatted JSON")
+	case errors.Is(err, io.EOF):
+		err = fmt.Errorf("empty request body")
+	case errors.As(err, &syntaxError):
+		err = fmt.Errorf("request body contains badly-formatted JSON (at character %d)", err.(*json.SyntaxError).Offset)
+	case errors.As(err, &unmarshalTypeError):
+		if unmarshalTypeError.Field != "" {
+			err = fmt.Errorf("request body contains badly-formatted JSON for the field: %q", unmarshalTypeError.Field)
+		} else {
+			err = fmt.Errorf("request body contains badly-formatted JSON ((at character %d))", unmarshalTypeError.Offset)
+		}
+	case errors.As(err, &invalidUnmarshalError):
+		panic(err)
+	case strings.HasPrefix(err.Error(), "json: unknown field "):
+		field := strings.TrimPrefix(err.Error(), "json: unknown field ")
+		err = fmt.Errorf("request body contains unknown field: %s", field)
+	case err.Error() == "http: request body too large":
+		err = fmt.Errorf("request body must not be larger than %d bytes", maxBytes)
+	default:
+		err = fmt.Errorf("bad request")
+	}
+
+	s.errorResponse(w, r, http.StatusBadRequest, err.Error())
+	return err
 }
