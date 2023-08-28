@@ -22,10 +22,11 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	mux.Handler(http.MethodPatch, "/api/v1/stores/:store_id/items/:item_id/buy", s.authenticate(http.HandlerFunc(s.buyStoreItems)))
 
 	// inventory
-	mux.Handler(http.MethodPost, "/api/v1/users/:user_id/stores", s.authenticate(http.HandlerFunc(s.createStore)))
+	mux.Handler(http.MethodPost, "/api/v1/inventory/stores", s.authenticate(http.HandlerFunc(s.createStore)))
+	mux.Handler(http.MethodGet, "/api/v1/inventory/stores", s.authenticate(http.HandlerFunc(s.listUserStores)))
 	mux.Handler(
 		http.MethodPost,
-		"/api/v1/users/:user_id/stores/:store_id/items",
+		"/api/v1/inventory/stores/:store_id/items",
 		s.authenticate(
 			s.CheckAccessLevel(
 				util.FULLACCESS,
@@ -37,7 +38,7 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	)
 	mux.Handler(
 		http.MethodGet,
-		"/api/v1/users/:user_id/stores/:store_id/items",
+		"/api/v1/inventory/stores/:store_id/items",
 		s.authenticate(
 			s.CheckAccessLevel(
 				util.FULLACCESS,
@@ -49,7 +50,7 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	)
 	mux.Handler(
 		http.MethodPatch,
-		"/api/v1/users/:user_id/stores/:store_id/items/:item_id",
+		"/api/v1/inventory/stores/:store_id/items/:item_id",
 		s.authenticate(
 			s.CheckAccessLevel(
 				util.FULLACCESS,
@@ -60,8 +61,20 @@ func (s *StoreHub) setupRoutes() http.Handler {
 		),
 	)
 	mux.Handler(
+		http.MethodDelete,
+		"/api/v1/inventory/stores/:store_id/items/:item_id",
+		s.authenticate(
+			s.CheckAccessLevel(
+				util.FULLACCESS,
+				util.PRODUCTINVENTORYACCESS,
+			)(
+				http.HandlerFunc(s.deleteStoreItems),
+			),
+		),
+	)
+	mux.Handler(
 		http.MethodPatch,
-		"/api/v1/users/:user_id/stores/:store_id",
+		"/api/v1/inventory/stores/:store_id",
 		s.authenticate(
 			s.CheckAccessLevel(
 				util.FULLACCESS,
@@ -72,7 +85,7 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	)
 	mux.Handler(
 		http.MethodDelete,
-		"/api/v1/users/:user_id/stores/:store_id",
+		"/api/v1/inventory/stores/:store_id",
 		s.authenticate(
 			s.CheckAccessLevel(
 				util.FULLACCESS,
@@ -81,19 +94,7 @@ func (s *StoreHub) setupRoutes() http.Handler {
 			),
 		),
 	)
-	mux.Handler(http.MethodGet, "/api/v1/users/:user_id/stores", s.authenticate(http.HandlerFunc(s.listUserStores)))
-	mux.Handler(
-		http.MethodDelete,
-		"/api/v1/users/:user_id/stores/:store_id/items/:item_id",
-		s.authenticate(
-			s.CheckAccessLevel(
-				util.FULLACCESS,
-				util.PRODUCTINVENTORYACCESS,
-			)(
-				http.HandlerFunc(s.deleteStoreItems),
-			),
-		),
-	)
+	
 	mux.Handler(
 		http.MethodPost,
 		"/api/v1/inventory/stores/:store_id/send-access-invitation",
@@ -136,10 +137,10 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	)
 
 	// orders
-	mux.Handler(http.MethodPost, "/api/v1/stores/:store_id/orders", s.authenticate(http.HandlerFunc(s.createOrder)))
+	mux.Handler(http.MethodPost, "/api/v1/inventory/stores/:store_id/orders", s.authenticate(http.HandlerFunc(s.createOrder)))
 	mux.Handler(
 		http.MethodGet,
-		"/api/v1/stores/:store_id/orders",
+		"/api/v1/inventory/stores/:store_id/orders",
 		s.authenticate(
 			s.CheckAccessLevel(
 				util.FULLACCESS,
@@ -151,7 +152,7 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	)
 	mux.Handler(
 		http.MethodGet,
-		"/api/v1/stores/:store_id/orders/:order_id",
+		"/api/v1/inventory/stores/:store_id/orders/:order_id",
 		s.authenticate(
 			s.CheckAccessLevel(
 				util.FULLACCESS,
@@ -163,7 +164,7 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	)
 	mux.Handler(
 		http.MethodPatch,
-		"/api/v1/stores/:store_id/orders/:order_id",
+		"/api/v1/inventory/stores/:store_id/orders/:order_id",
 		s.authenticate(
 			s.CheckAccessLevel(
 				util.FULLACCESS,
@@ -177,7 +178,7 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	// sales
 	mux.Handler(
 		http.MethodGet,
-		"/api/v1/users/:user_id/stores/:store_id/sales",
+		"/api/v1/inventory/stores/:store_id/sales",
 		s.authenticate(
 			s.CheckAccessLevel(
 				util.FULLACCESS,
@@ -189,7 +190,7 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	)
 	mux.Handler(
 		http.MethodGet,
-		"/api/v1/users/:user_id/stores/:store_id/sales/:sale_id",
+		"/api/v1/inventory/stores/:store_id/sales/:sale_id",
 		s.authenticate(
 			s.CheckAccessLevel(
 				util.FULLACCESS,
@@ -201,7 +202,7 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	)
 	mux.Handler(
 		http.MethodGet,
-		"/api/v1/users/:user_id/stores/:store_id/sales-overview",
+		"/api/v1/inventory/stores/:store_id/sales-overview",
 		s.authenticate(
 			s.CheckAccessLevel(
 				util.FULLACCESS,
@@ -227,3 +228,4 @@ func (s *StoreHub) setupRoutes() http.Handler {
 
 	return s.recoverPanic(s.enableCORS(s.httpLogger(mux)))
 }
+

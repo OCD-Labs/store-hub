@@ -27,7 +27,7 @@ type createOrderPathVars struct {
 	StoreID int64 `path:"store_id" validate:"required,min=1"`
 }
 
-// createOrder maps to endpoint "POST /stores/{store_id}/orders"
+// createOrder maps to endpoint "POST /inventory/stores/{store_id}/orders"
 func (s *StoreHub) createOrder(w http.ResponseWriter, r *http.Request) {
 	var reqBody createOrderRequestBody
 	if err := s.shouldBindBody(w, r, &reqBody); err != nil {
@@ -45,7 +45,7 @@ func (s *StoreHub) createOrder(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		if err == sql.ErrNoRows {
-			s.errorResponse(w, r, http.StatusForbidden, "failed to create orders")
+			s.errorResponse(w, r, http.StatusForbidden, "item not found")
 			log.Error().Err(err).Msg("error occurred")
 			return
 		}
@@ -68,7 +68,7 @@ func (s *StoreHub) createOrder(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		if err == sql.ErrNoRows {
-			s.errorResponse(w, r, http.StatusForbidden, "Seller ID is not store owner")
+			s.errorResponse(w, r, http.StatusForbidden, "seller_id not found in store access")
 			return
 		}
 		s.errorResponse(w, r, http.StatusInternalServerError, "Error fetching access levels")
@@ -76,7 +76,7 @@ func (s *StoreHub) createOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !util.NumberExists(store_access, util.FULLACCESS) {
-		s.errorResponse(w, r, http.StatusForbidden, "wrong store owner")
+		s.errorResponse(w, r, http.StatusForbidden, "seller_id is not store owner")
 		return
 	}
 
@@ -96,7 +96,7 @@ func (s *StoreHub) createOrder(w http.ResponseWriter, r *http.Request) {
 		if pqErr, ok := err.(*pq.Error); ok {
 			switch pqErr.Code.Name() {
 			case "foreign_key_violation":
-				s.errorResponse(w, r, http.StatusConflict, "a referenced key was not found")
+				s.errorResponse(w, r, http.StatusConflict, "a referenced ID was not found")
 			default:
 				s.errorResponse(w, r, http.StatusInternalServerError, "failed to create order")
 			}
@@ -133,7 +133,7 @@ type listSellerOrdersPathVars struct {
 	StoreID int64 `path:"store_id" validate:"required,min=1"`
 }
 
-// listSellerOrders maps to endpoint "GET /stores/{store_id}/orders"
+// listSellerOrders maps to endpoint "GET /inventory/stores/{store_id}/orders"
 func (s *StoreHub) listSellerOrders(w http.ResponseWriter, r *http.Request) {
 	var reqQueryStr listSellerOrdersQueryStr
 	if err := s.shouldBindQuery(w, r, &reqQueryStr); err != nil {
@@ -198,7 +198,7 @@ type getSellerOrderPathVars struct {
 	StoreID int64 `path:"store_id" validate:"required,min=1"`
 }
 
-// getSellerOrder maps to endpoint "GET /stores/{store_id}/orders/{order_id}"
+// getSellerOrder maps to endpoint "GET /inventory/stores/{store_id}/orders/{order_id}"
 func (s *StoreHub) getSellerOrder(w http.ResponseWriter, r *http.Request) {
 	var pathVar getSellerOrderPathVars
 	if err := s.ShouldBindPathVars(w, r, &pathVar); err != nil {
@@ -246,7 +246,7 @@ type updateSellerOrderPathVars struct {
 	StoreID int64 `path:"store_id" validate:"required,min=1"`
 }
 
-// getSellerOrder maps to endpoint "PATCH /stores/{store_id}/orders/{order_id}"
+// getSellerOrder maps to endpoint "PATCH /inventory/stores/{store_id}/orders/{order_id}"
 func (s *StoreHub) updateSellerOrder(w http.ResponseWriter, r *http.Request) {
 	var pathVars updateSellerOrderPathVars
 	if err := s.ShouldBindPathVars(w, r, &pathVars); err != nil {

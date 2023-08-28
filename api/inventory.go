@@ -23,18 +23,8 @@ type createStoreRequestBody struct {
 	StoreAccountID  string `json:"store_account_id" validate:"required,min=2,max=64"`
 }
 
-type createStorePathVar struct {
-	UserID int64 `path:"user_id" validate:"required,min=1"`
-}
-
-// createStore maps to endpoint "POST /users/{id}/stores".
+// createStore maps to endpoint "POST /inventory/stores".
 func (s *StoreHub) createStore(w http.ResponseWriter, r *http.Request) {
-	// parse path variables
-	var pathVar createStorePathVar
-	if err := s.ShouldBindPathVars(w, r, &pathVar); err != nil {
-		return
-	}
-
 	// parse request body
 	var reqBody createStoreRequestBody
 	if err := s.shouldBindBody(w, r, &reqBody); err != nil {
@@ -42,12 +32,7 @@ func (s *StoreHub) createStore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// authorise
 	authPayload := s.contextGetToken(r)
-	if pathVar.UserID != authPayload.UserID {
-		s.errorResponse(w, r, http.StatusUnauthorized, "mismatch user")
-		return
-	}
 
 	// db query
 	arg := db.CreateStoreTxParams{
@@ -87,6 +72,31 @@ func (s *StoreHub) createStore(w http.ResponseWriter, r *http.Request) {
 	}, nil)
 }
 
+// listUserStores maps to endpoint "GET /inventory/stores"
+func (s *StoreHub) listUserStores(w http.ResponseWriter, r *http.Request) {
+	// authorise
+	authPayload := s.contextGetToken(r)
+
+	// db query
+	stores, err := s.dbStore.ListUserStoresWithAccess(r.Context(), authPayload.UserID)
+	if err != nil {
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to retrieve stores")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	// return response
+	s.writeJSON(w, http.StatusOK, envelop{
+		"status": "success",
+		"data": envelop{
+			"message": "found your stores",
+			"result": envelop{
+				"stores": stores,
+			},
+		},
+	}, nil)
+}
+
 type addStoreItemRequestBody struct {
 	Name               string   `json:"name" validate:"required"`
 	Description        string   `json:"description" validate:"required"` // TODO: Check the DB schema for the NUMERIC type if it's enough to accommodate big price
@@ -100,10 +110,9 @@ type addStoreItemRequestBody struct {
 
 type addStoreItemPathVar struct {
 	StoreID int64 `path:"store_id" validate:"required,min=1"`
-	UserID  int64 `path:"user_id" validate:"required,min=1"`
 }
 
-// addStoreItem maps to endpoint "POST /users/{user_id}/stores/{store_id}/items"
+// addStoreItem maps to endpoint "POST /inventory/stores/{store_id}/items"
 func (s *StoreHub) addStoreItem(w http.ResponseWriter, r *http.Request) {
 	// parse path variables
 	var pathVar addStoreItemPathVar
@@ -114,12 +123,6 @@ func (s *StoreHub) addStoreItem(w http.ResponseWriter, r *http.Request) {
 	// parse request body
 	var reqBody addStoreItemRequestBody
 	if err := s.shouldBindBody(w, r, &reqBody); err != nil {
-		return
-	}
-
-	authPayload := s.contextGetToken(r) // authorize
-	if pathVar.UserID != authPayload.UserID {
-		s.errorResponse(w, r, http.StatusUnauthorized, "mismatch user")
 		return
 	}
 
@@ -173,10 +176,9 @@ type listOwnedStoreItemsQueryStr struct {
 
 type listOwnedStoreItemsPathVar struct {
 	StoreID int64 `path:"store_id" validate:"required,min=1"`
-	UserID  int64 `path:"user_id" validate:"required,min=1"`
 }
 
-// listOwnedStoreItems maps to endpoint "GET /users/{user_id}/stores/{store_id}/items"
+// listOwnedStoreItems maps to endpoint "GET /inventory/stores/{store_id}/items"
 func (s *StoreHub) listOwnedStoreItems(w http.ResponseWriter, r *http.Request) {
 	// parse path variables
 	var pathVar listOwnedStoreItemsPathVar
@@ -198,13 +200,7 @@ func (s *StoreHub) listOwnedStoreItems(w http.ResponseWriter, r *http.Request) {
 	}
 	if reqQueryStr.Sort == "" {
 		reqQueryStr.Sort = "-id"
-	}
-
-	authPayload := s.contextGetToken(r) // authorize
-	if pathVar.UserID != authPayload.UserID {
-		s.errorResponse(w, r, http.StatusUnauthorized, "mismatch user")
-		return
-	}
+	}	
 
 	// db query
 	arg := db.ListStoreItemsParams{
@@ -251,10 +247,9 @@ type updateStoreItemsRequestBody struct { // TODO: write custom validation tags 
 type updateStoreItemsPathVar struct {
 	StoreID int64 `path:"store_id" validate:"required,min=1"`
 	ItemID  int64 `path:"item_id" validate:"required,min=1"`
-	UserID  int64 `path:"user_id" validate:"required,min=1"`
 }
 
-// updateStoreItems maps to endpoint "PATCH /users/{user_id}/stores/{store_id}/items/{item_id}"
+// updateStoreItems maps to endpoint "PATCH /inventory/stores/{store_id}/items/{item_id}"
 func (s *StoreHub) updateStoreItems(w http.ResponseWriter, r *http.Request) {
 	var pathVar updateStoreItemsPathVar
 
@@ -267,12 +262,6 @@ func (s *StoreHub) updateStoreItems(w http.ResponseWriter, r *http.Request) {
 	var reqBody updateStoreItemsRequestBody
 	if err := s.shouldBindBody(w, r, &reqBody); err != nil {
 		log.Error().Err(err).Msg("error occurred")
-		return
-	}
-
-	authPayload := s.contextGetToken(r) // authorize
-	if pathVar.UserID != authPayload.UserID {
-		s.errorResponse(w, r, http.StatusUnauthorized, "mismatch user")
 		return
 	}
 
@@ -353,20 +342,13 @@ func (s *StoreHub) updateStoreItems(w http.ResponseWriter, r *http.Request) {
 type deleteStoreItemsPathVar struct {
 	StoreID int64 `path:"store_id" validate:"required"`
 	ItemID  int64 `path:"item_id" validate:"required"`
-	UserID  int64 `path:"user_id" validate:"required"`
 }
 
-// deleteStoreItems maps to endpoint "DELETE /users/{user_id}/stores/{store_id}/items/{item_id}"
+// deleteStoreItems maps to endpoint "DELETE /inventory/stores/{store_id}/items/{item_id}"
 func (s *StoreHub) deleteStoreItems(w http.ResponseWriter, r *http.Request) {
 	// parse path variables
 	var pathVar deleteStoreItemsPathVar
 	if err := s.ShouldBindPathVars(w, r, &pathVar); err != nil {
-		return
-	}
-
-	authPayload := s.contextGetToken(r) // authorize
-	if pathVar.UserID != authPayload.UserID {
-		s.errorResponse(w, r, http.StatusUnauthorized, "mismatch user")
 		return
 	}
 
@@ -391,7 +373,6 @@ func (s *StoreHub) deleteStoreItems(w http.ResponseWriter, r *http.Request) {
 
 type updateStoreProfilePathVar struct {
 	StoreID int64 `path:"store_id" validate:"required,min=1"`
-	UserID  int64 `path:"user_id" validate:"required,min=1"`
 }
 
 type updateStoreProfileRquestBody struct {
@@ -413,12 +394,6 @@ func (s *StoreHub) updateStoreProfile(w http.ResponseWriter, r *http.Request) {
 	// parse request body
 	var reqBody updateStoreProfileRquestBody
 	if err := s.shouldBindBody(w, r, &reqBody); err != nil {
-		return
-	}
-
-	authPayload := s.contextGetToken(r) // authorize
-	if pathVar.UserID != authPayload.UserID {
-		s.errorResponse(w, r, http.StatusUnauthorized, "mismatch user")
 		return
 	}
 

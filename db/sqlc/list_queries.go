@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -16,15 +17,36 @@ type ListAllStoresParams struct {
 	Filters pagination.Filters
 }
 
+type StoreAndOwnersResult struct {
+	Store Store `json:"store"`
+	StoreOwners []struct {
+		AccountID      string `json:"account_id"`
+		ProfileImgURL  string `json:"profile_img_url"`
+	} `json:"store_owners"`
+}
+
 // ListAllStores do a fulltext search to list stores, and paginates accordingly.
-func (q *SQLTx) ListAllStores(ctx context.Context, arg ListAllStoresParams) ([]Store, pagination.Metadata, error) {
+func (q *SQLTx) ListAllStores(ctx context.Context, arg ListAllStoresParams) ([]StoreAndOwnersResult, pagination.Metadata, error) {
 	stmt := fmt.Sprintf(`
-		SELECT count(*) OVER() AS total_count, id, name, description, "profile_image_url", store_account_id, is_verified, category, is_frozen, created_at
-		FROM stores
-		WHERE (name ILIKE '%%' || $1 || '%%' OR $1 = '')
-		ORDER BY %s %s, id ASC
-		LIMIT $2 OFFSET $3`, arg.Filters.SortColumn(), arg.Filters.SortDirection(),
-	)
+	SELECT
+		count(*) OVER() AS total_count,
+  	s.id, s.name, s.description, s.profile_image_url, s.store_account_id, s.is_verified, s.category, s.is_frozen, s.created_at,
+  	json_agg(json_build_object(
+      	'account_id', u.account_id,
+      	'profile_img_url', u.profile_image_url
+  	)) AS store_owners
+	FROM 
+  	stores AS s
+	JOIN 
+  	store_owners AS so ON s.id = so.store_id
+	JOIN 
+  	users AS u ON so.user_id = u.id
+	WHERE 
+		(name ILIKE '%%' || $1 || '%%' OR $1 = '')
+	GROUP BY 
+  	s.id
+	ORDER BY %s %s, s.id ASC
+	LIMIT $2 OFFSET $3`, arg.Filters.SortColumn(), arg.Filters.SortDirection())
 
 	args := []interface{}{arg.Search, arg.Filters.Limit(), arg.Filters.Offset()}
 
@@ -34,25 +56,40 @@ func (q *SQLTx) ListAllStores(ctx context.Context, arg ListAllStoresParams) ([]S
 	}
 	defer rows.Close()
 	totalRecords := 0
-	stores := []Store{}
+	results := []StoreAndOwnersResult{}
 
 	for rows.Next() {
-		var i Store
+		var store Store
+		var ownersJSON []byte
 		if err := rows.Scan(
 			&totalRecords,
-			&i.ID,
-			&i.Name,
-			&i.Description,
-			&i.ProfileImageUrl,
-			&i.StoreAccountID,
-			&i.IsVerified,
-			&i.Category,
-			&i.IsFrozen,
-			&i.CreatedAt,
+			&store.ID,
+			&store.Name,
+			&store.Description,
+			&store.ProfileImageUrl,
+			&store.StoreAccountID,
+			&store.IsVerified,
+			&store.Category,
+			&store.IsFrozen,
+			&store.CreatedAt,
+			&ownersJSON,
 		); err != nil {
 			return nil, pagination.Metadata{}, err
 		}
-		stores = append(stores, i)
+
+		var owners []struct {
+			AccountID      string `json:"account_id"`
+			ProfileImgURL  string `json:"profile_img_url"`
+		}
+		if err := json.Unmarshal(ownersJSON, &owners); err != nil {
+			return nil, pagination.Metadata{}, err
+		}
+
+		result := StoreAndOwnersResult{
+			Store:       store,
+			StoreOwners: owners,
+		}
+		results = append(results, result)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -61,7 +98,7 @@ func (q *SQLTx) ListAllStores(ctx context.Context, arg ListAllStoresParams) ([]S
 
 	metadata := pagination.CalcMetadata(totalRecords, arg.Filters.Page, arg.Filters.PageSize)
 
-	return stores, metadata, nil
+	return results, metadata, nil
 }
 
 type ListStoreItemsParams struct {

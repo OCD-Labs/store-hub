@@ -34,9 +34,11 @@ func createStoreAndOwners(t *testing.T) (CreateStoreTxResult, User) {
 	require.False(t, res.Store.IsVerified)
 	require.NotZero(t, res.Store.CreatedAt)
 
-	require.Equal(t, arg.OwnerID, res.Owners[0].UserID)
-	require.Equal(t, res.Store.ID, res.Owners[0].StoreID)
-	require.NotZero(t, res.Owners[0].AddedAt)
+	require.Equal(t, user.AccountID, res.StoreOwners[0].AccountID)
+	require.Equal(t, user.ProfileImageUrl.String, res.StoreOwners[0].ProfileImgURL)
+	require.ElementsMatch(t, []int32{1}, res.StoreOwners[0].AccessLevels)
+	require.True(t, res.StoreOwners[0].IsOriginalOwner)
+	require.NotZero(t, res.StoreOwners[0].AddedAt)
 
 	return res, user
 }

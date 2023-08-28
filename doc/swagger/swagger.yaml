@@ -20,15 +20,10 @@ securityDefinitions:
     name: Authorization
     in: header
 paths:
-  /users/{id}/stores:
+  /inventory/stores:
     post:
       summary: Create a new store
       parameters:
-        - name: id
-          in: path
-          required: true
-          type: integer
-          minimum: 1
         - name: requestBody
           in: body
           description: Store details
@@ -60,14 +55,6 @@ paths:
         - Bearer: []
     get:
       summary: Retrieve stores owned by a user
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
-            minimum: 1
-          description: The ID of the user
       responses:
         200:
           description: OK
@@ -102,16 +89,10 @@ paths:
             $ref: "#/definitions/ErrorResponse"
       security:
         - Bearer: []
-  /users/{user_id}/stores/{store_id}/items:
+  /inventory/stores/{store_id}/items:
     post:
       summary: Add a new item to a store
       parameters:
-        - name: user_id
-          in: path
-          description: User ID
-          required: true
-          type: integer
-          minimum: 1
         - name: store_id
           in: path
           description: Store ID
@@ -154,13 +135,6 @@ paths:
     get:
       summary: List owned store items
       parameters:
-        - in: path
-          name: user_id
-          required: true
-          schema:
-            type: integer
-            minimum: 1
-          description: The ID of the user
         - in: path
           name: store_id
           required: true
@@ -232,17 +206,10 @@ paths:
             $ref: "#/definitions/ErrorResponse"
       security:
         - Bearer: []
-  /users/{user_id}/stores/{store_id}/items/{item_id}: 
+  /inventory/stores/{store_id}/items/{item_id}: 
     patch:
       summary: Update store item
       parameters:
-        - in: path
-          name: user_id
-          required: true
-          schema:
-            type: integer
-            minimum: 1
-          description: The ID of the user
         - in: path
           name: store_id
           required: true
@@ -302,13 +269,6 @@ paths:
     delete:
       summary: Delete a store item
       parameters:
-        - in: path
-          name: user_id
-          required: true
-          schema:
-            type: integer
-            minimum: 1
-          description: The ID of the user
         - in: path
           name: store_id
           required: true
@@ -653,7 +613,7 @@ paths:
                       stores:
                         type: array
                         items:
-                          $ref: '#/definitions/store'
+                          $ref: '#/definitions/ListAllStoresResult'
                       metadata:
                         $ref: '#/definitions/pagination'
         400:
@@ -967,15 +927,10 @@ paths:
           description: Failed to fetch item details
           schema:
             $ref: "#/definitions/ErrorResponse"
-  /users/{user_id}/stores/{store_id}:
+  /inventory/stores/{store_id}:
     patch:
       summary: Update store profile
       parameters:
-        - name: user_id
-          in: path
-          description: ID of the user who owns the store
-          required: true
-          type: integer
         - name: store_id
           in: path
           description: ID of the store to be updated
@@ -1037,13 +992,13 @@ paths:
             $ref: "#/definitions/ErrorResponse"
       security:
         - Bearer: []
-  /stores/{store_id}/orders:
+  /inventory/stores/{store_id}/orders:
     post:
       summary: Create a new order
       parameters:
         - in: path
           name: store_id
-          description: The store Id to create a store for
+          description: The store ID to create an order for
           schema:
             type: integer
           required: true
@@ -1094,7 +1049,7 @@ paths:
       parameters:
         - in: path
           name: store_id
-          description: The store Id to fetch its orders.
+          description: The store ID to fetch its orders.
           schema:
             type: integer
           required: true
@@ -1143,7 +1098,7 @@ paths:
             maximum: 20
         - in: query
           name: sort
-          description: The sorting criteria for the order (e.g "-id", "-item_name", "-created_at", "id", "item_name", "created_at")
+          description: The sorting criteria for the order.
           schema:
             type: string
       responses:
@@ -1178,7 +1133,7 @@ paths:
             $ref: "#/definitions/ErrorResponse"
       security:
         - Bearer: []
-  /stores/{store_id}/orders/{order_id}:
+  /inventory/stores/{store_id}/orders/{order_id}:
     get:
       summary: Get seller order by ID
       parameters:
@@ -1290,16 +1245,10 @@ paths:
       security:
         - Bearer: []
 
-  /users/{user_id}/stores/{store_id}/sales:
+  /inventory/stores/{store_id}/sales:
     get:
       summary: List all sales for a store
       parameters:
-        - name: user_id
-          in: path
-          description: The Id of the store owner
-          required: true
-          schema:
-            type: integer
         - name: store_id
           description: The Id of the store
           in: path
@@ -1404,16 +1353,10 @@ paths:
       security:
         - Bearer: []
 
-  /users/{user_id}/stores/{store_id}/sales/{sale_id}:
+  /inventory/stores/{store_id}/sales/{sale_id}:
     get:
       summary: Get details of a sale for a store
       parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
         - name: store_id
           in: path
           required: true
@@ -1462,15 +1405,10 @@ paths:
             $ref: "#/definitions/ErrorResponse"
       security:
         - Bearer: []
-  /users/{user_id}/stores/{store_id}/sales-overview:
+  /inventory/stores/{store_id}/sales-overview:
     get:
       summary: Get sales overview for a store
       parameters:
-        - name: user_id
-          in: path
-          description: The Id of the store owner
-          required: true
-          type: integer
         - name: store_id
           in: path
           description: The Id of the store
@@ -1613,12 +1551,14 @@ definitions:
   storeOwner:
     type: object
     properties:
-      user_id:
-        type: integer
-      store_id:
-        type: integer
-      access_level:
-        type: integer
+      account_id:
+        type: string
+      profile_img_url:
+        type: string
+      access_levels:
+        type: array
+        items:
+          type: integer
       added_at:
         type: string
         format: date-time
@@ -1944,3 +1884,18 @@ definitions:
       total_items_sold:
         type: integer
         description: Total number of items sold
+
+  ListAllStoresResult:
+    type: object
+    properties:
+      store:
+        $ref: '#/definitions/store'
+      store_owners:
+        type: array
+        items:
+          type: object
+          properties:
+            account_id:
+              type: string
+            profile_img_url:
+              type: string
