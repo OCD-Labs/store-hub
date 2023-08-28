@@ -20,3 +20,5 @@ CREATE TRIGGER trigger_distinct_access_levels
 BEFORE INSERT OR UPDATE ON store_owners
 FOR EACH ROW
 EXECUTE FUNCTION fn_distinct_access_levels();
+
+ALTER TABLE sales_overview ALTER COLUMN sales_percentage TYPE NUMERIC(10, 4);
