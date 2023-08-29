@@ -97,6 +97,24 @@ func (q *Queries) CreateStoreItem(ctx context.Context, arg CreateStoreItemParams
 	return i, err
 }
 
+const deductItemSupply = `-- name: DeductItemSupply :exec
+UPDATE items 
+SET 
+  supply_quantity = supply_quantity - $1
+WHERE
+  id = $2 AND supply_quantity >= $1
+`
+
+type DeductItemSupplyParams struct {
+	OrderQuantity int64 `json:"order_quantity"`
+	ItemID        int64 `json:"item_id"`
+}
+
+func (q *Queries) DeductItemSupply(ctx context.Context, arg DeductItemSupplyParams) error {
+	_, err := q.db.ExecContext(ctx, deductItemSupply, arg.OrderQuantity, arg.ItemID)
+	return err
+}
+
 const deleteItem = `-- name: DeleteItem :exec
 DELETE FROM items
 WHERE store_id = $1 AND id = $2
@@ -154,9 +172,10 @@ SET
   supply_quantity = COALESCE($8, supply_quantity),
   extra = COALESCE($9, extra),
   is_frozen = COALESCE($10, is_frozen),
-  updated_at = COALESCE($11, updated_at)
+  status = COALESCE($11, status),
+  updated_at = COALESCE($12, updated_at)
 WHERE
-  id = $12
+  id = $13
 RETURNING id, name, description, price, store_id, image_urls, category, discount_percentage, supply_quantity, extra, is_frozen, created_at, updated_at, currency, cover_img_url, status
 `
 
@@ -171,6 +190,7 @@ type UpdateItemParams struct {
 	SupplyQuantity     sql.NullInt64         `json:"supply_quantity"`
 	Extra              pqtype.NullRawMessage `json:"extra"`
 	IsFrozen           sql.NullBool          `json:"is_frozen"`
+	Status             sql.NullString        `json:"status"`
 	UpdatedAt          sql.NullTime          `json:"updated_at"`
 	ItemID             int64                 `json:"item_id"`
 }
@@ -187,6 +207,7 @@ func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, e
 		arg.SupplyQuantity,
 		arg.Extra,
 		arg.IsFrozen,
+		arg.Status,
 		arg.UpdatedAt,
 		arg.ItemID,
 	)

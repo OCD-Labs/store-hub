@@ -1705,6 +1705,9 @@ definitions:
         type: string
       supply_quantity:
         type: integer
+      status:
+        type:
+        enum: ["VISIBLE", "HIDDEN"]
       extra:
         type: object
       is_frozen:
@@ -1739,6 +1742,9 @@ definitions:
         type: string
       supply_quantity:
         type: integer
+      status:
+        type: string
+        enum: ["HIDDEN", "VISIBLE"]
 
   pagination:
     type: object

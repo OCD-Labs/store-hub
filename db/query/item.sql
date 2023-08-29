@@ -31,10 +31,18 @@ SET
   supply_quantity = COALESCE(sqlc.narg(supply_quantity), supply_quantity),
   extra = COALESCE(sqlc.narg(extra), extra),
   is_frozen = COALESCE(sqlc.narg(is_frozen), is_frozen),
+  status = COALESCE(sqlc.narg(status), status),
   updated_at = COALESCE(sqlc.narg(updated_at), updated_at)
 WHERE
   id = sqlc.arg(item_id)
 RETURNING *;
+
+-- name: DeductItemSupply :exec
+UPDATE items 
+SET 
+  supply_quantity = supply_quantity - sqlc.arg(order_quantity)
+WHERE
+  id = sqlc.arg(item_id) AND supply_quantity >= sqlc.arg(order_quantity);
 
 -- name: DeleteItem :exec
 DELETE FROM items

@@ -242,6 +242,7 @@ type updateStoreItemsRequestBody struct { // TODO: write custom validation tags 
 	Category           *string  `json:"category"`
 	DiscountPercentage *string  `json:"discount_percentage"`
 	SupplyQuantity     *int64   `json:"supply_quantity"`
+	Status             *string  `json:"status" validate:"oneof=VISIBLE HIDDEN"`
 }
 
 type updateStoreItemsPathVar struct {
@@ -312,6 +313,12 @@ func (s *StoreHub) updateStoreItems(w http.ResponseWriter, r *http.Request) {
 		arg.SupplyQuantity = sql.NullInt64{
 			Int64: *reqBody.SupplyQuantity,
 			Valid: true,
+		}
+	}
+	if reqBody.Status != nil {
+		arg.Status = sql.NullString{
+			String: *reqBody.Status,
+			Valid:  true,
 		}
 	}
 

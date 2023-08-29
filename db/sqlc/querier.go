@@ -22,6 +22,7 @@ type Querier interface {
 	CreateStore(ctx context.Context, arg CreateStoreParams) (Store, error)
 	CreateStoreItem(ctx context.Context, arg CreateStoreItemParams) (Item, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeductItemSupply(ctx context.Context, arg DeductItemSupplyParams) error
 	DeleteExpiredSession(ctx context.Context) error
 	DeleteItem(ctx context.Context, arg DeleteItemParams) error
 	DeleteReview(ctx context.Context, arg DeleteReviewParams) error
