@@ -104,8 +104,9 @@ func (s *StoreHub) listStoreItems(w http.ResponseWriter, r *http.Request) {
 
 	// db query
 	arg := db.ListStoreItemsParams{
-		StoreID:  pathVar.StoreID,
-		ItemName: reqQueryStr.ItemName,
+		StoreID:      pathVar.StoreID,
+		ItemName:     reqQueryStr.ItemName,
+		IsStorefront: true,
 		Filters: pagination.Filters{
 			Page:         reqQueryStr.Page,
 			PageSize:     reqQueryStr.PageSize,

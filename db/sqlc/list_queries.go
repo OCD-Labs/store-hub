@@ -18,10 +18,10 @@ type ListAllStoresParams struct {
 }
 
 type StoreAndOwnersResult struct {
-	Store Store `json:"store"`
+	Store       Store `json:"store"`
 	StoreOwners []struct {
-		AccountID      string `json:"account_id"`
-		ProfileImgURL  string `json:"profile_img_url"`
+		AccountID     string `json:"account_id"`
+		ProfileImgURL string `json:"profile_img_url"`
 	} `json:"store_owners"`
 }
 
@@ -78,8 +78,8 @@ func (q *SQLTx) ListAllStores(ctx context.Context, arg ListAllStoresParams) ([]S
 		}
 
 		var owners []struct {
-			AccountID      string `json:"account_id"`
-			ProfileImgURL  string `json:"profile_img_url"`
+			AccountID     string `json:"account_id"`
+			ProfileImgURL string `json:"profile_img_url"`
 		}
 		if err := json.Unmarshal(ownersJSON, &owners); err != nil {
 			return nil, pagination.Metadata{}, err
@@ -102,19 +102,25 @@ func (q *SQLTx) ListAllStores(ctx context.Context, arg ListAllStoresParams) ([]S
 }
 
 type ListStoreItemsParams struct {
-	ItemName string
-	StoreID  int64
-	Filters  pagination.Filters
+	ItemName     string
+	StoreID      int64
+	Filters      pagination.Filters
+	IsStorefront bool
 }
 
 // ListStoreItems do a fulltext search to list store items, and paginates accordingly.
 func (q *SQLTx) ListStoreItems(ctx context.Context, arg ListStoreItemsParams) ([]Item, pagination.Metadata, error) {
+	statusWhereClause := ""
+	if arg.IsStorefront {
+		// Only show VISIBLE items to buyers
+		statusWhereClause = "AND status = 'VISIBLE'"
+	}
 	stmt := fmt.Sprintf(`
 		SELECT count(*) OVER() AS total_count, items.*
 		FROM items
-		WHERE (name ILIKE '%%' || $1 || '%%' OR $1 = '') AND store_id = $4
+		WHERE (name ILIKE '%%' || $1 || '%%' OR $1 = '') AND store_id = $4 %s
 		ORDER BY %s %s, id ASC
-		LIMIT $2 OFFSET $3`, arg.Filters.SortColumn(), arg.Filters.SortDirection(),
+		LIMIT $2 OFFSET $3`, statusWhereClause, arg.Filters.SortColumn(), arg.Filters.SortDirection(),
 	)
 
 	args := []interface{}{arg.ItemName, arg.Filters.Limit(), arg.Filters.Offset(), arg.StoreID}
@@ -146,6 +152,7 @@ func (q *SQLTx) ListStoreItems(ctx context.Context, arg ListStoreItemsParams) ([
 			&i.UpdatedAt,
 			&i.Currency,
 			&i.CoverImgUrl,
+			&i.Status,
 		); err != nil {
 			return nil, pagination.Metadata{}, err
 		}

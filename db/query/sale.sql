@@ -58,3 +58,10 @@ FROM sales s
 LEFT JOIN orders o ON s.order_id = o.id
 LEFT JOIN items i ON s.item_id = i.id
 WHERE s.store_id = sqlc.arg(store_id);
+
+-- name: HasMadePurchase :one
+SELECT EXISTS(
+    SELECT 1 
+    FROM sales 
+    WHERE customer_id = sqlc.arg(customer_id) AND item_id = sqlc.arg(item_id) AND store_id = sqlc.arg(store_id)
+) AS has_made_purchase;

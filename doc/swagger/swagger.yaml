@@ -1478,6 +1478,61 @@ paths:
             $ref: "#/definitions/ErrorResponse"
       security:
         - Bearer: []
+  /accounts/{account_id}/reviews/{order_id}:
+    put:
+      summary: Add a new review to a store
+      parameters:
+        - in: path
+          name: account_id
+          description: The account ID
+          required: true
+          type: string
+        - in: path
+          name: order_id
+          description: The order ID
+          required: true
+          type: integer
+        - in: body
+          name: requestBody
+          description: Review details to be added
+          required: true
+          schema:
+            $ref: "#/definitions/addReviewRequestBody"
+      responses:
+        201:
+          description: Created
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        403:
+          description: Forbidden
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        409:
+          description: Conflict
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
 
 definitions:
   createStoreRequestBody:
@@ -1650,6 +1705,9 @@ definitions:
         type: string
       supply_quantity:
         type: integer
+      status:
+        type:
+        enum: ["VISIBLE", "HIDDEN"]
       extra:
         type: object
       is_frozen:
@@ -1684,6 +1742,9 @@ definitions:
         type: string
       supply_quantity:
         type: integer
+      status:
+        type: string
+        enum: ["HIDDEN", "VISIBLE"]
 
   pagination:
     type: object
@@ -1899,3 +1960,19 @@ definitions:
               type: string
             profile_img_url:
               type: string
+
+  addReviewRequestBody:
+    type: object
+    properties:
+      store_id:
+        type: integer
+        minimum: 1
+      item_id:
+        type: integer
+        minimum: 1
+      rating:
+        type: string
+        enum: ["1", "2", "3", "4", "5"]
+      comment:
+        type: string
+        minLength: 1
