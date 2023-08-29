@@ -17,13 +17,12 @@ type CreateStoreTxParams struct {
 }
 
 type StoreOwnerDetails struct {
-	AccountID        string    `json:"account_id"`
-	ProfileImgURL    string    `json:"profile_img_url"`
-	AccessLevels     []int32   `json:"access_levels"`
-	IsOriginalOwner  bool      `json:"is_original_owner"`
-	AddedAt          time.Time `json:"added_at"`
+	AccountID       string    `json:"account_id"`
+	ProfileImgURL   string    `json:"profile_img_url"`
+	AccessLevels    []int32   `json:"access_levels"`
+	IsOriginalOwner bool      `json:"is_original_owner"`
+	AddedAt         time.Time `json:"added_at"`
 }
-
 
 // A CreateStoreTxResult contains the result of the create store transaction.
 type CreateStoreTxResult struct {

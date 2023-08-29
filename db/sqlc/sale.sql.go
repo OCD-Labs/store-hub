@@ -160,6 +160,27 @@ func (q *Queries) GetStoreMetrics(ctx context.Context, storeID int64) (GetStoreM
 	return i, err
 }
 
+const hasMadePurchase = `-- name: HasMadePurchase :one
+SELECT EXISTS(
+    SELECT 1 
+    FROM sales 
+    WHERE customer_id = $1 AND item_id = $2 AND store_id = $3
+) AS has_made_purchase
+`
+
+type HasMadePurchaseParams struct {
+	CustomerID int64 `json:"customer_id"`
+	ItemID     int64 `json:"item_id"`
+	StoreID    int64 `json:"store_id"`
+}
+
+func (q *Queries) HasMadePurchase(ctx context.Context, arg HasMadePurchaseParams) (bool, error) {
+	row := q.db.QueryRowContext(ctx, hasMadePurchase, arg.CustomerID, arg.ItemID, arg.StoreID)
+	var has_made_purchase bool
+	err := row.Scan(&has_made_purchase)
+	return has_made_purchase, err
+}
+
 const reduceSalesOverview = `-- name: ReduceSalesOverview :exec
 SELECT reduce_sale($1, $2, $3)
 `

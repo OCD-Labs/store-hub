@@ -94,7 +94,7 @@ func (s *StoreHub) setupRoutes() http.Handler {
 			),
 		),
 	)
-	
+
 	mux.Handler(
 		http.MethodPost,
 		"/api/v1/inventory/stores/:store_id/send-access-invitation",
@@ -219,6 +219,9 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	mux.Handler(http.MethodPost, "/api/v1/auth/logout", s.authenticate(http.HandlerFunc(s.logout)))
 	mux.Handler(http.MethodGet, "/api/v1/users/:user_id", s.authenticate(http.HandlerFunc(s.getUser)))
 
+	// review
+	mux.Handler(http.MethodPut, "/api/v1/accounts/:account_id/reviews/:order_id", s.authenticate(http.HandlerFunc(s.addReview)))
+
 	// TODO:
 	mux.HandlerFunc(http.MethodPatch, "/api/v1/stores/:store_id/freeze", http.HandlerFunc(s.freezeStore))
 	mux.HandlerFunc(http.MethodPatch, "/api/v1/stores/:store_id/unfreeze", http.HandlerFunc(s.unfreezeStore))
@@ -228,4 +231,3 @@ func (s *StoreHub) setupRoutes() http.Handler {
 
 	return s.recoverPanic(s.enableCORS(s.httpLogger(mux)))
 }
-

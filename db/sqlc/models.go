@@ -29,6 +29,7 @@ type Item struct {
 	UpdatedAt          time.Time       `json:"updated_at"`
 	Currency           string          `json:"currency"`
 	CoverImgUrl        string          `json:"cover_img_url"`
+	Status             string          `json:"status"`
 }
 
 type ItemRating struct {
@@ -53,6 +54,27 @@ type Order struct {
 	PaymentChannel       string    `json:"payment_channel"`
 	PaymentMethod        string    `json:"payment_method"`
 	CreatedAt            time.Time `json:"created_at"`
+	IsReviewed           bool      `json:"is_reviewed"`
+}
+
+type Review struct {
+	ID                 int64     `json:"id"`
+	StoreID            int64     `json:"store_id"`
+	UserID             int64     `json:"user_id"`
+	ItemID             int64     `json:"item_id"`
+	Rating             string    `json:"rating"`
+	ReviewType         string    `json:"review_type"`
+	Comment            string    `json:"comment"`
+	IsVerifiedPurchase bool      `json:"is_verified_purchase"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
+}
+
+type ReviewLike struct {
+	ID       int64 `json:"id"`
+	ReviewID int64 `json:"review_id"`
+	UserID   int64 `json:"user_id"`
+	Liked    bool  `json:"liked"`
 }
 
 type Sale struct {

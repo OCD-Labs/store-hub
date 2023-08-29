@@ -18,10 +18,10 @@ type ListAllStoresParams struct {
 }
 
 type StoreAndOwnersResult struct {
-	Store Store `json:"store"`
+	Store       Store `json:"store"`
 	StoreOwners []struct {
-		AccountID      string `json:"account_id"`
-		ProfileImgURL  string `json:"profile_img_url"`
+		AccountID     string `json:"account_id"`
+		ProfileImgURL string `json:"profile_img_url"`
 	} `json:"store_owners"`
 }
 
@@ -78,8 +78,8 @@ func (q *SQLTx) ListAllStores(ctx context.Context, arg ListAllStoresParams) ([]S
 		}
 
 		var owners []struct {
-			AccountID      string `json:"account_id"`
-			ProfileImgURL  string `json:"profile_img_url"`
+			AccountID     string `json:"account_id"`
+			ProfileImgURL string `json:"profile_img_url"`
 		}
 		if err := json.Unmarshal(ownersJSON, &owners); err != nil {
 			return nil, pagination.Metadata{}, err

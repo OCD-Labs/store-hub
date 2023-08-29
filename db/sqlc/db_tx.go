@@ -37,6 +37,9 @@ type StoreTx interface {
 	// UpdateSellerOrderTx updates a order row, create a sale row if order is DELIVERED.
 	UpdateSellerOrderTx(ctx context.Context, arg UpdateSellerOrderParams) (GetOrderForSellerRow, error)
 
+	// CreateReviewTx create a review for an item under a store, updates an order.
+	CreateReviewTx(ctx context.Context, arg CreateReviewTxParams) error
+
 	// ListAllStores do a fulltext search to list stores, and paginates accordingly.
 	ListAllStores(ctx context.Context, arg ListAllStoresParams) ([]StoreAndOwnersResult, pagination.Metadata, error)
 

@@ -46,7 +46,7 @@ INSERT INTO items (
   extra
 ) VALUES (
   $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
-) RETURNING id, name, description, price, store_id, image_urls, category, discount_percentage, supply_quantity, extra, is_frozen, created_at, updated_at, currency, cover_img_url
+) RETURNING id, name, description, price, store_id, image_urls, category, discount_percentage, supply_quantity, extra, is_frozen, created_at, updated_at, currency, cover_img_url, status
 `
 
 type CreateStoreItemParams struct {
@@ -92,6 +92,7 @@ func (q *Queries) CreateStoreItem(ctx context.Context, arg CreateStoreItemParams
 		&i.UpdatedAt,
 		&i.Currency,
 		&i.CoverImgUrl,
+		&i.Status,
 	)
 	return i, err
 }
@@ -112,7 +113,7 @@ func (q *Queries) DeleteItem(ctx context.Context, arg DeleteItemParams) error {
 }
 
 const getItem = `-- name: GetItem :one
-SELECT id, name, description, price, store_id, image_urls, category, discount_percentage, supply_quantity, extra, is_frozen, created_at, updated_at, currency, cover_img_url FROM items
+SELECT id, name, description, price, store_id, image_urls, category, discount_percentage, supply_quantity, extra, is_frozen, created_at, updated_at, currency, cover_img_url, status FROM items
 WHERE id = $1 AND supply_quantity > 0
 `
 
@@ -135,6 +136,7 @@ func (q *Queries) GetItem(ctx context.Context, itemID int64) (Item, error) {
 		&i.UpdatedAt,
 		&i.Currency,
 		&i.CoverImgUrl,
+		&i.Status,
 	)
 	return i, err
 }
@@ -155,7 +157,7 @@ SET
   updated_at = COALESCE($11, updated_at)
 WHERE
   id = $12
-RETURNING id, name, description, price, store_id, image_urls, category, discount_percentage, supply_quantity, extra, is_frozen, created_at, updated_at, currency, cover_img_url
+RETURNING id, name, description, price, store_id, image_urls, category, discount_percentage, supply_quantity, extra, is_frozen, created_at, updated_at, currency, cover_img_url, status
 `
 
 type UpdateItemParams struct {
@@ -205,6 +207,7 @@ func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, e
 		&i.UpdatedAt,
 		&i.Currency,
 		&i.CoverImgUrl,
+		&i.Status,
 	)
 	return i, err
 }

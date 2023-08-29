@@ -200,7 +200,7 @@ func (s *StoreHub) listOwnedStoreItems(w http.ResponseWriter, r *http.Request) {
 	}
 	if reqQueryStr.Sort == "" {
 		reqQueryStr.Sort = "-id"
-	}	
+	}
 
 	// db query
 	arg := db.ListStoreItemsParams{
