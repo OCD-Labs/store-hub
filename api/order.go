@@ -170,7 +170,7 @@ func (s *StoreHub) listSellerOrders(w http.ResponseWriter, r *http.Request) {
 			Page:         reqQueryStr.Page,
 			PageSize:     reqQueryStr.PageSize,
 			Sort:         reqQueryStr.Sort,
-			SortSafelist: []string{"-id", "-item_name", "-created_at", "order_id", "item_name", "created_at"},
+			SortSafelist: []string{"-id", "-item_name", "-created_at", "order_id", "item_name", "created_at", "id"},
 		},
 	}
 	orders, pagination, err := s.dbStore.ListSellerOrders(r.Context(), arg)

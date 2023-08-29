@@ -40,9 +40,9 @@ type Querier interface {
 	GetUserByEmail(ctx context.Context, userEmail string) (User, error)
 	GetUserByID(ctx context.Context, userID int64) (User, error)
 	HasMadePurchase(ctx context.Context, arg HasMadePurchaseParams) (bool, error)
-	ListReviews(ctx context.Context, arg ListReviewsParams) ([]ListReviewsRow, error)
 	ListUserStoresWithAccess(ctx context.Context, userID int64) ([]ListUserStoresWithAccessRow, error)
 	LogAction(ctx context.Context, arg LogActionParams) error
+	RatingOverview(ctx context.Context, storeID int64) (RatingOverviewRow, error)
 	ReduceSalesOverview(ctx context.Context, arg ReduceSalesOverviewParams) error
 	RevokeAccess(ctx context.Context, arg RevokeAccessParams) error
 	RevokeAllAccess(ctx context.Context, arg RevokeAllAccessParams) error
@@ -52,7 +52,6 @@ type Querier interface {
 	UpdateStore(ctx context.Context, arg UpdateStoreParams) (Store, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 	UpdateUserReview(ctx context.Context, arg UpdateUserReviewParams) (Review, error)
-	ratingOverview(ctx context.Context, storeID int64) (ratingOverviewRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

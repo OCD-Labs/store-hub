@@ -1533,6 +1533,143 @@ paths:
             $ref: "#/definitions/ErrorResponse"
       security:
         - Bearer: []
+  /stores/{store_id}/items/{item_id}/reviews:
+    get:
+      summary: List reviews for a store's item
+      parameters:
+        - name: store_id
+          in: path
+          description: The store ID
+          required: true
+          type: integer
+        - name: item_id
+          in: path
+          description: The item ID
+          required: true
+          type: integer
+        - in: query
+          name: page
+          description: The page number for pagination
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            maximum: 10000000
+        - in: query
+          name: page_size
+          description: The number of reviews to include per page
+          schema:
+            type: integer
+            minimum: 1
+            default: 15
+            maximum: 20
+        - in: query
+          name: sort
+          description: The sorting criteria for the reviews (e.g "-id", "-created_at", "id", "created_at")
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      reviews:
+                        type: array
+                        items:
+                          $ref: '#/definitions/ListReviewsResult'
+                      metadata:
+                        $ref: '#/definitions/pagination'
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /inventory/stores/{store_id}/reviews:
+    get:
+      summary: List reviews for a store in inventory
+      parameters:
+        - name: store_id
+          in: path
+          description: The store ID
+          required: true
+          type: integer
+        - in: query
+          name: page
+          description: The page number for pagination
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            maximum: 10000000
+        - in: query
+          name: page_size
+          description: The number of reviews to include per page
+          schema:
+            type: integer
+            minimum: 1
+            default: 15
+            maximum: 20
+        - in: query
+          name: sort
+          description: The sorting criteria for the reviews (e.g "-id", "id")
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      reviews:
+                        type: array
+                        items:
+                          $ref: '#/definitions/ListReviewsResult'
+                      aggregated_reviews:
+                        $ref: '#/definitions/RatingOverview'
+                      metadata:
+                        $ref: '#/definitions/pagination'
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        403:
+          description: Forbidden
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
 
 definitions:
   createStoreRequestBody:
@@ -1976,3 +2113,57 @@ definitions:
       comment:
         type: string
         minLength: 1
+
+  ListReviewsResult:
+    type: object
+    properties:
+      id:
+        type: integer
+      store_id:
+        type: integer
+      user_id:
+        type: integer
+      item_id:
+        type: integer
+      rating:
+        type: string
+      review_type:
+        type: string
+      comment:
+        type: string
+      is_verified_purchase:
+        type: boolean
+      created_at:
+        type: string
+        format: date-time
+      updated_at:
+        type: string
+        format: date-time
+      first_name:
+        type: string
+      last_name:
+        type: string
+      account_id:
+        type: string
+      profile_image_url:
+        type: string
+
+  RatingOverview:
+    type: object
+    properties:
+      total_reviews:
+        type: integer
+      total_reviews_today:
+        type: integer
+      average_rating:
+        type: string
+      rate_1_count:
+        type: integer
+      rate_2_count:
+        type: integer
+      rate_3_count:
+        type: integer
+      rate_4_count:
+        type: integer
+      rate_5_count:
+        type: integer

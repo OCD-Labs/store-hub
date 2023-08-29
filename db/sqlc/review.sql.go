@@ -8,7 +8,6 @@ package db
 import (
 	"context"
 	"database/sql"
-	"time"
 )
 
 const createReview = `-- name: CreateReview :exec
@@ -65,80 +64,52 @@ func (q *Queries) DeleteReview(ctx context.Context, arg DeleteReviewParams) erro
 	return err
 }
 
-const listReviews = `-- name: ListReviews :many
+const ratingOverview = `-- name: RatingOverview :one
+WITH RatingCounts AS (
+    SELECT rating, COUNT(rating) as rate_count
+    FROM reviews
+    WHERE store_id = $1
+    GROUP BY rating
+)
+
 SELECT 
-  r.id, r.store_id, r.user_id, r.item_id, r.rating, r.review_type, r.comment, r.is_verified_purchase, r.created_at, r.updated_at,
-  u.first_name,
-  u.last_name,
-  u.account_id,
-  u.profile_image_url
-FROM 
-  reviews r
-JOIN 
-  users u ON r.user_id = u.id
-WHERE 
-  r.store_id = $1 
-  OR r.item_id = $2
+    COUNT(*) as total_reviews,
+    SUM(CASE WHEN DATE(r.created_at) = CURRENT_DATE THEN 1 ELSE 0 END) as total_reviews_today,
+    ROUND(AVG(r.rating), 2) as average_rating,
+    COALESCE((SELECT rate_count FROM RatingCounts WHERE rating = 1), 0) as rate_1_count,
+    COALESCE((SELECT rate_count FROM RatingCounts WHERE rating = 2), 0) as rate_2_count,
+    COALESCE((SELECT rate_count FROM RatingCounts WHERE rating = 3), 0) as rate_3_count,
+    COALESCE((SELECT rate_count FROM RatingCounts WHERE rating = 4), 0) as rate_4_count,
+    COALESCE((SELECT rate_count FROM RatingCounts WHERE rating = 5), 0) as rate_5_count
+FROM reviews r
+WHERE r.store_id = $1
 `
 
-type ListReviewsParams struct {
-	StoreID int64 `json:"store_id"`
-	ItemID  int64 `json:"item_id"`
+type RatingOverviewRow struct {
+	TotalReviews      int64       `json:"total_reviews"`
+	TotalReviewsToday int64       `json:"total_reviews_today"`
+	AverageRating     string      `json:"average_rating"`
+	Rate1Count        interface{} `json:"rate_1_count"`
+	Rate2Count        interface{} `json:"rate_2_count"`
+	Rate3Count        interface{} `json:"rate_3_count"`
+	Rate4Count        interface{} `json:"rate_4_count"`
+	Rate5Count        interface{} `json:"rate_5_count"`
 }
 
-type ListReviewsRow struct {
-	ID                 int64          `json:"id"`
-	StoreID            int64          `json:"store_id"`
-	UserID             int64          `json:"user_id"`
-	ItemID             int64          `json:"item_id"`
-	Rating             string         `json:"rating"`
-	ReviewType         string         `json:"review_type"`
-	Comment            string         `json:"comment"`
-	IsVerifiedPurchase bool           `json:"is_verified_purchase"`
-	CreatedAt          time.Time      `json:"created_at"`
-	UpdatedAt          time.Time      `json:"updated_at"`
-	FirstName          string         `json:"first_name"`
-	LastName           string         `json:"last_name"`
-	AccountID          string         `json:"account_id"`
-	ProfileImageUrl    sql.NullString `json:"profile_image_url"`
-}
-
-func (q *Queries) ListReviews(ctx context.Context, arg ListReviewsParams) ([]ListReviewsRow, error) {
-	rows, err := q.db.QueryContext(ctx, listReviews, arg.StoreID, arg.ItemID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []ListReviewsRow{}
-	for rows.Next() {
-		var i ListReviewsRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.StoreID,
-			&i.UserID,
-			&i.ItemID,
-			&i.Rating,
-			&i.ReviewType,
-			&i.Comment,
-			&i.IsVerifiedPurchase,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.FirstName,
-			&i.LastName,
-			&i.AccountID,
-			&i.ProfileImageUrl,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) RatingOverview(ctx context.Context, storeID int64) (RatingOverviewRow, error) {
+	row := q.db.QueryRowContext(ctx, ratingOverview, storeID)
+	var i RatingOverviewRow
+	err := row.Scan(
+		&i.TotalReviews,
+		&i.TotalReviewsToday,
+		&i.AverageRating,
+		&i.Rate1Count,
+		&i.Rate2Count,
+		&i.Rate3Count,
+		&i.Rate4Count,
+		&i.Rate5Count,
+	)
+	return i, err
 }
 
 const updateUserReview = `-- name: UpdateUserReview :one
@@ -178,54 +149,6 @@ func (q *Queries) UpdateUserReview(ctx context.Context, arg UpdateUserReviewPara
 		&i.IsVerifiedPurchase,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const ratingOverview = `-- name: ratingOverview :one
-WITH RatingCounts AS (
-    SELECT rating, COUNT(rating) as rate_count
-    FROM reviews
-    WHERE store_id = $1
-    GROUP BY rating
-)
-
-SELECT 
-    COUNT(*) as total_reviews,
-    SUM(CASE WHEN DATE(r.created_at) = CURRENT_DATE THEN 1 ELSE 0 END) as total_reviews_today,
-    ROUND(AVG(r.rating), 2) as average_rating,
-    COALESCE((SELECT rate_count FROM RatingCounts WHERE rating = 1), 0) as rate_1_count,
-    COALESCE((SELECT rate_count FROM RatingCounts WHERE rating = 2), 0) as rate_2_count,
-    COALESCE((SELECT rate_count FROM RatingCounts WHERE rating = 3), 0) as rate_3_count,
-    COALESCE((SELECT rate_count FROM RatingCounts WHERE rating = 4), 0) as rate_4_count,
-    COALESCE((SELECT rate_count FROM RatingCounts WHERE rating = 5), 0) as rate_5_count
-FROM reviews r
-WHERE r.store_id = $1
-`
-
-type ratingOverviewRow struct {
-	TotalReviews      int64       `json:"total_reviews"`
-	TotalReviewsToday int64       `json:"total_reviews_today"`
-	AverageRating     string      `json:"average_rating"`
-	Rate1Count        interface{} `json:"rate_1_count"`
-	Rate2Count        interface{} `json:"rate_2_count"`
-	Rate3Count        interface{} `json:"rate_3_count"`
-	Rate4Count        interface{} `json:"rate_4_count"`
-	Rate5Count        interface{} `json:"rate_5_count"`
-}
-
-func (q *Queries) ratingOverview(ctx context.Context, storeID int64) (ratingOverviewRow, error) {
-	row := q.db.QueryRowContext(ctx, ratingOverview, storeID)
-	var i ratingOverviewRow
-	err := row.Scan(
-		&i.TotalReviews,
-		&i.TotalReviewsToday,
-		&i.AverageRating,
-		&i.Rate1Count,
-		&i.Rate2Count,
-		&i.Rate3Count,
-		&i.Rate4Count,
-		&i.Rate5Count,
 	)
 	return i, err
 }
