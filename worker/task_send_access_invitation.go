@@ -112,8 +112,8 @@ func (processor *RedisTaskProcessor) ProcessTaskSendAccessInvitation(ctx context
 	}
 
 	acceptInvitationURL := fmt.Sprintf(
-		"https://%s/api/v1/inventory/stores/%d/accept-access-invitation?sth_code=%s",
-		processor.configs.APIHost,
+		"http://localhost:3000/access-confirmation?store_name=%s&store_id=%d&sth_code=%s",
+		store.Name,
 		store.ID,
 		accessInvitationSession.Token,
 	)
