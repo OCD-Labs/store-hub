@@ -57,6 +57,9 @@ type StoreTx interface {
 
 	// ListSalesOverview do a full search to list a store's sales overview, and paginates accordingly.
 	ListSalesOverview(ctx context.Context, arg SalesOverviewParams) ([]SaleOverviewResult, pagination.Metadata, error)
+
+	// ListReviews retrieves all the reviews for an item under a store.
+	ListReviews(ctx context.Context, arg ListReviewsParams) ([]ListReviewsResult, pagination.Metadata, error)
 }
 
 // A SQLTx provides all functions to execute SQL queries and transactions.

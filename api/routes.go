@@ -221,6 +221,19 @@ func (s *StoreHub) setupRoutes() http.Handler {
 
 	// review
 	mux.Handler(http.MethodPut, "/api/v1/accounts/:account_id/reviews/:order_id", s.authenticate(http.HandlerFunc(s.addReview)))
+	mux.HandlerFunc(http.MethodGet, "/api/v1/stores/:store_id/items/:item_id/reviews", s.listItemReviewStorefront)
+	mux.Handler(
+		http.MethodGet, 
+		"/api/v1/inventory/stores/:store_id/reviews", 
+		s.authenticate(
+			s.CheckAccessLevel(
+				util.FULLACCESS,
+				util.SALESACCESS,
+			)(
+				http.HandlerFunc(s.listItemReviewInventory),
+			),
+		),
+	)
 
 	// TODO:
 	mux.HandlerFunc(http.MethodPatch, "/api/v1/stores/:store_id/freeze", http.HandlerFunc(s.freezeStore))
