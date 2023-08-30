@@ -74,14 +74,14 @@ func (s *StoreHub) addReview(w http.ResponseWriter, r *http.Request) {
 }
 
 type listItemReviewStorefrontQueryStr struct {
-	Page           int       `querystr:"page" validate:"max=10000000"`
-	PageSize       int       `querystr:"page_size" validate:"max=20"`
-	Sort           string    `querystr:"sort"`
+	Page     int    `querystr:"page" validate:"max=10000000"`
+	PageSize int    `querystr:"page_size" validate:"max=20"`
+	Sort     string `querystr:"sort"`
 }
 
 type listItemReviewStorefrontPathVars struct {
-	StoreID int64  `path:"store_id" validate:"required,min=1"`
-	ItemID  int64  `path:"item_id" validatw:"required,min=1"`
+	StoreID int64 `path:"store_id" validate:"required,min=1"`
+	ItemID  int64 `path:"item_id" validatw:"required,min=1"`
 }
 
 // listItemReviewStorefront map to endpoint "GET /stores/{store_id}/items/{item_id}/reviews"
@@ -107,8 +107,8 @@ func (s *StoreHub) listItemReviewStorefront(w http.ResponseWriter, r *http.Reque
 	}
 
 	reviews, pagination, err := s.dbStore.ListReviews(r.Context(), db.ListReviewsParams{
-		StoreID: pathVars.StoreID,
-		ItemID: pathVars.ItemID,
+		StoreID:      pathVars.StoreID,
+		ItemID:       pathVars.ItemID,
 		IsStorefront: true,
 		Filters: pagination.Filters{
 			Page:         reqQueryStr.Page,
@@ -129,7 +129,7 @@ func (s *StoreHub) listItemReviewStorefront(w http.ResponseWriter, r *http.Reque
 		"data": envelop{
 			"message": "found some reviews",
 			"result": envelop{
-				"reviews":    reviews,
+				"reviews":  reviews,
 				"metadata": pagination,
 			},
 		},
@@ -137,13 +137,13 @@ func (s *StoreHub) listItemReviewStorefront(w http.ResponseWriter, r *http.Reque
 }
 
 type listItemReviewInventoryQueryStr struct {
-	Page           int       `querystr:"page" validate:"max=10000000"`
-	PageSize       int       `querystr:"page_size" validate:"max=20"`
-	Sort           string    `querystr:"sort"`
+	Page     int    `querystr:"page" validate:"max=10000000"`
+	PageSize int    `querystr:"page_size" validate:"max=20"`
+	Sort     string `querystr:"sort"`
 }
 
 type listItemReviewInventoryPathVars struct {
-	StoreID int64  `path:"store_id" validate:"required,min=1"`
+	StoreID int64 `path:"store_id" validate:"required,min=1"`
 }
 
 // listItemReviewStorefront map to endpoint "GET /inventory/stores/{store_id}/reviews"
@@ -196,9 +196,9 @@ func (s *StoreHub) listItemReviewInventory(w http.ResponseWriter, r *http.Reques
 		"data": envelop{
 			"message": "found some reviews",
 			"result": envelop{
-				"reviews":    reviews,
+				"reviews":            reviews,
 				"aggregated_reviews": aggregatedReviews,
-				"metadata": pagination,
+				"metadata":           pagination,
 			},
 		},
 	}, nil)

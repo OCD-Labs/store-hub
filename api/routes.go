@@ -223,8 +223,8 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	mux.Handler(http.MethodPut, "/api/v1/accounts/:account_id/reviews/:order_id", s.authenticate(http.HandlerFunc(s.addReview)))
 	mux.HandlerFunc(http.MethodGet, "/api/v1/stores/:store_id/items/:item_id/reviews", s.listItemReviewStorefront)
 	mux.Handler(
-		http.MethodGet, 
-		"/api/v1/inventory/stores/:store_id/reviews", 
+		http.MethodGet,
+		"/api/v1/inventory/stores/:store_id/reviews",
 		s.authenticate(
 			s.CheckAccessLevel(
 				util.FULLACCESS,
