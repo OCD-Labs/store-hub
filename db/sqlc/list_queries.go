@@ -506,34 +506,34 @@ func (dbTx SQLTx) ListSalesOverview(ctx context.Context, arg SalesOverviewParams
 }
 
 type ListReviewsParams struct {
-	StoreID int64 `json:"store_id"`
-	ItemID  int64 `json:"item_id"`
+	StoreID      int64 `json:"store_id"`
+	ItemID       int64 `json:"item_id"`
 	IsStorefront bool
-	Filters pagination.Filters
+	Filters      pagination.Filters
 }
 
 type ListReviewsResult struct {
-	ID                 int64          `json:"id"`
-	StoreID            int64          `json:"store_id"`
-	UserID             int64          `json:"user_id"`
-	ItemID             int64          `json:"item_id"`
-	Rating             string         `json:"rating"`
-	ReviewType         string         `json:"review_type"`
-	Comment            string         `json:"comment"`
-	IsVerifiedPurchase bool           `json:"is_verified_purchase"`
-	CreatedAt          time.Time      `json:"created_at"`
-	UpdatedAt          time.Time      `json:"updated_at"`
-	FirstName          string         `json:"first_name"`
-	LastName           string         `json:"last_name"`
-	AccountID          string         `json:"account_id"`
-	ProfileImageUrl    string `json:"profile_image_url"`
+	ID                 int64     `json:"id"`
+	StoreID            int64     `json:"store_id"`
+	UserID             int64     `json:"user_id"`
+	ItemID             int64     `json:"item_id"`
+	Rating             string    `json:"rating"`
+	ReviewType         string    `json:"review_type"`
+	Comment            string    `json:"comment"`
+	IsVerifiedPurchase bool      `json:"is_verified_purchase"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
+	FirstName          string    `json:"first_name"`
+	LastName           string    `json:"last_name"`
+	AccountID          string    `json:"account_id"`
+	ProfileImageUrl    string    `json:"profile_image_url"`
 }
 
 // ListReviews retrieves all the reviews for an item under a store.
 func (q *Queries) ListReviews(ctx context.Context, arg ListReviewsParams) ([]ListReviewsResult, pagination.Metadata, error) {
-	itemIDClause := "" 
+	itemIDClause := ""
 	args := []interface{}{arg.StoreID}
-	
+
 	if arg.IsStorefront {
 		itemIDClause = "AND r.item_id = $2"
 		args = append(args, arg.ItemID)
@@ -588,13 +588,12 @@ func (q *Queries) ListReviews(ctx context.Context, arg ListReviewsParams) ([]Lis
 		}
 		reviews = append(reviews, r)
 	}
-	
+
 	if err := rows.Err(); err != nil {
 		return nil, pagination.Metadata{}, err
 	}
 
 	metadata := pagination.CalcMetadata(totalRecords, arg.Filters.Page, arg.Filters.PageSize)
-
 
 	return reviews, metadata, nil
 }
