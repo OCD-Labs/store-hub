@@ -219,8 +219,15 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	mux.Handler(http.MethodPost, "/api/v1/auth/logout", s.authenticate(http.HandlerFunc(s.logout)))
 	mux.Handler(http.MethodGet, "/api/v1/users/:user_id", s.authenticate(http.HandlerFunc(s.getUser)))
 
+	// cart
+	mux.Handler(http.MethodGet, "/api/v1/carts/:user_id", s.authenticate(http.HandlerFunc(s.getUserCart)))
+	mux.Handler(http.MethodPost, "/api/v1/carts/:cart_id/items", s.authenticate(http.HandlerFunc(s.addItemToCart)))
+	mux.Handler(http.MethodDelete, "/api/v1/carts/:cart_id/items/:item_id", s.authenticate(http.HandlerFunc(s.removeItemFromCart)))
+	mux.Handler(http.MethodPut, "/api/v1/carts/:cart_id/items/:item_id/increase", s.authenticate(http.HandlerFunc(s.increaseCartItem)))
+	mux.Handler(http.MethodPut, "/api/v1/carts/:cart_id/items/:item_id/decrease", s.authenticate(http.HandlerFunc(s.decreaseCartItem)))
+
 	// review
-	mux.Handler(http.MethodPut, "/api/v1/accounts/:account_id/reviews/:order_id", s.authenticate(http.HandlerFunc(s.addReview)))
+	mux.Handler(http.MethodPut, "/api/v1/users/:user_id/reviews/:order_id", s.authenticate(http.HandlerFunc(s.addReview)))
 	mux.HandlerFunc(http.MethodGet, "/api/v1/stores/:store_id/items/:item_id/reviews", s.listItemReviewStorefront)
 	mux.Handler(
 		http.MethodGet,

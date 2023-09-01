@@ -1478,15 +1478,15 @@ paths:
             $ref: "#/definitions/ErrorResponse"
       security:
         - Bearer: []
-  /accounts/{account_id}/reviews/{order_id}:
+  /users/{user_id}/reviews/{order_id}:
     put:
       summary: Add a new review to a store
       parameters:
         - in: path
-          name: account_id
-          description: The account ID
+          name: user_id
+          description: The User ID
           required: true
-          type: string
+          type: integer
         - in: path
           name: order_id
           description: The order ID
@@ -1662,6 +1662,236 @@ paths:
             $ref: "#/definitions/ErrorResponse"
         403:
           description: Forbidden
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+  /carts/{user_id}:
+    get:
+      summary: Get user's cart
+      parameters:
+        - name: user_id
+          in: path
+          description: The user ID
+          required: true
+          type: integer
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      cart:
+                        type: array
+                        items:
+                          $ref: '#/definitions/ListCartItem'
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+  /carts/{cart_id}/items:
+    post:
+      summary: Add item to cart
+      parameters:
+        - name: cart_id
+          in: path
+          description: The cart ID
+          required: true
+          type: integer
+        - name: requestBody
+          in: body
+          description: Details of the item to be added to the cart.
+          required: true
+          schema:
+            type: object
+            properties:
+              item_id:
+                type: integer
+                minimum: 1
+              store_id:
+                type: integer
+                minimum: 1
+      responses:
+        201:
+          description: Created
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      cart_item:
+                        $ref: '#/definitions/CartItem'
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+  /carts/{cart_id}/items/{item_id}:
+    delete:
+      summary: Remove item from cart
+      parameters:
+        - name: cart_id
+          in: path
+          description: The cart ID
+          required: true
+          type: integer
+        - name: item_id
+          in: path
+          description: The item ID to be removed from the cart
+          required: true
+          type: integer
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+  /carts/{cart_id}/items/{item_id}/increase:
+    put:
+      summary: Increase cart item quantity
+      parameters:
+        - name: cart_id
+          in: path
+          description: The cart ID
+          required: true
+          type: integer
+        - name: item_id
+          in: path
+          description: The item ID for which to increase the quantity
+          required: true
+          type: integer
+        - name: requestBody
+          in: body
+          description: Amount by which to increase the cart item quantity
+          required: true
+          schema:
+            type: object
+            properties:
+              increase_amount:
+                type: integer
+                minimum: 1
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      updated_cart_item:
+                        $ref: '#/definitions/CartItem'
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      security:
+        - Bearer: []
+  /carts/{cart_id}/items/{item_id}/decrease:
+    put:
+      summary: Decrease cart item quantity
+      parameters:
+        - name: cart_id
+          in: path
+          description: The cart ID
+          required: true
+          type: integer
+        - name: item_id
+          in: path
+          description: The item ID for which to decrease the quantity
+          required: true
+          type: integer
+        - name: requestBody
+          in: body
+          description: Amount by which to decrease the cart item quantity
+          required: true
+          schema:
+            type: object
+            properties:
+              decrease_amount:
+                type: integer
+                minimum: 1
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      updated_cart_item:
+                        $ref: '#/definitions/CartItem'
+        400:
+          description: Bad Request
           schema:
             $ref: "#/definitions/ErrorResponse"
         500:
@@ -2167,3 +2397,41 @@ definitions:
         type: integer
       rate_5_count:
         type: integer
+
+  ListCartItem:
+    type: object
+    properties:
+      cart_id:
+        type: integer
+      item_id:
+        type: integer
+      item_name:
+        type: string
+      item_description:
+        type: string
+      price:
+        type: string
+      quantity:
+        type: integer
+      item_image:
+        type: string
+
+  CartItem:
+    type: object
+    properties:
+      id:
+        type: integer
+      cart_id:
+        type: integer
+      item_id:
+        type: integer
+      store_id:
+        type: integer
+      quantity:
+        type: integer
+      added_at:
+        type: string
+        format: date-time
+      updated_at:
+        type: string
+        format: date-time
