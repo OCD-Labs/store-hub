@@ -18,11 +18,11 @@ type addReviewRequestBody struct {
 }
 
 type addReviewPathVars struct {
-	OrderID   int64  `path:"order_id" validatw:"required,min=1"`
-	AccountID string `path:"account_id" validate:"required"`
+	OrderID int64 `path:"order_id" validatw:"required,min=1"`
+	UserID  int64 `path:"user_id" validate:"required,min=1"`
 }
 
-// addReview maps to endpoint "PUT /accounts/{account_id}/reviews/{order_id}"
+// addReview maps to endpoint "PUT /users/{user_id}/reviews/{order_id}"
 func (s *StoreHub) addReview(w http.ResponseWriter, r *http.Request) {
 	var reqBody addReviewRequestBody
 	if err := s.shouldBindBody(w, r, &reqBody); err != nil {

@@ -15,6 +15,7 @@ type Querier interface {
 	AddToCoOwnerAccess(ctx context.Context, arg AddToCoOwnerAccessParams) (StoreOwner, error)
 	CheckItemStoreMatch(ctx context.Context, arg CheckItemStoreMatchParams) (int64, error)
 	CheckSessionExistence(ctx context.Context, token string) (bool, error)
+	CreateCartForUser(ctx context.Context, userID int64) error
 	CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error)
 	CreateReview(ctx context.Context, arg CreateReviewParams) error
 	CreateSale(ctx context.Context, arg CreateSaleParams) (Sale, error)
@@ -22,11 +23,13 @@ type Querier interface {
 	CreateStore(ctx context.Context, arg CreateStoreParams) (Store, error)
 	CreateStoreItem(ctx context.Context, arg CreateStoreItemParams) (Item, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DecreaseCartItemQuantity(ctx context.Context, arg DecreaseCartItemQuantityParams) (CartItem, error)
 	DeductItemSupply(ctx context.Context, arg DeductItemSupplyParams) error
 	DeleteExpiredSession(ctx context.Context) error
 	DeleteItem(ctx context.Context, arg DeleteItemParams) error
 	DeleteReview(ctx context.Context, arg DeleteReviewParams) error
 	DeleteStore(ctx context.Context, storeID int64) error
+	GetCartByUserID(ctx context.Context, userID int64) ([]GetCartByUserIDRow, error)
 	GetItem(ctx context.Context, itemID int64) (Item, error)
 	GetOrderForBuyer(ctx context.Context, arg GetOrderForBuyerParams) (GetOrderForBuyerRow, error)
 	GetOrderForSeller(ctx context.Context, arg GetOrderForSellerParams) (GetOrderForSellerRow, error)
@@ -40,10 +43,12 @@ type Querier interface {
 	GetUserByEmail(ctx context.Context, userEmail string) (User, error)
 	GetUserByID(ctx context.Context, userID int64) (User, error)
 	HasMadePurchase(ctx context.Context, arg HasMadePurchaseParams) (bool, error)
+	IncreaseCartItemQuantity(ctx context.Context, arg IncreaseCartItemQuantityParams) (CartItem, error)
 	ListUserStoresWithAccess(ctx context.Context, userID int64) ([]ListUserStoresWithAccessRow, error)
 	LogAction(ctx context.Context, arg LogActionParams) error
 	RatingOverview(ctx context.Context, storeID int64) (RatingOverviewRow, error)
 	ReduceSalesOverview(ctx context.Context, arg ReduceSalesOverviewParams) error
+	RemoveItemFromCart(ctx context.Context, arg RemoveItemFromCartParams) error
 	RevokeAccess(ctx context.Context, arg RevokeAccessParams) error
 	RevokeAllAccess(ctx context.Context, arg RevokeAllAccessParams) error
 	UpdateBuyerOrder(ctx context.Context, arg UpdateBuyerOrderParams) (Order, error)
@@ -52,6 +57,7 @@ type Querier interface {
 	UpdateStore(ctx context.Context, arg UpdateStoreParams) (Store, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 	UpdateUserReview(ctx context.Context, arg UpdateUserReviewParams) (Review, error)
+	UpsertCartItem(ctx context.Context, arg UpsertCartItemParams) (CartItem, error)
 }
 
 var _ Querier = (*Queries)(nil)

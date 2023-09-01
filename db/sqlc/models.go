@@ -13,6 +13,22 @@ import (
 	"github.com/sqlc-dev/pqtype"
 )
 
+type Cart struct {
+	ID        int64     `json:"id"`
+	UserID    int64     `json:"user_id"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type CartItem struct {
+	ID        int64     `json:"id"`
+	CartID    int64     `json:"cart_id"`
+	ItemID    int64     `json:"item_id"`
+	StoreID   int64     `json:"store_id"`
+	Quantity  int32     `json:"quantity"`
+	AddedAt   time.Time `json:"added_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 type Item struct {
 	ID                 int64           `json:"id"`
 	Name               string          `json:"name"`
