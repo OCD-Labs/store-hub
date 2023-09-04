@@ -45,7 +45,7 @@ func (s *StoreHub) grantStoreAccess(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if exists, err := s.cache.IsSessionBlacklisted(r.Context(), payload.ID.String()); err != nil || exists {
-		s.errorResponse(w, r, http.StatusUnauthorized, "invalid token")
+		s.errorResponse(w, r, http.StatusUnauthorized, "token has been used before")
 		return
 	}
 
