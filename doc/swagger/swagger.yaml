@@ -74,7 +74,7 @@ paths:
                       stores:
                         type: array
                         items:
-                          $ref: '#/definitions/store'
+                          $ref: '#/definitions/ListOwnedStoresResult'
         400:
           description: Bad Request
           schema:
@@ -1965,10 +1965,7 @@ definitions:
       created_at:
         type: string
         format: date-time
-      user_access_levels:
-        type: array
-        items:
-          type: integer
+
 
   storeOwner:
     type: object
@@ -2017,6 +2014,8 @@ definitions:
         type: string
       supply_quantity:
         type: integer
+      status:
+        type: string
     required:
       - name
       - description
@@ -2025,6 +2024,7 @@ definitions:
       - category
       - discount_percentage
       - supply_quantity
+      - status
   
   addStoreItemResponse:
     type: object
@@ -2317,7 +2317,27 @@ definitions:
     type: object
     properties:
       store:
-        $ref: '#/definitions/store'
+        type: object
+        properties:
+          id:
+            type: integer
+          name:
+            type: string
+          description:
+            type: string
+          store_account_id:
+            type: string
+          profile_image_url:
+            type: string
+          is_verified:
+            type: boolean
+          category:
+            type: string
+          is_frozen:
+            type: boolean
+          created_at:
+            type: string
+            format: date-time
       store_owners:
         type: array
         items:
@@ -2327,6 +2347,50 @@ definitions:
               type: string
             profile_img_url:
               type: string
+
+  ListOwnedStoresResult:
+    type: object
+    properties:
+      store:
+        type: object
+        properties:
+          id:
+            type: integer
+          name:
+            type: string
+          description:
+            type: string
+          store_account_id:
+            type: string
+          profile_image_url:
+            type: string
+          is_verified:
+            type: boolean
+          category:
+            type: string
+          is_frozen:
+            type: boolean
+          created_at:
+            type: string
+            format: date-time
+      store_owners:
+        type: array
+        items:
+          type: object
+          properties:
+            account_id:
+              type: string
+            profile_img_url:
+              type: string
+            access_levels:
+              type: array
+              items:
+                type: integer
+            is_original_owner:
+              type: boolean
+            added_at:
+              type: string
+              format: date-time
 
   addReviewRequestBody:
     type: object

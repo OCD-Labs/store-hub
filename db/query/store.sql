@@ -41,15 +41,23 @@ SELECT
     s.category,
     s.is_frozen,
     s.created_at AS store_created_at,
-    so.access_levels AS user_access_levels
+    json_agg(json_build_object(
+      'account_id', u.account_id,
+      'profile_img_url', u.profile_image_url,
+      'access_levels', so.access_levels,
+      'is_original_owner', so.is_primary,
+      'added_at', so.added_at
+  )) AS store_owners
 FROM 
     stores s
 JOIN 
     store_owners so ON s.id = so.store_id
+JOIN 
+  users AS u ON so.user_id = u.id
 WHERE 
-    so.user_id = sqlc.arg(user_id);
-
-
+    so.user_id = sqlc.arg(user_id)
+GROUP BY 
+  s.id;
 
 -- name: UpdateStore :one
 UPDATE stores

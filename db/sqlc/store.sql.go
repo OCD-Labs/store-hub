@@ -10,8 +10,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"time"
-
-	"github.com/lib/pq"
 )
 
 const createStore = `-- name: CreateStore :one
@@ -131,26 +129,36 @@ SELECT
     s.category,
     s.is_frozen,
     s.created_at AS store_created_at,
-    so.access_levels AS user_access_levels
+    json_agg(json_build_object(
+      'account_id', u.account_id,
+      'profile_img_url', u.profile_image_url,
+      'access_levels', so.access_levels,
+      'is_original_owner', so.is_primary,
+      'added_at', so.added_at
+  )) AS store_owners
 FROM 
     stores s
 JOIN 
     store_owners so ON s.id = so.store_id
+JOIN 
+  users AS u ON so.user_id = u.id
 WHERE 
     so.user_id = $1
+GROUP BY 
+  s.id
 `
 
 type ListUserStoresWithAccessRow struct {
-	StoreID          int64     `json:"store_id"`
-	StoreName        string    `json:"store_name"`
-	StoreDescription string    `json:"store_description"`
-	StoreImage       string    `json:"store_image"`
-	StoreAccountID   string    `json:"store_account_id"`
-	IsVerified       bool      `json:"is_verified"`
-	Category         string    `json:"category"`
-	IsFrozen         bool      `json:"is_frozen"`
-	StoreCreatedAt   time.Time `json:"store_created_at"`
-	UserAccessLevels []int32   `json:"user_access_levels"`
+	StoreID          int64           `json:"store_id"`
+	StoreName        string          `json:"store_name"`
+	StoreDescription string          `json:"store_description"`
+	StoreImage       string          `json:"store_image"`
+	StoreAccountID   string          `json:"store_account_id"`
+	IsVerified       bool            `json:"is_verified"`
+	Category         string          `json:"category"`
+	IsFrozen         bool            `json:"is_frozen"`
+	StoreCreatedAt   time.Time       `json:"store_created_at"`
+	StoreOwners      json.RawMessage `json:"store_owners"`
 }
 
 func (q *Queries) ListUserStoresWithAccess(ctx context.Context, userID int64) ([]ListUserStoresWithAccessRow, error) {
@@ -172,7 +180,7 @@ func (q *Queries) ListUserStoresWithAccess(ctx context.Context, userID int64) ([
 			&i.Category,
 			&i.IsFrozen,
 			&i.StoreCreatedAt,
-			pq.Array(&i.UserAccessLevels),
+			&i.StoreOwners,
 		); err != nil {
 			return nil, err
 		}

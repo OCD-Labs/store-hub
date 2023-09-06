@@ -43,9 +43,10 @@ INSERT INTO items (
   cover_img_url,
   discount_percentage,
   supply_quantity,
-  extra
+  extra,
+  status
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
 ) RETURNING id, name, description, price, store_id, image_urls, category, discount_percentage, supply_quantity, extra, is_frozen, created_at, updated_at, currency, cover_img_url, status
 `
 
@@ -60,6 +61,7 @@ type CreateStoreItemParams struct {
 	DiscountPercentage string          `json:"discount_percentage"`
 	SupplyQuantity     int64           `json:"supply_quantity"`
 	Extra              json.RawMessage `json:"extra"`
+	Status             string          `json:"status"`
 }
 
 func (q *Queries) CreateStoreItem(ctx context.Context, arg CreateStoreItemParams) (Item, error) {
@@ -74,6 +76,7 @@ func (q *Queries) CreateStoreItem(ctx context.Context, arg CreateStoreItemParams
 		arg.DiscountPercentage,
 		arg.SupplyQuantity,
 		arg.Extra,
+		arg.Status,
 	)
 	var i Item
 	err := row.Scan(
