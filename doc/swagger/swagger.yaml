@@ -2017,6 +2017,8 @@ definitions:
         type: string
       supply_quantity:
         type: integer
+      status:
+        type: string
     required:
       - name
       - description
@@ -2025,6 +2027,7 @@ definitions:
       - category
       - discount_percentage
       - supply_quantity
+      - status
   
   addStoreItemResponse:
     type: object

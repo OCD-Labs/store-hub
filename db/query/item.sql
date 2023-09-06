@@ -9,9 +9,10 @@ INSERT INTO items (
   cover_img_url,
   discount_percentage,
   supply_quantity,
-  extra
+  extra,
+  status
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
 ) RETURNING *;
 
 -- name: GetItem :one
