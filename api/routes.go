@@ -249,5 +249,5 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	mux.HandlerFunc(http.MethodPatch, "/api/v1/stores/:store_id/items/:item_id/unfreeze", http.HandlerFunc(s.unfreezeStoreItems))
 	// mux.HandlerFunc(http.MethodGet, "/stores/{name}", http.HandlerFunc(s.getStore))
 
-	return s.recoverPanic(s.enableCORS(s.httpLogger(mux)))
+	return s.recoverPanic(s.rateLimit(s.enableCORS(s.httpLogger(mux))))
 }
