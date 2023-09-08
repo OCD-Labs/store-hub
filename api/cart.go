@@ -40,8 +40,8 @@ func (s *StoreHub) getUserCart(w http.ResponseWriter, r *http.Request) {
 }
 
 type addItemToCartRequestBody struct {
-	ItemID   int64 `json:"item_id" validate:"required,min=1"`
-	StoreID   int64 `json:"store_id" validate:"required,min=1"`
+	ItemID  int64 `json:"item_id" validate:"required,min=1"`
+	StoreID int64 `json:"store_id" validate:"required,min=1"`
 }
 
 type addItemToCartPathVar struct {
@@ -64,8 +64,8 @@ func (s *StoreHub) addItemToCart(w http.ResponseWriter, r *http.Request) {
 
 	// db query
 	arg := db.UpsertCartItemParams{
-		CartID:   pathVar.CartID,
-		ItemID:   reqBody.ItemID,
+		CartID:  pathVar.CartID,
+		ItemID:  reqBody.ItemID,
 		StoreID: reqBody.StoreID,
 	}
 	cartItem, err := s.dbStore.UpsertCartItem(r.Context(), arg)

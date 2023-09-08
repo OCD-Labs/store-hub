@@ -8,12 +8,15 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	db "github.com/OCD-Labs/store-hub/db/sqlc"
 	"github.com/OCD-Labs/store-hub/token"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rs/zerolog/log"
+	"github.com/tomasen/realip"
+	"golang.org/x/time/rate"
 )
 
 const (
@@ -240,4 +243,55 @@ func (s *StoreHub) CheckAccessLevel(requiredAccessLevels ...int32) func(http.Han
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func (s *StoreHub) rateLimit(next http.Handler) http.Handler {
+	type client struct {
+		lastSeen time.Time
+		limiter  *rate.Limiter
+	}
+
+	var (
+		mu      sync.Mutex
+		clients = make(map[string]*client)
+	)
+
+	go func() {
+		for {
+			time.Sleep(time.Minute)
+
+			mu.Lock()
+
+			for ip, client := range clients {
+				if time.Since(client.lastSeen) > 3*time.Minute {
+					delete(clients, ip)
+				}
+			}
+			mu.Unlock()
+		}
+	}()
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.configs.Limiter.Enabled {
+			ip := realip.FromRequest(r)
+
+			mu.Lock()
+			if _, found := clients[ip]; !found {
+				clients[ip] = &client{
+					limiter: rate.NewLimiter(rate.Limit(s.configs.Limiter.RPS), s.configs.Limiter.Burst),
+				}
+			}
+
+			clients[ip].lastSeen = time.Now()
+
+			if !clients[ip].limiter.Allow() {
+				mu.Unlock()
+				s.errorResponse(w, r, http.StatusTooManyRequests, "rate limit exceeded")
+				return
+			}
+			mu.Unlock()
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }

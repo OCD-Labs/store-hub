@@ -16,6 +16,11 @@ type Configs struct {
 	TokenSymmetricKey   string   `mapstructure:"TOKEN_SYMMETRIC_KEY"`
 	RedisAddress        string   `mapstructure:"REDIS_ADDRESS"`
 	MigrationURL        string   `mapstructure:"MIGRATION_URL"`
+	Limiter             struct {
+		RPS     float64
+		Burst   int
+		Enabled bool
+	}
 }
 
 // ParseConfigs parses the configuration files.

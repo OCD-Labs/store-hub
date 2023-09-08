@@ -106,7 +106,7 @@ type addStoreItemRequestBody struct {
 	DiscountPercentage string   `json:"discount_percentage" validate:"required"`
 	SupplyQuantity     int64    `json:"supply_quantity" validate:"required"`
 	CoverImgURL        string   `json:"cover_img_url" validate:"required"`
-	Status        string   `json:"status" validate:"required,oneof=VISIBLE HIDDEN"`
+	Status             string   `json:"status" validate:"required,oneof=VISIBLE HIDDEN"`
 }
 
 type addStoreItemPathVar struct {
@@ -139,7 +139,7 @@ func (s *StoreHub) addStoreItem(w http.ResponseWriter, r *http.Request) {
 		DiscountPercentage: reqBody.DiscountPercentage,
 		CoverImgUrl:        reqBody.CoverImgURL,
 		Extra:              []byte("{}"),
-		Status: reqBody.Status,
+		Status:             reqBody.Status,
 	}
 	item, err := s.dbStore.CreateStoreItem(r.Context(), arg)
 	if err != nil {
