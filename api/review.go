@@ -34,7 +34,7 @@ func (s *StoreHub) addReview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authPayload := s.contextGetToken(r)
+	authPayload := s.contextGetMustToken(r)
 
 	arg := db.CreateReviewTxParams{
 		StoreID: reqBody.StoreID,

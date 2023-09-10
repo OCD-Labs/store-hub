@@ -231,7 +231,7 @@ func (s *StoreHub) sendAccessInvitation(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	authPayload := s.contextGetToken(r) // authorize
+	authPayload := s.contextGetMustToken(r) // authorize
 
 	taskPayload := &worker.PayloadSendAccessInvitation{
 		InviterID:        authPayload.UserID,

@@ -32,7 +32,7 @@ func (s *StoreHub) createStore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authPayload := s.contextGetToken(r)
+	authPayload := s.contextGetMustToken(r)
 
 	// db query
 	arg := db.CreateStoreTxParams{
@@ -75,7 +75,7 @@ func (s *StoreHub) createStore(w http.ResponseWriter, r *http.Request) {
 // listUserStores maps to endpoint "GET /inventory/stores"
 func (s *StoreHub) listUserStores(w http.ResponseWriter, r *http.Request) {
 	// authorise
-	authPayload := s.contextGetToken(r)
+	authPayload := s.contextGetMustToken(r)
 
 	// db query
 	stores, err := s.dbStore.ListUserStoresWithAccess(r.Context(), authPayload.UserID)
@@ -478,7 +478,7 @@ func (s *StoreHub) deleteStore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authPayload := s.contextGetToken(r) // authorize
+	authPayload := s.contextGetMustToken(r) // authorize
 	if pathVar.UserID != authPayload.UserID {
 		s.errorResponse(w, r, http.StatusUnauthorized, "mismatch user")
 		return

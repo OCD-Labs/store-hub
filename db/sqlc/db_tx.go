@@ -47,7 +47,7 @@ type StoreTx interface {
 	ListStoreItems(ctx context.Context, arg ListStoreItemsParams) ([]Item, pagination.Metadata, error)
 
 	// CreateUserTx creates a user row and schedules a verify email task on redis.
-	CreateUserTx(ctx context.Context, arg CreateUserTxParams) (CreateUserTxResult, error)
+	CreateUserTx(ctx context.Context, arg CreateUserTxParams) (User, error)
 
 	// ListSellerOrders do a fulltext search to list orders, and paginates accordingly.
 	ListSellerOrders(ctx context.Context, arg ListSellerOrdersParams) ([]SellerOrder, pagination.Metadata, error)
