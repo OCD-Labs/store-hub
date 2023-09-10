@@ -34,11 +34,20 @@ func (s *StoreHub) contextSetToken(r *http.Request, payload *token.Payload) *htt
 	return r.WithContext(ctx)
 }
 
-// contextGetToken retrieves n authentication token.
-func (s *StoreHub) contextGetToken(r *http.Request) *token.Payload {
+// contextGetMustToken must retrieves user payload or panic.
+func (s *StoreHub) contextGetMustToken(r *http.Request) *token.Payload {
 	user, ok := r.Context().Value(authorizationPayloadKey).(*token.Payload)
 	if !ok {
 		panic("missing user value in request context")
+	}
+	return user
+}
+
+// contextGetToken retrieves user payload or return nil.
+func (s *StoreHub) contextGetToken(r *http.Request) *token.Payload {
+	user, ok := r.Context().Value(authorizationPayloadKey).(*token.Payload)
+	if !ok {
+		return nil
 	}
 	return user
 }
@@ -104,8 +113,14 @@ func (s *StoreHub) authenticate(next http.Handler) http.Handler {
 
 		authHeader := r.Header.Get(authorizationHeaderKey)
 		if authHeader == "" {
-			s.errorResponse(w, r, http.StatusUnauthorized, "authorization header is not provided")
-			return
+			if s.SupportUnauthenticated {
+				r = s.contextSetToken(r, nil)
+				next.ServeHTTP(w, r)
+				return
+			} else {
+				s.errorResponse(w, r, http.StatusUnauthorized, "authorization header is not provided")
+				return
+			}
 		}
 
 		tokenParts := strings.Split(authHeader, " ")
@@ -191,7 +206,7 @@ func (s *StoreHub) CheckAccessLevel(requiredAccessLevels ...int32) func(http.Han
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Get user from context
-			authPayload := s.contextGetToken(r)
+			authPayload := s.contextGetMustToken(r)
 
 			// Get storeID from URL parameter using httprouter
 			params := httprouter.ParamsFromContext(r.Context())
@@ -277,8 +292,14 @@ func (s *StoreHub) rateLimit(next http.Handler) http.Handler {
 
 			mu.Lock()
 			if _, found := clients[ip]; !found {
-				clients[ip] = &client{
-					limiter: rate.NewLimiter(rate.Limit(s.configs.Limiter.RPS), s.configs.Limiter.Burst),
+				if strings.HasPrefix(r.URL.Path, "/api/v1/swagger/") {
+					clients[ip] = &client{
+						limiter: rate.NewLimiter(rate.Limit(10), 20),
+					}
+				} else {
+					clients[ip] = &client{
+						limiter: rate.NewLimiter(rate.Limit(s.configs.Limiter.RPS), s.configs.Limiter.Burst),
+					}
 				}
 			}
 
@@ -291,6 +312,14 @@ func (s *StoreHub) rateLimit(next http.Handler) http.Handler {
 			}
 			mu.Unlock()
 		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (s *StoreHub) supportUnauthenticated(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		s.SupportUnauthenticated = true
 
 		next.ServeHTTP(w, r)
 	})

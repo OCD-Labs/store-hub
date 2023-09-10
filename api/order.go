@@ -80,7 +80,7 @@ func (s *StoreHub) createOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authPayload := s.contextGetToken(r)
+	authPayload := s.contextGetMustToken(r)
 
 	order, err := s.dbStore.CreateOrder(r.Context(), db.CreateOrderParams{
 		ItemID:         reqBody.ItemID,
@@ -155,7 +155,7 @@ func (s *StoreHub) listSellerOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authPayload := s.contextGetToken(r)
+	authPayload := s.contextGetMustToken(r)
 
 	// TODO: Add a proper range logic for createdAt search params
 	arg := db.ListSellerOrdersParams{
@@ -205,7 +205,7 @@ func (s *StoreHub) getSellerOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authPayload := s.contextGetToken(r)
+	authPayload := s.contextGetMustToken(r)
 
 	order, err := s.dbStore.GetOrderForSeller(r.Context(), db.GetOrderForSellerParams{
 		SellerID: authPayload.UserID,
@@ -258,7 +258,7 @@ func (s *StoreHub) updateSellerOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authPayload := s.contextGetToken(r)
+	authPayload := s.contextGetMustToken(r)
 
 	arg := db.UpdateSellerOrderParams{
 		OrderID:  pathVars.OrderID,

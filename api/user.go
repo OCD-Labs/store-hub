@@ -103,7 +103,7 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	result, err := s.dbStore.CreateUserTx(r.Context(), arg)
+	user, err := s.dbStore.CreateUserTx(r.Context(), arg)
 	if err != nil {
 		if pqError, ok := err.(*pq.Error); ok {
 			switch pqError.Code.Name() {
@@ -119,7 +119,7 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// access token
-	token, _, err := s.tokenMaker.CreateToken(result.User.ID, reqBody.AccountID, 24*time.Hour, nil)
+	token, _, err := s.tokenMaker.CreateToken(user.ID, reqBody.AccountID, 24*time.Hour, nil)
 	if err != nil {
 		s.errorResponse(w, r, http.StatusInternalServerError, "failed to generate access token")
 		log.Error().Err(err).Msg("error occurred")
@@ -132,7 +132,7 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request) {
 		"data": envelop{
 			"message": "new user created",
 			"result": envelop{
-				"user":         newUserResponse(result.User),
+				"user":         newUserResponse(user),
 				"access_token": token,
 			},
 		},
@@ -213,7 +213,7 @@ func (s *StoreHub) login(w http.ResponseWriter, r *http.Request) {
 
 // logout maps to endpoint "POST /auth/logout"
 func (s *StoreHub) logout(w http.ResponseWriter, r *http.Request) {
-	authPayload := s.contextGetToken(r)
+	authPayload := s.contextGetMustToken(r)
 
 	err := s.cache.BlacklistSession(r.Context(), authPayload.ID.String(), time.Until(authPayload.ExpiredAt))
 	if err != nil {
@@ -242,7 +242,7 @@ func (s *StoreHub) getUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authPayload := s.contextGetToken(r)
+	authPayload := s.contextGetMustToken(r)
 
 	if pathVar.ID != authPayload.UserID {
 		s.errorResponse(w, r, http.StatusUnauthorized, "mismatched user")

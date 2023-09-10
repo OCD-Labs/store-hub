@@ -52,7 +52,7 @@ func (s *StoreHub) listStoreSales(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// authorise
-	authPayload := s.contextGetToken(r)
+	authPayload := s.contextGetMustToken(r)
 
 	arg := db.ListAllSellerSalesParams{
 		ItemPriceStart:    reqQueryStr.ItemPriceStart,
@@ -113,7 +113,7 @@ func (s *StoreHub) getSale(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authPayload := s.contextGetToken(r)
+	authPayload := s.contextGetMustToken(r)
 
 	sale, err := s.dbStore.GetSale(r.Context(), db.GetSaleParams{
 		StoreID:  pathVars.StoreID,

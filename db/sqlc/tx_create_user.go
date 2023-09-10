@@ -9,24 +9,23 @@ type CreateUserTxParams struct {
 	AfterCreate func(user User) error
 }
 
-// A CreateUserTxResult contains the result of the create user transaction.
-type CreateUserTxResult struct {
-	User User
-}
-
 // CreateUserTx creates a user row and schedules a verify email task on redis.
-func (dbTx *SQLTx) CreateUserTx(ctx context.Context, arg CreateUserTxParams) (CreateUserTxResult, error) {
-	var result CreateUserTxResult
+func (dbTx *SQLTx) CreateUserTx(ctx context.Context, arg CreateUserTxParams) (User, error) {
+	var result User
 
 	err := dbTx.execTx(ctx, func(q *Queries) error {
 		var err error
 
-		result.User, err = q.CreateUser(ctx, arg.CreateUserParams)
+		result, err = q.CreateUser(ctx, arg.CreateUserParams)
 		if err != nil {
 			return err
 		}
 
-		return arg.AfterCreate(result.User)
+		if err := q.CreateCartForUser(ctx, result.ID); err != nil {
+			return err
+		}
+
+		return arg.AfterCreate(result)
 	})
 
 	return result, err

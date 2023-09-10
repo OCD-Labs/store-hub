@@ -32,8 +32,8 @@ func main() {
 		log.Fatal().Err(err).Msg("error occurred parsing configs")
 	}
 
-	flag.Float64Var(&configs.Limiter.RPS, "limiter-rps", 2, "Rate limiter maximum requests per second")
-	flag.IntVar(&configs.Limiter.Burst, "limiter-burst", 4, "Rate limiter maximum burst")
+	flag.Float64Var(&configs.Limiter.RPS, "limiter-rps", 3, "Rate limiter maximum requests per second")
+	flag.IntVar(&configs.Limiter.Burst, "limiter-burst", 5, "Rate limiter maximum burst")
 	flag.BoolVar(&configs.Limiter.Enabled, "limiter-enabled", true, "Enable rate limiter")
 	flag.Parse()
 

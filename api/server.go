@@ -20,13 +20,14 @@ import (
 )
 
 type StoreHub struct {
-	configs         util.Configs
-	logger          zerolog.Logger
-	swaggerFiles    fs.FS
-	cache           cache.Cache
-	tokenMaker      token.Maker
-	dbStore         db.StoreTx
-	taskDistributor worker.TaskDistributor
+	configs                util.Configs
+	logger                 zerolog.Logger
+	swaggerFiles           fs.FS
+	cache                  cache.Cache
+	tokenMaker             token.Maker
+	dbStore                db.StoreTx
+	taskDistributor        worker.TaskDistributor
+	SupportUnauthenticated bool
 }
 
 func NewStoreHub(
