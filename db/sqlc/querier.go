@@ -30,6 +30,7 @@ type Querier interface {
 	DeleteReview(ctx context.Context, arg DeleteReviewParams) error
 	DeleteStore(ctx context.Context, storeID int64) error
 	GetCartByUserID(ctx context.Context, userID int64) ([]GetCartByUserIDRow, error)
+	GetCartID(ctx context.Context, userID int64) (int64, error)
 	GetItem(ctx context.Context, itemID int64) (Item, error)
 	GetOrderForBuyer(ctx context.Context, arg GetOrderForBuyerParams) (GetOrderForBuyerRow, error)
 	GetOrderForSeller(ctx context.Context, arg GetOrderForSellerParams) (GetOrderForSellerRow, error)

@@ -112,6 +112,22 @@ func (q *Queries) GetCartByUserID(ctx context.Context, userID int64) ([]GetCartB
 	return items, nil
 }
 
+const getCartID = `-- name: GetCartID :one
+SELECT 
+  id
+FROM 
+  carts 
+WHERE 
+  user_id = $1 LIMIT 1
+`
+
+func (q *Queries) GetCartID(ctx context.Context, userID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getCartID, userID)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const increaseCartItemQuantity = `-- name: IncreaseCartItemQuantity :one
 WITH item_supply AS (
   SELECT supply_quantity 

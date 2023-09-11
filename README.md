@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="doc/img/hero.png" alt="Snippetbox" width="700"/>
+</p>
+
 # Store Hub — Your Single-Click Ecommerce Solution
 
 Store Hub is a groundbreaking solution for businesses looking to effortlessly establish an online presence. With just a single click, you can launch an e-commerce store, co-own the store with friends, and gain unparalleled business insights and analytics to help your business thrive in the online marketplace. 
