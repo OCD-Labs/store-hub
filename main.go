@@ -12,6 +12,7 @@ import (
 	"github.com/OCD-Labs/store-hub/cache"
 	db "github.com/OCD-Labs/store-hub/db/sqlc"
 	"github.com/OCD-Labs/store-hub/mailer"
+	"github.com/OCD-Labs/store-hub/near"
 	"github.com/OCD-Labs/store-hub/token"
 	"github.com/OCD-Labs/store-hub/util"
 	"github.com/OCD-Labs/store-hub/worker"
@@ -108,4 +109,19 @@ func runDBMigrations(migrationURL string, dbSource string, configs util.Configs)
 	}
 
 	log.Info().Msg("db migrated successfully")
+}
+
+
+func setupNEAR(configs util.Configs) (err error) {
+	if util.CommandExists("npm") {
+		if err = near.InstallNearCLI(); err != nil {
+			return err
+		}
+
+		if err = near.SetupNearMasterAccount(configs.NEARNetwork, configs.NEARAccountID, configs.NEARPubKey, configs.NEARPrivKey); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

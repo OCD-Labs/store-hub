@@ -20,7 +20,7 @@ func (s *StoreHub) getUserCart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// db query
-	cart, err := s.dbStore.GetCartByUserID(r.Context(), pathVar.UserID)
+	cart, err := s.dbStore.GetUserCartTx(r.Context(), pathVar.UserID)
 	if err != nil {
 		s.errorResponse(w, r, http.StatusInternalServerError, "failed to retrieve cart")
 		log.Error().Err(err).Msg("error occurred")
@@ -33,7 +33,8 @@ func (s *StoreHub) getUserCart(w http.ResponseWriter, r *http.Request) {
 		"data": envelop{
 			"message": "retrieved user cart",
 			"result": envelop{
-				"cart": cart,
+				"cart": cart.Cart,
+				"cart_id": cart.CartID,
 			},
 		},
 	}, nil)

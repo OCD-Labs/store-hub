@@ -3,6 +3,8 @@ package util
 import (
 	"fmt"
 	"math/rand"
+	"os"
+	"os/exec"
 	"strings"
 	"time"
 )
@@ -117,4 +119,16 @@ func NumberExists(slice []int32, number int) bool {
 		}
 	}
 	return false
+}
+
+// CommandExists checks if an executable named file exists
+func CommandExists(cmd string) bool {
+	_, err := exec.LookPath(cmd)
+	return err == nil
+}
+
+// FolderExists checks if folder/file exists.
+func FolderExists(path string) bool {
+	_, err := os.Stat(path)
+	return !os.IsNotExist(err)
 }

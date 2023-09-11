@@ -21,6 +21,10 @@ type Configs struct {
 		Burst   int
 		Enabled bool
 	}
+	NEARAccountID string `mapstructure:"NEAR_ACCOUNT_ID"`
+	NEARNetwork   string `mapstructure:"NEAR_NETWORK"`
+	NEARPubKey    string `mapstructure:"NEAR_ACCOUNT_PUB_KEY"`
+	NEARPrivKey   string `mapstructure:"NEAR_ACCOUNT_PRIV_KEY"`
 }
 
 // ParseConfigs parses the configuration files.

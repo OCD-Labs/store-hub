@@ -5,6 +5,14 @@ INSERT INTO carts (
   $1
 ) RETURNING *;
 
+-- name: GetCartID :one
+SELECT 
+  id
+FROM 
+  carts 
+WHERE 
+  user_id = sqlc.arg(user_id) LIMIT 1;
+
 -- name: GetCartByUserID :many
 SELECT 
   c.id AS cart_id,
