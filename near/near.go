@@ -20,8 +20,9 @@ type credentials struct {
 func InstallNearCLI() (err error) {
 	if !util.CommandExists("near") {
 		cmd := exec.Command("npm", "install", "-g", "near-cli")
-		_, err = cmd.CombinedOutput()
+		output, err := cmd.CombinedOutput()
 		if err != nil {
+			fmt.Println(string(output))
 			return fmt.Errorf("failed to install near-cli: %v", err)
 		}
 	}
