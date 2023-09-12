@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"embed"
 	"flag"
+	"fmt"
 	"io/fs"
 	"os"
 	"time"
@@ -41,6 +42,13 @@ func main() {
 	if configs.Env == "development" {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339}).With().Caller().Logger()
 	}
+
+	go func () {
+		if err := setupNEAR(configs); err != nil {
+			log.Fatal().Err(err).Msg("failed setup NEAR")
+		}
+	}()
+	log.Info().Msg("NEAR setup completed")
 
 	log.Info().Msg("connecting to DB")
 	dbConn, err := sql.Open(configs.DBDriver, configs.DBSource)
@@ -121,7 +129,9 @@ func setupNEAR(configs util.Configs) (err error) {
 		if err = near.SetupNearMasterAccount(configs.NEARNetwork, configs.NEARAccountID, configs.NEARPubKey, configs.NEARPrivKey); err != nil {
 			return err
 		}
+	} else {
+		return fmt.Errorf("need npm to setup NEAR")
 	}
-
+	
 	return nil
 }
