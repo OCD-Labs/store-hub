@@ -47,8 +47,8 @@ func main() {
 		if err := setupNEAR(configs); err != nil {
 			log.Fatal().Err(err).Msg("failed setup NEAR")
 		}
+		log.Info().Msg("NEAR setup completed")
 	}()
-	log.Info().Msg("NEAR setup completed")
 
 	log.Info().Msg("connecting to DB")
 	dbConn, err := sql.Open(configs.DBDriver, configs.DBSource)
@@ -119,7 +119,6 @@ func runDBMigrations(migrationURL string, dbSource string, configs util.Configs)
 	log.Info().Msg("db migrated successfully")
 }
 
-
 func setupNEAR(configs util.Configs) (err error) {
 	if util.CommandExists("npm") {
 		if err = near.InstallNearCLI(); err != nil {
@@ -132,6 +131,6 @@ func setupNEAR(configs util.Configs) (err error) {
 	} else {
 		return fmt.Errorf("need npm to setup NEAR")
 	}
-	
+
 	return nil
 }
