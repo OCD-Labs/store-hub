@@ -3,12 +3,12 @@ package db
 import "context"
 
 type GetUserCartResult struct {
-	Cart []GetCartByUserIDRow `json:"cart"`
-	CartID int64 `json:"cart_id"`
+	Cart   []GetCartByUserIDRow `json:"cart"`
+	CartID int64                `json:"cart_id"`
 }
 
 // GetUserCart retrieves a user's cart items.
-func (dbTx *SQLTx) GetUserCartTx(ctx context.Context, userID int64 ) (GetUserCartResult, error) {
+func (dbTx *SQLTx) GetUserCartTx(ctx context.Context, userID int64) (GetUserCartResult, error) {
 	var result GetUserCartResult
 
 	err := dbTx.execTx(ctx, func(q *Queries) error {

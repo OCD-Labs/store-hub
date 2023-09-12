@@ -41,7 +41,7 @@ type StoreTx interface {
 	CreateReviewTx(ctx context.Context, arg CreateReviewTxParams) error
 
 	// GetUserCart retrieves a user's cart items.
-	GetUserCartTx(ctx context.Context, userID int64 ) (GetUserCartResult, error)
+	GetUserCartTx(ctx context.Context, userID int64) (GetUserCartResult, error)
 
 	// ListAllStores do a fulltext search to list stores, and paginates accordingly.
 	ListAllStores(ctx context.Context, arg ListAllStoresParams) ([]StoreAndOwnersResult, pagination.Metadata, error)

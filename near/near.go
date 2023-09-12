@@ -31,6 +31,7 @@ func InstallNearCLI() (err error) {
 
 func RunNearCLICommand(args ...string) error {
 	cmd := exec.Command("near", args...)
+	cmd.Env = append(os.Environ(), "NEAR_ENV=testnet")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println(string(output))

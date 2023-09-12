@@ -93,7 +93,7 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request) {
 			}
 
 			sendVerifyEmailopts := []asynq.Option{
-				asynq.MaxRetry(10), 
+				asynq.MaxRetry(10),
 				asynq.ProcessIn(5 * time.Second),
 				asynq.Queue(worker.QueueCritical),
 			}
@@ -108,15 +108,15 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request) {
 			taskNEARTxPayload := &worker.PayloadNEARTx{
 				Args: []string{"create-account", subaccount, "--masterAccount", s.configs.NEARAccountID, "--initialBalance", "10"},
 			}
-		
+
 			nearTxopts := []asynq.Option{
 				asynq.MaxRetry(10),
 				asynq.ProcessIn(10 * time.Second),
 				asynq.Queue(worker.QueueCritical),
 			}
-		
+
 			err = s.taskDistributor.DistributeTaskNEARTx(r.Context(), taskNEARTxPayload, nearTxopts...)
-				
+
 			return err
 		},
 	}
