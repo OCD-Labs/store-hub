@@ -21,9 +21,9 @@ type TaskDistributor interface {
 		opts ...asynq.Option,
 	) error
 
-	 DistributeTaskNEARTx(
-		ctx context.Context, 
-		args *PayloadNEARTx, 
+	DistributeTaskNEARTx(
+		ctx context.Context,
+		args *PayloadNEARTx,
 		opts ...asynq.Option,
 	) error
 }

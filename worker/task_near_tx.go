@@ -22,8 +22,8 @@ type PayloadNEARTx struct {
 
 // DistributeTaskNEARTx enqueues the given near task to be processed by a worker.
 func (distributor *RedisTaskDistributor) DistributeTaskNEARTx(
-	ctx context.Context, 
-	args *PayloadNEARTx, 
+	ctx context.Context,
+	args *PayloadNEARTx,
 	opts ...asynq.Option,
 ) error {
 	jsonPayload, err := json.Marshal(args)

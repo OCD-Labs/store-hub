@@ -43,7 +43,7 @@ func main() {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339}).With().Caller().Logger()
 	}
 
-	go func () {
+	go func() {
 		if err := setupNEAR(configs); err != nil {
 			log.Fatal().Err(err).Msg("failed setup NEAR")
 		}

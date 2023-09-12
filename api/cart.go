@@ -33,7 +33,7 @@ func (s *StoreHub) getUserCart(w http.ResponseWriter, r *http.Request) {
 		"data": envelop{
 			"message": "retrieved user cart",
 			"result": envelop{
-				"cart": cart.Cart,
+				"cart":    cart.Cart,
 				"cart_id": cart.CartID,
 			},
 		},
