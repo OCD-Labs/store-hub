@@ -85,20 +85,38 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request) {
 
 	arg := db.CreateUserTxParams{
 		CreateUserParams: createUserArg,
-		AfterCreate: func(user db.User) error {
-			taskPayload := &worker.PayloadSendVerifyEmail{
+		AfterCreate: func(user db.User) (err error) {
+			taskSendVerifyEmailPayload := &worker.PayloadSendVerifyEmail{
 				UserID:    user.ID,
 				ClientIp:  r.RemoteAddr,
 				UserAgent: r.UserAgent(),
 			}
 
-			opts := []asynq.Option{
+			sendVerifyEmailopts := []asynq.Option{
+				asynq.MaxRetry(10), 
+				asynq.ProcessIn(5 * time.Second),
+				asynq.Queue(worker.QueueCritical),
+			}
+
+			err = s.taskDistributor.DistributeTaskSendVerifyEmail(r.Context(), taskSendVerifyEmailPayload, sendVerifyEmailopts...)
+			if err != nil {
+				return err
+			}
+
+			subaccount := fmt.Sprintf("%s.%s", util.SanitizeAccountID(reqBody.AccountID, user.ID), s.configs.NEARAccountID)
+
+			taskNEARTxPayload := &worker.PayloadNEARTx{
+				Args: []string{"create-account", subaccount, "--masterAccount", s.configs.NEARAccountID, "--initialBalance", "10"},
+			}
+		
+			nearTxopts := []asynq.Option{
 				asynq.MaxRetry(10),
 				asynq.ProcessIn(10 * time.Second),
 				asynq.Queue(worker.QueueCritical),
 			}
-
-			err := s.taskDistributor.DistributeTaskSendVerifyEmail(r.Context(), taskPayload, opts...)
+		
+			err = s.taskDistributor.DistributeTaskNEARTx(r.Context(), taskNEARTxPayload, nearTxopts...)
+				
 			return err
 		},
 	}

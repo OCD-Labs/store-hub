@@ -33,6 +33,7 @@ func RunNearCLICommand(args ...string) error {
 	cmd := exec.Command("near", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
+		fmt.Println(string(output))
 		return fmt.Errorf("failed to run near-cli command: %v", err)
 	}
 	fmt.Println(string(output))

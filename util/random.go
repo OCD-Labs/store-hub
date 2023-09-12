@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -131,4 +132,33 @@ func CommandExists(cmd string) bool {
 func FolderExists(path string) bool {
 	_, err := os.Stat(path)
 	return !os.IsNotExist(err)
+}
+
+// SanitizeAccountID removes the suffix ".near" or ".testnet" from accountID.
+func SanitizeAccountID(accountID string, num int64) string {
+	// Remove .near or .testnet suffix
+	accountID = strings.TrimSuffix(accountID, ".near")
+	accountID = strings.TrimSuffix(accountID, ".testnet")
+
+	// Split the accountID by dot
+	parts := strings.Split(accountID, ".")
+
+	// If there are more than two parts, take only the first part
+	if len(parts) > 2 {
+		accountID = parts[0]
+	}
+
+	// Replace invalid characters with underscores
+	reg := regexp.MustCompile(`[^a-z0-9_-]+`)
+	accountID = reg.ReplaceAllString(accountID, "_")
+
+	// Check if the result is "near" or "testnet" and replace with a default value
+	if accountID == "near" || accountID == "testnet" {
+		accountID = "default"
+	}
+
+	// Append the int64 value in the XX-int64 format
+	accountID = fmt.Sprintf("%s-%d", accountID, num)
+
+	return accountID
 }
