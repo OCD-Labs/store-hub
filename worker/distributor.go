@@ -20,6 +20,12 @@ type TaskDistributor interface {
 		payload *PayloadSendAccessInvitation,
 		opts ...asynq.Option,
 	) error
+
+	 DistributeTaskNEARTx(
+		ctx context.Context, 
+		args *PayloadNEARTx, 
+		opts ...asynq.Option,
+	) error
 }
 
 // RedisTaskDistributor defines and wrap a asynq client
