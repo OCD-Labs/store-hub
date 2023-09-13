@@ -10,7 +10,10 @@ RETURNS trigger
 LANGUAGE plpgsql
 AS $function$
 BEGIN
-  DELETE FROM sessions WHERE expires_at < NOW();
+  -- Check if there are expired sessions before attempting to delete.
+  IF EXISTS (SELECT 1 FROM sessions WHERE expires_at < NOW()) THEN
+    DELETE FROM sessions WHERE expires_at < NOW();
+  END IF;
   RETURN NULL;
 END;
 $function$;
