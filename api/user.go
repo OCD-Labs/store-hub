@@ -299,20 +299,20 @@ func (s *StoreHub) getUser(w http.ResponseWriter, r *http.Request) {
 	}, nil)
 }
 
-type verifyEmailQueryStr struct {
-	Token string `querystr:"secret_code" validate:"required"`
-	Email string `querystr:"email" validate:"required,email"`
+type verifyEmailRequest struct {
+	Token string `json:"secret_code" validate:"required"`
+	Email string `json:"email" validate:"required,email"`
 }
 
 // verifyEmail maps to endpoint "POST /users/verify-email"
 func (s *StoreHub) verifyEmail(w http.ResponseWriter, r *http.Request) {
-	var queryStr verifyEmailQueryStr
-	if err := s.ShouldBindPathVars(w, r, &queryStr); err != nil {
+	var reqBody verifyEmailRequest
+	if err := s.shouldBindBody(w, r, &reqBody); err != nil {
 		return
 	}
 
 	sessionExists, err := s.dbStore.CheckSessionExists(r.Context(), db.CheckSessionExistsParams{
-		Token: queryStr.Token,
+		Token: reqBody.Token,
 		Scope: "access_invitation_email",
 	})
 	if err != nil {
@@ -326,7 +326,7 @@ func (s *StoreHub) verifyEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payload, err := s.tokenMaker.VerifyToken(util.Concat(queryStr.Token))
+	payload, err := s.tokenMaker.VerifyToken(util.Concat(reqBody.Token))
 	if err != nil {
 		switch {
 		case errors.Is(err, token.ErrExpiredToken):
@@ -353,7 +353,7 @@ func (s *StoreHub) verifyEmail(w http.ResponseWriter, r *http.Request) {
 			Valid: true,
 		},
 		Email: sql.NullString{
-			String: queryStr.Email,
+			String: reqBody.Email,
 			Valid:  true,
 		},
 	}
@@ -362,7 +362,7 @@ func (s *StoreHub) verifyEmail(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
-			s.errorResponse(w, r, http.StatusNotFound, "Invalid login credentials")
+			s.errorResponse(w, r, http.StatusNotFound, "user not found")
 		default:
 			s.errorResponse(w, r, http.StatusInternalServerError, "failed to fetch user's profile")
 		}
@@ -394,6 +394,55 @@ func (s *StoreHub) verifyEmail(w http.ResponseWriter, r *http.Request) {
 				"user":         newUserResponse(user),
 				"access_token": token,
 			},
+		},
+	}, nil)
+}
+
+type sendEmailVerificationRequest struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+func (s *StoreHub) sendEmailVerification(w http.ResponseWriter, r *http.Request) {
+	var reqBody sendEmailVerificationRequest
+	if err := s.shouldBindBody(w, r, &reqBody); err != nil {
+		return
+	}
+
+	user, err := s.dbStore.GetUserByEmail(r.Context(), reqBody.Email)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			s.errorResponse(w, r, http.StatusNotFound, "user not found")
+		default:
+			s.errorResponse(w, r, http.StatusInternalServerError, "failed to fetch user's profile")
+		}
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	taskSendVerifyEmailPayload := &worker.PayloadSendVerifyEmail{
+		UserID:    user.ID,
+		ClientIp:  r.RemoteAddr,
+		UserAgent: r.UserAgent(),
+	}
+
+	sendVerifyEmailopts := []asynq.Option{
+		asynq.MaxRetry(10),
+		asynq.ProcessIn(5 * time.Second),
+		asynq.Queue(worker.QueueCritical),
+	}
+
+	err = s.taskDistributor.DistributeTaskSendVerifyEmail(r.Context(), taskSendVerifyEmailPayload, sendVerifyEmailopts...)
+	if err != nil {
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to schedule a verification-email task")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK ,envelop{
+		"status": "success",
+		"data": envelop{
+			"message": "email verification sent",
 		},
 	}, nil)
 }
