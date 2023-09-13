@@ -1900,8 +1900,78 @@ paths:
             $ref: "#/definitions/ErrorResponse"
       security:
         - Bearer: []
+  /users/verify-email:
+    post:
+      summary: Verify user's email
+      parameters:
+        - name: secret_code
+          in: query
+          description: The secret code for email verification
+          required: true
+          type: string
+        - name: email
+          in: query
+          description: The email to be verified
+          required: true
+          type: string
+      responses:
+        200:
+          description: OK
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/definitions/userResponse'
+                      access_token:
+                        type: string
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        404:
+          description: Not Found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
 
 definitions:
+  verifyEmailQueryStr:
+    type: object
+    properties:
+      secret_code:
+        type: string
+      email:
+        type: string
+
+  profileResponse:
+    type: object
+    properties:
+      first_name:
+        type: string
+      last_name:
+        type: string
+      account_id:
+        type: string
+      profile_image_url:
+        type: string
+
   createStoreRequestBody:
     type: object
     properties:
@@ -2168,9 +2238,17 @@ definitions:
         type: string
       account_id:
         type: string
+      status:
+        type: string
+      about:
+        type: string
       email:
         type: string
-      profil_image_url:
+      socials:
+        type: object
+        additionalProperties:
+          type: string
+      profile_image_url:
         type: string
       created_at:
         type: string

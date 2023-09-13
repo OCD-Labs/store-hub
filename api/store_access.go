@@ -38,7 +38,7 @@ func (s *StoreHub) grantStoreAccess(w http.ResponseWriter, r *http.Request) {
 		log.Error().Err(err).Msg("error occurred")
 		return
 	}
-	
+
 	if !exists {
 		s.errorResponse(w, r, http.StatusBadRequest, token.ErrInvalidToken.Error())
 		return
