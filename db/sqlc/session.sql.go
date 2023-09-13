@@ -12,12 +12,17 @@ import (
 	"github.com/google/uuid"
 )
 
-const checkSessionExistence = `-- name: CheckSessionExistence :one
-SELECT EXISTS(SELECT 1 FROM sessions WHERE token = $1) AS session_exists
+const checkSessionExists = `-- name: CheckSessionExists :one
+SELECT EXISTS(SELECT 1 FROM sessions WHERE token = $1 AND scope = $2) AS session_exists
 `
 
-func (q *Queries) CheckSessionExistence(ctx context.Context, token string) (bool, error) {
-	row := q.db.QueryRowContext(ctx, checkSessionExistence, token)
+type CheckSessionExistsParams struct {
+	Token string `json:"token"`
+	Scope string `json:"scope"`
+}
+
+func (q *Queries) CheckSessionExists(ctx context.Context, arg CheckSessionExistsParams) (bool, error) {
+	row := q.db.QueryRowContext(ctx, checkSessionExists, arg.Token, arg.Scope)
 	var session_exists bool
 	err := row.Scan(&session_exists)
 	return session_exists, err

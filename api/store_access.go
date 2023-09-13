@@ -29,6 +29,21 @@ func (s *StoreHub) grantStoreAccess(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	exists, err := s.dbStore.CheckSessionExists(r.Context(), db.CheckSessionExistsParams{
+		Token: queryStr.Token,
+		Scope: "access_invitation_email",
+	})
+	if err != nil {
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to verify token")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+	
+	if !exists {
+		s.errorResponse(w, r, http.StatusBadRequest, token.ErrInvalidToken.Error())
+		return
+	}
+
 	payload, err := s.tokenMaker.VerifyToken(util.Concat(queryStr.Token))
 	if err != nil {
 		switch {
