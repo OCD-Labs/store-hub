@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -26,16 +27,19 @@ type createUserRequest struct {
 }
 
 type userResponse struct {
-	ID                int64     `json:"user_id"`
-	FirstName         string    `json:"first_name"`
-	LastName          string    `json:"last_name"`
-	AccountID         string    `json:"account_id"`
-	Email             string    `json:"email"`
-	ProfileImageurl   string    `json:"profil_image_url"`
-	CreatedAt         time.Time `json:"created_at"`
-	PasswordChangedAt time.Time `json:"password_changed_at"`
-	IsActive          bool      `json:"is_active"`
-	IsEmailVerified   bool      `json:"is_email_verified"`
+	ID                int64           `json:"user_id"`
+	FirstName         string          `json:"first_name"`
+	LastName          string          `json:"last_name"`
+	AccountID         string          `json:"account_id"`
+	Status            string          `json:"status"`
+	About             string          `json:"about"`
+	Email             string          `json:"email"`
+	Socials           json.RawMessage `json:"socials"`
+	ProfileImageurl   string          `json:"profil_image_url"`
+	CreatedAt         time.Time       `json:"created_at"`
+	PasswordChangedAt time.Time       `json:"password_changed_at"`
+	IsActive          bool            `json:"is_active"`
+	IsEmailVerified   bool            `json:"is_email_verified"`
 }
 
 func newUserResponse(user db.User) userResponse {
@@ -44,6 +48,8 @@ func newUserResponse(user db.User) userResponse {
 		FirstName:         user.FirstName,
 		LastName:          user.LastName,
 		AccountID:         user.AccountID,
+		Status:            user.Status,
+		About:             user.About,
 		Email:             user.Email,
 		ProfileImageurl:   user.ProfileImageUrl.String,
 		CreatedAt:         user.CreatedAt,
@@ -314,7 +320,7 @@ func (s *StoreHub) verifyEmail(w http.ResponseWriter, r *http.Request) {
 		log.Error().Err(err).Msg("error occurred")
 		return
 	}
-	
+
 	if !sessionExists {
 		s.errorResponse(w, r, http.StatusBadRequest, token.ErrInvalidToken.Error())
 		return
