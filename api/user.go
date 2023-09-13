@@ -8,6 +8,7 @@ import (
 	"time"
 
 	db "github.com/OCD-Labs/store-hub/db/sqlc"
+	"github.com/OCD-Labs/store-hub/token"
 	"github.com/OCD-Labs/store-hub/util"
 	"github.com/OCD-Labs/store-hub/worker"
 	"github.com/hibiken/asynq"
@@ -136,22 +137,13 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// access token
-	token, _, err := s.tokenMaker.CreateToken(user.ID, reqBody.AccountID, 24*time.Hour, nil)
-	if err != nil {
-		s.errorResponse(w, r, http.StatusInternalServerError, "failed to generate access token")
-		log.Error().Err(err).Msg("error occurred")
-		return
-	}
-
 	// return response
 	s.writeJSON(w, http.StatusCreated, envelop{
 		"status": "success",
 		"data": envelop{
 			"message": "new user created",
 			"result": envelop{
-				"user":         newUserResponse(user),
-				"access_token": token,
+				"user": newUserResponse(user),
 			},
 		},
 	}, nil)
@@ -183,18 +175,29 @@ func (s *StoreHub) login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !user.IsEmailVerified {
-		newReq, err := http.NewRequest(http.MethodPost, "/api/v1/resend_email_verification", r.Body)
+		taskSendVerifyEmailPayload := &worker.PayloadSendVerifyEmail{
+			UserID:    user.ID,
+			ClientIp:  r.RemoteAddr,
+			UserAgent: r.UserAgent(),
+		}
+
+		sendVerifyEmailopts := []asynq.Option{
+			asynq.MaxRetry(10),
+			asynq.ProcessIn(5 * time.Second),
+			asynq.Queue(worker.QueueCritical),
+		}
+
+		err = s.taskDistributor.DistributeTaskSendVerifyEmail(r.Context(), taskSendVerifyEmailPayload, sendVerifyEmailopts...)
 		if err != nil {
-			s.errorResponse(w, r, http.StatusInternalServerError, "failed to resend email verification mail")
+			s.errorResponse(w, r, http.StatusInternalServerError, "failed to schedule a verification-email task")
 			log.Error().Err(err).Msg("error occurred")
 			return
 		}
 
-		for key, value := range r.Header {
-			newReq.Header.Set(key, value[0])
-		}
-
-		http.Redirect(w, r, fmt.Sprintf("/api/v1/resend_email_verification?user_id=%d", user.ID), http.StatusTemporaryRedirect)
+		s.writeJSON(w, http.StatusAccepted, envelop{
+			"status":  "success",
+			"message": "Please check your email to complete the verification process.",
+		}, nil)
 		return
 	}
 
@@ -285,6 +288,105 @@ func (s *StoreHub) getUser(w http.ResponseWriter, r *http.Request) {
 			"message": "found user",
 			"result": envelop{
 				"user": newUserResponse(user),
+			},
+		},
+	}, nil)
+}
+
+type verifyEmailQueryStr struct {
+	Token string `querystr:"secret_code" validate:"required"`
+	Email string `querystr:"email" validate:"required,email"`
+}
+
+// verifyEmail maps to endpoint "POST /users/verify-email"
+func (s *StoreHub) verifyEmail(w http.ResponseWriter, r *http.Request) {
+	var queryStr verifyEmailQueryStr
+	if err := s.ShouldBindPathVars(w, r, &queryStr); err != nil {
+		return
+	}
+
+	sessionExists, err := s.dbStore.CheckSessionExists(r.Context(), db.CheckSessionExistsParams{
+		Token: queryStr.Token,
+		Scope: "access_invitation_email",
+	})
+	if err != nil {
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to verify token")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+	
+	if !sessionExists {
+		s.errorResponse(w, r, http.StatusBadRequest, token.ErrInvalidToken.Error())
+		return
+	}
+
+	payload, err := s.tokenMaker.VerifyToken(util.Concat(queryStr.Token))
+	if err != nil {
+		switch {
+		case errors.Is(err, token.ErrExpiredToken):
+			s.errorResponse(w, r, http.StatusBadRequest, token.ErrExpiredToken.Error())
+		case errors.Is(err, token.ErrInvalidToken):
+			s.errorResponse(w, r, http.StatusBadRequest, token.ErrInvalidToken.Error())
+		default:
+			s.errorResponse(w, r, http.StatusInternalServerError, "failed to verify secret code")
+		}
+
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	exists, err := s.cache.IsSessionBlacklisted(r.Context(), payload.ID.String())
+	if err != nil || exists {
+		s.errorResponse(w, r, http.StatusUnauthorized, "invalid token")
+		return
+	}
+
+	arg := db.UpdateUserParams{
+		IsEmailVerified: sql.NullBool{
+			Bool:  true,
+			Valid: true,
+		},
+		Email: sql.NullString{
+			String: queryStr.Email,
+			Valid:  true,
+		},
+	}
+
+	user, err := s.dbStore.UpdateUser(r.Context(), arg)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			s.errorResponse(w, r, http.StatusNotFound, "Invalid login credentials")
+		default:
+			s.errorResponse(w, r, http.StatusInternalServerError, "failed to fetch user's profile")
+		}
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	err = s.cache.BlacklistSession(r.Context(), payload.ID.String(), time.Until(payload.ExpiredAt))
+	if err != nil {
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to blacklist access token")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	// access token
+	token, _, err := s.tokenMaker.CreateToken(user.ID, user.AccountID, 24*time.Hour, nil)
+	if err != nil {
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to generate access token")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	// return response
+	s.writeJSON(w, http.StatusOK, envelop{
+		"status": "success",
+		"data": envelop{
+			"message": "user email verified",
+			"result": envelop{
+				"user":         newUserResponse(user),
+				"access_token": token,
 			},
 		},
 	}, nil)

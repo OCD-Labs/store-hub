@@ -14,7 +14,7 @@ type Querier interface {
 	AddCoOwnerAccess(ctx context.Context, arg AddCoOwnerAccessParams) (StoreOwner, error)
 	AddToCoOwnerAccess(ctx context.Context, arg AddToCoOwnerAccessParams) (StoreOwner, error)
 	CheckItemStoreMatch(ctx context.Context, arg CheckItemStoreMatchParams) (int64, error)
-	CheckSessionExistence(ctx context.Context, token string) (bool, error)
+	CheckSessionExists(ctx context.Context, arg CheckSessionExistsParams) (bool, error)
 	CreateCartForUser(ctx context.Context, userID int64) error
 	CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error)
 	CreateReview(ctx context.Context, arg CreateReviewParams) error

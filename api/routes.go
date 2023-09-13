@@ -218,6 +218,7 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	mux.HandlerFunc(http.MethodPost, "/api/v1/auth/login", s.login)
 	mux.Handler(http.MethodPost, "/api/v1/auth/logout", s.authenticate(http.HandlerFunc(s.logout)))
 	mux.Handler(http.MethodGet, "/api/v1/users/:user_id", s.authenticate(http.HandlerFunc(s.getUser)))
+	mux.HandlerFunc(http.MethodPost, "/api/v1/users/verify-email", s.verifyEmail)
 
 	// cart
 	mux.Handler(http.MethodGet, "/api/v1/carts/:user_id", s.authenticate(http.HandlerFunc(s.getUserCart)))
