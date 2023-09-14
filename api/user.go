@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -92,7 +93,7 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request) {
 
 	arg := db.CreateUserTxParams{
 		CreateUserParams: createUserArg,
-		AfterCreate: func(user db.User) (err error) {
+		AfterCreate: func(ctx context.Context, q *db.Queries, user db.User) (err error) {
 			taskSendVerifyEmailPayload := &worker.PayloadSendVerifyEmail{
 				UserID:    user.ID,
 				ClientIp:  r.RemoteAddr,
@@ -123,6 +124,20 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request) {
 			}
 
 			err = s.taskDistributor.DistributeTaskNEARTx(r.Context(), taskNEARTxPayload, nearTxopts...)
+			if err != nil {
+				return err
+			}
+
+			_, err = q.UpdateUser(ctx, db.UpdateUserParams{
+				AccountID: sql.NullString{
+					String: subaccount,
+					Valid: true,
+				},
+				ID: sql.NullInt64{
+					Int64: user.ID,
+					Valid: true,
+				},
+			})
 
 			return err
 		},
@@ -313,7 +328,7 @@ func (s *StoreHub) verifyEmail(w http.ResponseWriter, r *http.Request) {
 
 	sessionExists, err := s.dbStore.CheckSessionExists(r.Context(), db.CheckSessionExistsParams{
 		Token: reqBody.Token,
-		Scope: "access_invitation_email",
+		Scope: "verify_email",
 	})
 	if err != nil {
 		s.errorResponse(w, r, http.StatusInternalServerError, "failed to verify token")

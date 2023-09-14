@@ -6,7 +6,7 @@ import "context"
 // the create user transaction.
 type CreateUserTxParams struct {
 	CreateUserParams
-	AfterCreate func(user User) error
+	AfterCreate func(ctx context.Context, q *Queries, user User) error
 }
 
 // CreateUserTx creates a user row and schedules a verify email task on redis.
@@ -25,7 +25,7 @@ func (dbTx *SQLTx) CreateUserTx(ctx context.Context, arg CreateUserTxParams) (Us
 			return err
 		}
 
-		return arg.AfterCreate(result)
+		return arg.AfterCreate(ctx, q, result)
 	})
 
 	return result, err

@@ -38,7 +38,8 @@ SET
   profile_image_url = COALESCE(sqlc.narg(profile_image_url), profile_image_url),
   socials = COALESCE(sqlc.narg(socials), socials),
   status = COALESCE(sqlc.narg(status), status),
-  about = COALESCE(sqlc.narg(about), about)
+  about = COALESCE(sqlc.narg(about), about),
+  account_id = COALESCE(sqlc.narg(account_id), account_id)
 WHERE 
   id = sqlc.narg(id) OR email = sqlc.narg(email)
 RETURNING *;
