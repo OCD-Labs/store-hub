@@ -30,7 +30,7 @@ func TestCreateUserTx(t *testing.T) {
 			Socials:   json.RawMessage([]byte("{}")),
 			AccountID: fmt.Sprintf("%s.testnet", util.RandomOwner()),
 		},
-		AfterCreate: func(user User) error {
+		AfterCreate: func(ctx context.Context, q *Queries, user User) error {
 			return nil
 		},
 	}

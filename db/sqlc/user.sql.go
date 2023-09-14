@@ -167,9 +167,10 @@ SET
   profile_image_url = COALESCE($8, profile_image_url),
   socials = COALESCE($9, socials),
   status = COALESCE($10, status),
-  about = COALESCE($11, about)
+  about = COALESCE($11, about),
+  account_id = COALESCE($12, account_id)
 WHERE 
-  id = $12 OR email = $5
+  id = $13 OR email = $5
 RETURNING id, first_name, last_name, account_id, status, about, email, socials, profile_image_url, hashed_password, password_changed_at, created_at, is_active, is_email_verified
 `
 
@@ -185,6 +186,7 @@ type UpdateUserParams struct {
 	Socials           pqtype.NullRawMessage `json:"socials"`
 	Status            sql.NullString        `json:"status"`
 	About             sql.NullString        `json:"about"`
+	AccountID         sql.NullString        `json:"account_id"`
 	ID                sql.NullInt64         `json:"id"`
 }
 
@@ -201,6 +203,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		arg.Socials,
 		arg.Status,
 		arg.About,
+		arg.AccountID,
 		arg.ID,
 	)
 	var i User
