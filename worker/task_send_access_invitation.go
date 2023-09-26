@@ -112,7 +112,7 @@ func (processor *RedisTaskProcessor) ProcessTaskSendAccessInvitation(ctx context
 	}
 
 	acceptInvitationURL := fmt.Sprintf(
-		"http://localhost:3000/access-confirmation?store_name=%s&store_id=%d&sth_code=%s",
+		"http://store-hub-frontend.vercel.app/access-confirmation?store_name=%s&store_id=%d&sth_code=%s",
 		store.Name,
 		store.ID,
 		accessInvitationSession.Token,

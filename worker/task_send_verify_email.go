@@ -94,7 +94,7 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(
 	}
 
 	verifyURL := fmt.Sprintf(
-		"http://localhost:3000/auth/verify-email?email=%s&secret_code=%s",
+		"http://store-hub-frontend.vercel.app/auth/verify-email?email=%s&secret_code=%s",
 		user.Email,
 		verifyEmailSession.Token,
 	)
