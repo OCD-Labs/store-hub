@@ -122,6 +122,3 @@ BEGIN
     END LOOP;
 END;
 $$ LANGUAGE plpgsql;
-
--- name: ListUserStoresWithAccess :many
-SELECT * FROM get_stores_by_user(sqlc.arg(user_id));
