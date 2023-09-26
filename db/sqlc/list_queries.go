@@ -599,16 +599,16 @@ func (q *Queries) ListReviews(ctx context.Context, arg ListReviewsParams) ([]Lis
 }
 
 type ListUserStoresWithAccessRow struct {
-	StoreID          int64
-	StoreName        string
-	StoreDescription string
-	StoreImage       string
-	StoreAccountID   string
-	IsVerified       bool
-	Category         string
-	IsFrozen         bool
-	StoreCreatedAt   time.Time
-	StoreOwners      json.RawMessage
+	StoreID          int64           `json:"store_id"`
+	StoreName        string          `json:"store_name"`
+	StoreDescription string          `json:"store_description"`
+	StoreImage       string          `json:"store_image"`
+	StoreAccountID   string          `json:"store_account_id"`
+	IsVerified       bool            `json:"is_verified"`
+	Category         string          `json:"category"`
+	IsFrozen         bool            `json:"is_frozen"`
+	StoreCreatedAt   time.Time       `json:"store_created_at"`
+	StoreOwners      json.RawMessage `json:"store_owners"`
 }
 
 // ListUserStoresWithAccess retrieves all the stores & its owners for a user
