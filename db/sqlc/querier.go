@@ -45,7 +45,6 @@ type Querier interface {
 	GetUserByID(ctx context.Context, userID int64) (User, error)
 	HasMadePurchase(ctx context.Context, arg HasMadePurchaseParams) (bool, error)
 	IncreaseCartItemQuantity(ctx context.Context, arg IncreaseCartItemQuantityParams) (CartItem, error)
-	ListUserStoresWithAccess(ctx context.Context, userID int64) ([]ListUserStoresWithAccessRow, error)
 	LogAction(ctx context.Context, arg LogActionParams) error
 	RatingOverview(ctx context.Context, storeID int64) (RatingOverviewRow, error)
 	ReduceSalesOverview(ctx context.Context, arg ReduceSalesOverviewParams) error

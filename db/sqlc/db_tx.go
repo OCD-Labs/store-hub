@@ -63,6 +63,9 @@ type StoreTx interface {
 
 	// ListReviews retrieves all the reviews for an item under a store.
 	ListReviews(ctx context.Context, arg ListReviewsParams) ([]ListReviewsResult, pagination.Metadata, error)
+
+	// ListUserStoresWithAccess retrieves all the stores & its owners for a user
+	ListUserStoresWithAccess(ctx context.Context, userID int64) ([]ListUserStoresWithAccessRow, error)
 }
 
 // A SQLTx provides all functions to execute SQL queries and transactions.

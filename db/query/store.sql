@@ -30,9 +30,6 @@ WHERE
 GROUP BY 
   s.id;
 
--- name: ListUserStoresWithAccess :many
-SELECT * FROM get_stores_by_user(sqlc.arg(user_id));
-
 -- name: UpdateStore :one
 UPDATE stores
 SET

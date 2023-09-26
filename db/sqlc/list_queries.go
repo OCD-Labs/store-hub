@@ -598,6 +598,66 @@ func (q *Queries) ListReviews(ctx context.Context, arg ListReviewsParams) ([]Lis
 	return reviews, metadata, nil
 }
 
+type ListUserStoresWithAccessRow struct {
+	StoreID          int64
+	StoreName        string
+	StoreDescription string
+	StoreImage       string
+	StoreAccountID   string
+	IsVerified       bool
+	Category         string
+	IsFrozen         bool
+	StoreCreatedAt   time.Time
+	StoreOwners      json.RawMessage
+}
+
+// ListUserStoresWithAccess retrieves all the stores & its owners for a user
+func (q *Queries) ListUserStoresWithAccess(ctx context.Context, userID int64) ([]ListUserStoresWithAccessRow, error) {
+
+	const listUserStoresWithAccess = `-- name: ListUserStoresWithAccess :many
+		SELECT 
+				store_id,
+				store_name,
+				store_description,
+				store_image,
+				store_account_id,
+				is_verified,
+				category,
+				is_frozen,
+				store_created_at,
+				store_owners
+		FROM get_stores_by_user($1)
+		`
+	rows, err := q.db.QueryContext(ctx, listUserStoresWithAccess, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	stores := []ListUserStoresWithAccessRow{}
+	for rows.Next() {
+		var i ListUserStoresWithAccessRow
+		if err := rows.Scan(
+			&i.StoreID,
+			&i.StoreName,
+			&i.StoreDescription,
+			&i.StoreImage,
+			&i.StoreAccountID,
+			&i.IsVerified,
+			&i.Category,
+			&i.IsFrozen,
+			&i.StoreCreatedAt,
+			&i.StoreOwners,
+		); err != nil {
+			return nil, err
+		}
+		stores = append(stores, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return stores, nil
+}
+
 func addFloatRangeFilter(startVal, endVal, columnName string, whereClauses []string, args []interface{}) ([]string, []interface{}) {
 	if startVal != "" && endVal != "" {
 		// Convert strings to float64

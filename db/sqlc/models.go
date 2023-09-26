@@ -29,6 +29,23 @@ type CartItem struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type CryptoAccount struct {
+	ID            int64     `json:"id"`
+	StoreID       int64     `json:"store_id"`
+	Balance       string    `json:"balance"`
+	WalletAddress string    `json:"wallet_address"`
+	CryptoType    string    `json:"crypto_type"`
+	CreatedAt     time.Time `json:"created_at"`
+}
+
+type FiatAccount struct {
+	ID        int64     `json:"id"`
+	StoreID   int64     `json:"store_id"`
+	Balance   string    `json:"balance"`
+	Currency  string    `json:"currency"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type Item struct {
 	ID                 int64           `json:"id"`
 	Name               string          `json:"name"`
@@ -151,6 +168,22 @@ type StoreOwner struct {
 	AddedAt      time.Time `json:"added_at"`
 	IsPrimary    bool      `json:"is_primary"`
 	AccessLevels []int32   `json:"access_levels"`
+}
+
+type Transaction struct {
+	ID                     int64     `json:"id"`
+	Amount                 string    `json:"amount"`
+	FromAccountID          int64     `json:"from_account_id"`
+	TOAccountID            int64     `json:"TO_account_id"`
+	PaymentChannel         string    `json:"payment_channel"`
+	TransactionFee         string    `json:"transaction_fee"`
+	ConversionFee          string    `json:"conversion_fee"`
+	Description            string    `json:"description"`
+	TransactionType        string    `json:"transaction_type"`
+	TransactionRefID       string    `json:"transaction_ref_id"`
+	Status                 string    `json:"status"`
+	AccountBalanceSnapshot string    `json:"account_balance_snapshot"`
+	CreatedAt              time.Time `json:"created_at"`
 }
 
 type User struct {

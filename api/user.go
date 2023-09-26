@@ -131,7 +131,7 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request) {
 			_, err = q.UpdateUser(ctx, db.UpdateUserParams{
 				AccountID: sql.NullString{
 					String: subaccount,
-					Valid: true,
+					Valid:  true,
 				},
 				ID: sql.NullInt64{
 					Int64: user.ID,
@@ -454,7 +454,7 @@ func (s *StoreHub) sendEmailVerification(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	s.writeJSON(w, http.StatusOK ,envelop{
+	s.writeJSON(w, http.StatusOK, envelop{
 		"status": "success",
 		"data": envelop{
 			"message": "email verification sent",
