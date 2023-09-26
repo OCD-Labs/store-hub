@@ -23,7 +23,7 @@ CREATE TABLE transactions (
   "id" bigserial PRIMARY KEY,
   "amount" NUMERIC(18, 2) NOT NULL,
   "from_account_id" bigint NOT NULL,
-  "TO_account_id" bigint NOT NULL,
+  "to_account_id" bigint NOT NULL,
   "payment_channel" varchar NOT NULL,
   "transaction_fee" NUMERIC(10, 2) NOT NULL,
   "conversion_fee" NUMERIC(10, 2) NOT NULL,
@@ -122,6 +122,3 @@ BEGIN
     END LOOP;
 END;
 $$ LANGUAGE plpgsql;
-
--- name: ListUserStoresWithAccess :many
-SELECT * FROM get_stores_by_user(sqlc.arg(user_id));
