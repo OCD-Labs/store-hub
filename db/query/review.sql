@@ -1,4 +1,4 @@
--- name: CreateReview :exec
+-- name: CreateReviewFn :exec
 INSERT INTO reviews (
   store_id,
   user_id,
@@ -9,6 +9,17 @@ INSERT INTO reviews (
   is_verified_purchase
 ) VALUES (
   $1, $2, $3, $4, $5, $6, $7
+);
+
+-- name: CreateReview :exec
+SELECT * FROM create_review(
+  sqlc.arg(store_id),
+  sqlc.arg(user_id),
+  sqlc.arg(item_id),
+  sqlc.arg(rating),
+  sqlc.arg(review_type),
+  sqlc.arg(comment),
+  sqlc.arg(is_verified_purchase)
 );
 
 -- name: UpdateUserReview :one

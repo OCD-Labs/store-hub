@@ -7,7 +7,7 @@ db_schema:
 	dbml2sql --postgres -o doc/schema.sql doc/db.dbml
 
 migration_file:
-	migrate create -ext sql -dir db/migrations -seq $(file_name)
+	migrate create -ext sql -dir db/omo -seq $(file_name)
 
 sqlc:
 	sqlc generate

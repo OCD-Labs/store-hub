@@ -97,7 +97,6 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request) {
 			taskSendVerifyEmailPayload := &worker.PayloadSendVerifyEmail{
 				UserID:    user.ID,
 				ClientIp:  r.RemoteAddr,
-				UserAgent: r.UserAgent(),
 			}
 
 			sendVerifyEmailopts := []asynq.Option{
@@ -123,7 +122,7 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request) {
 				asynq.Queue(worker.QueueCritical),
 			}
 
-			err = s.taskDistributor.DistributeTaskNEARTx(r.Context(), taskNEARTxPayload, nearTxopts...)
+			err = s.taskDistributor.DistributeTaskNEARTx(ctx, taskNEARTxPayload, nearTxopts...)
 			if err != nil {
 				return err
 			}
@@ -199,7 +198,6 @@ func (s *StoreHub) login(w http.ResponseWriter, r *http.Request) {
 		taskSendVerifyEmailPayload := &worker.PayloadSendVerifyEmail{
 			UserID:    user.ID,
 			ClientIp:  r.RemoteAddr,
-			UserAgent: r.UserAgent(),
 		}
 
 		sendVerifyEmailopts := []asynq.Option{
@@ -438,7 +436,6 @@ func (s *StoreHub) sendEmailVerification(w http.ResponseWriter, r *http.Request)
 	taskSendVerifyEmailPayload := &worker.PayloadSendVerifyEmail{
 		UserID:    user.ID,
 		ClientIp:  r.RemoteAddr,
-		UserAgent: r.UserAgent(),
 	}
 
 	sendVerifyEmailopts := []asynq.Option{

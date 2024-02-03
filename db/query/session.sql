@@ -4,8 +4,8 @@ INSERT INTO sessions (
   user_id,
   token,
   scope,
-  user_agent,
   client_ip,
+  payload,
   is_blocked,
   expires_at
 ) VALUES (

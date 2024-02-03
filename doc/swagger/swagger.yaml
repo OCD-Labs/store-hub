@@ -1,11 +1,10 @@
 swagger: "2.0"
 info:
   title: "StoreHub API"
-  description: "
-  Rediscovery e-commerce et blockchain—server."
+  description: "Rediscovery e-commerce et blockchain—server."
   version: "1.0.0"
-# host: "localhost:6780"
-host: "store-hub-djxu.onrender.com"
+host: "localhost:6780"
+# host: "store-hub-djxu.onrender.com"
 basePath: "/api/v1"
 schemes:
   - "https"
@@ -771,6 +770,7 @@ paths:
             properties:
               email:
                 type: string
+                format: email
               password:
                 type: string
                 minLength: 8

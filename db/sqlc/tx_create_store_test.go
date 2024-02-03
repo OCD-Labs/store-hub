@@ -20,6 +20,9 @@ func createStoreAndOwners(t *testing.T) (CreateStoreTxResult, User) {
 			StoreAccountID:  fmt.Sprintf("%s.testnet", util.RandomString(6)),
 		},
 		OwnerID: user.ID,
+		AfterCreate: func(ctx context.Context, s Store) error {
+			return nil
+		},
 	}
 
 	res, err := testQueries.CreateStoreTx(context.Background(), arg)

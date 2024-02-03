@@ -1,4 +1,4 @@
--- name: CreateSale :one
+-- name: CreateSaleFn :one
 INSERT INTO sales (
   store_id,
   item_id,
@@ -8,6 +8,15 @@ INSERT INTO sales (
 ) VALUES (
   $1, $2, $3, $4, $5
 ) RETURNING *;
+
+-- name: CreateSale :one
+SELECT * FROM create_sale(
+  sqlc.arg(store_id),
+  sqlc.arg(item_id),
+  sqlc.arg(customer_id),
+  sqlc.arg(seller_id),
+  sqlc.arg(order_id)
+);
 
 -- name: GetSale :one
 SELECT 
@@ -37,7 +46,7 @@ WHERE
   AND s.seller_id = sqlc.arg(seller_id);
 
 -- name: ReduceSalesOverview :exec
-SELECT reduce_sale(sqlc.arg(store_id), sqlc.arg(item_id), sqlc.arg(order_id));
+SELECT reduce_sales_overview(sqlc.arg(store_id), sqlc.arg(item_id), sqlc.arg(order_id));
 
 -- name: GetStoreMetrics :one
 WITH TodaySales AS (

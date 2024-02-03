@@ -14,6 +14,7 @@ import (
 type CreateStoreTxParams struct {
 	CreateStoreParams
 	OwnerID int64 `json:"user_id"`
+	AfterCreate func(context.Context, Store) error
 }
 
 type StoreOwnerDetails struct {
@@ -41,6 +42,11 @@ func (dbTx *SQLTx) CreateStoreTx(ctx context.Context, arg CreateStoreTxParams) (
 			return err
 		}
 		result.Store = store
+
+		err = arg.AfterCreate(ctx, store)
+		if err != nil {
+			return err
+		}
 
 		// Add the owner to the store
 		_, err = q.AddCoOwnerAccess(ctx, AddCoOwnerAccessParams{

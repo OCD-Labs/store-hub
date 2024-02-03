@@ -256,7 +256,6 @@ func (s *StoreHub) sendAccessInvitation(w http.ResponseWriter, r *http.Request) 
 		AccessLevel:      reqBody.NewAccessLevel,
 		StoreID:          pathVar.StoreID,
 		ClientIp:         r.RemoteAddr,
-		UserAgent:        r.UserAgent(),
 	}
 	opts := []asynq.Option{
 		asynq.MaxRetry(10),

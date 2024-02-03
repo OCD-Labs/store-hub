@@ -22,7 +22,6 @@ const (
 type PayloadSendVerifyEmail struct {
 	UserID    int64  `json:"user_id"`
 	ClientIp  string `json:"client_ip"`
-	UserAgent string `json:"user_agent"`
 }
 
 // DistributeTaskSendVerifyEmail enqueues the given task to be processed by a worker. It returns an error if the task could
@@ -84,7 +83,7 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(
 		Token:     util.Extract(token),
 		Scope:     "verify_email",
 		ClientIp:  payload.ClientIp,
-		UserAgent: payload.UserAgent,
+		Payload: []byte("{}"),
 		IsBlocked: false,
 		ExpiresAt: tokenpayload.ExpiredAt,
 	})
