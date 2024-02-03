@@ -25,7 +25,7 @@ func (dbTx SQLTx) UpdateSellerOrderTx(ctx context.Context, arg UpdateSellerOrder
 		err = dbTx.execTx(ctx, func(q *Queries) error {
 			var o Order
 
-			o, err = dbTx.UpdateSellerOrder(ctx, arg)
+			o, err = q.UpdateSellerOrder(ctx, arg)
 			if err != nil {
 				return err
 			}
@@ -39,14 +39,14 @@ func (dbTx SQLTx) UpdateSellerOrderTx(ctx context.Context, arg UpdateSellerOrder
 					OrderID:    o.ID,
 				}
 
-				_, err = dbTx.CreateSale(ctx, sArg)
+				_, err = q.CreateSale(ctx, sArg)
 				if err != nil {
 					return err
 				}
 			}
 
 			if o.DeliveryStatus == "RETURNED" {
-				err = dbTx.ReduceSalesOverview(ctx, ReduceSalesOverviewParams{
+				err = q.ReduceSalesOverview(ctx, ReduceSalesOverviewParams{
 					StoreID: o.StoreID,
 					ItemID:  o.ItemID,
 					OrderID: o.ID,

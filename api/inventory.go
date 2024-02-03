@@ -1,12 +1,18 @@
 package api
 
 import (
+	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"net/http"
+	"time"
 
 	db "github.com/OCD-Labs/store-hub/db/sqlc"
 	"github.com/OCD-Labs/store-hub/pagination"
+	"github.com/OCD-Labs/store-hub/util"
+	"github.com/OCD-Labs/store-hub/worker"
+	"github.com/hibiken/asynq"
 	"github.com/lib/pq"
 	"github.com/rs/zerolog/log"
 )
@@ -44,6 +50,20 @@ func (s *StoreHub) createStore(w http.ResponseWriter, r *http.Request) {
 			StoreAccountID:  reqBody.StoreAccountID,
 		},
 		OwnerID: authPayload.UserID,
+		AfterCreate: func(ctx context.Context, store db.Store) (err error) {
+			subaccount := fmt.Sprintf("%s.%s", util.SanitizeAccountID(reqBody.StoreAccountID, store.ID), s.configs.NEARAccountID)
+			taskNEARTxPayload := &worker.PayloadNEARTx{
+				Args: []string{"create-account", subaccount, "--masterAccount", s.configs.NEARAccountID, "--initialBalance", "10"},
+			}
+
+			nearTxOpts := []asynq.Option{
+				asynq.MaxRetry(10),
+				asynq.ProcessIn(10 * time.Second),
+				asynq.Queue(worker.QueueCritical),
+			}
+
+			return s.taskDistributor.DistributeTaskNEARTx(ctx, taskNEARTxPayload, nearTxOpts...)
+		},
 	}
 	result, err := s.dbStore.CreateStoreTx(r.Context(), arg)
 	if err != nil {
@@ -244,7 +264,7 @@ type updateStoreItemsRequestBody struct { // TODO: write custom validation tags 
 	Category           *string  `json:"category"`
 	DiscountPercentage *string  `json:"discount_percentage"`
 	SupplyQuantity     *int64   `json:"supply_quantity"`
-	Status             *string  `json:"status" validate:"oneof=VISIBLE HIDDEN"`
+	Status             *string  `json:"status"`
 }
 
 type updateStoreItemsPathVar struct {
@@ -317,7 +337,7 @@ func (s *StoreHub) updateStoreItems(w http.ResponseWriter, r *http.Request) {
 			Valid: true,
 		}
 	}
-	if reqBody.Status != nil {
+	if reqBody.Status != nil && (*reqBody.Status == "HIDDEN" || *reqBody.Status == "VISIBLE" ){
 		arg.Status = sql.NullString{
 			String: *reqBody.Status,
 			Valid:  true,

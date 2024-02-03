@@ -148,11 +148,11 @@ func (q *SQLTx) ListStoreItems(ctx context.Context, arg ListStoreItemsParams) ([
 			&i.SupplyQuantity,
 			&i.Extra,
 			&i.IsFrozen,
-			&i.CreatedAt,
-			&i.UpdatedAt,
 			&i.Currency,
 			&i.CoverImgUrl,
 			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, pagination.Metadata{}, err
 		}

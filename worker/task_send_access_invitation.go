@@ -26,7 +26,6 @@ type PayloadSendAccessInvitation struct {
 	AccessLevel      int32  `json:"access_level"`
 	StoreID          int64  `json:"store_id"`
 	ClientIp         string `json:"client_ip"`
-	UserAgent        string `json:"user_agent"`
 }
 
 type TokenExtra struct {
@@ -97,7 +96,6 @@ func (processor *RedisTaskProcessor) ProcessTaskSendAccessInvitation(ctx context
 		Token:     util.Extract(token),
 		Scope:     "access_invitation_email",
 		ClientIp:  payload.ClientIp,
-		UserAgent: payload.UserAgent,
 		IsBlocked: false,
 		ExpiresAt: tokenPayload.ExpiredAt,
 	})

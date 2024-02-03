@@ -6,5 +6,5 @@ import (
 )
 
 func (s *StoreHub) healthcheck(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Hello, world")
+	fmt.Fprint(w, "Hello from StoreHub")
 }
