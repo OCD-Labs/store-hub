@@ -239,12 +239,20 @@ func (s *StoreHub) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cartID, err := s.dbStore.GetCartID(r.Context(), user.ID)
+	if err != nil {
+		s.errorResponse(w, r, http.StatusInternalServerError, "user authentication failed")
+		log.Error().Err(err).Msg("User cart not found")
+		return
+	}
+
 	s.writeJSON(w, http.StatusOK, envelop{
 		"status": "success",
 		"data": envelop{
 			"message": "logged user in",
 			"result": envelop{
 				"user":         newUserResponse(user),
+				"cart_id": cartID,
 				"access_token": token,
 			},
 		},
