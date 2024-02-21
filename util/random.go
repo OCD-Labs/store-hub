@@ -1,6 +1,7 @@
 package util
 
 import (
+	"encoding/base64"
 	"fmt"
 	"math/rand"
 	"os"
@@ -135,30 +136,26 @@ func FolderExists(path string) bool {
 }
 
 // SanitizeAccountID removes the suffix ".near" or ".testnet" from accountID.
-func SanitizeAccountID(accountID string, num int64) string {
-	// Remove .near or .testnet suffix
-	accountID = strings.TrimSuffix(accountID, ".near")
-	accountID = strings.TrimSuffix(accountID, ".testnet")
+func SanitizeAccountID(accountID, network string) string {
+	switch network {
+	case "near":
+		accountID = strings.TrimSuffix(accountID, ".near")
+	case "testnet":
+		accountID = strings.TrimSuffix(accountID, ".testnet")
+	}
+	accountID = strings.TrimSuffix(accountID, ".storehub-v1")
 
-	// Split the accountID by dot
-	parts := strings.Split(accountID, ".")
-
-	// If there are more than two parts, take only the first part
-	if len(parts) > 2 {
-		accountID = parts[0]
+	if len(accountID) == 0 {
+		return RandomString(12)
 	}
 
 	// Replace invalid characters with underscores
-	reg := regexp.MustCompile(`[^a-z0-9_-]+`)
-	accountID = reg.ReplaceAllString(accountID, "_")
+	reg := regexp.MustCompile(`[^A-Za-z0-9_-]+`)
+	return reg.ReplaceAllString(accountID, "_")
+}
 
-	// Check if the result is "near" or "testnet" and replace with a default value
-	if accountID == "near" || accountID == "testnet" {
-		accountID = "default"
-	}
 
-	// Append the int64 value in the XX-int64 format
-	accountID = fmt.Sprintf("%s-%d", accountID, num)
-
-	return accountID
+// EncodeToBase64 takes a byte slice as input and returns its Base64 encoded string
+func EncodeToBase64(data []byte) string {
+	return base64.StdEncoding.EncodeToString(data)
 }

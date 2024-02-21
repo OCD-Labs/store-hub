@@ -7,6 +7,7 @@ import (
 	"time"
 
 	db "github.com/OCD-Labs/store-hub/db/sqlc"
+	"github.com/OCD-Labs/store-hub/template/email_tmpl"
 	"github.com/OCD-Labs/store-hub/util"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
@@ -21,6 +22,7 @@ const (
 type PayloadSendAccessInvitation struct {
 	InviterID        int64  `json:"inviter_id"`
 	InviteeAccountID string `json:"invitee_account_id"`
+	InviteeProfileImgUrl string `json:"invitee_profile_img_url"`
 	InviteeID        int64  `json:"invitee_id"`
 	InviteeEmail     string `json:"invitee_email"`
 	AccessLevel      int32  `json:"access_level"`
@@ -109,28 +111,41 @@ func (processor *RedisTaskProcessor) ProcessTaskSendAccessInvitation(ctx context
 		return fmt.Errorf("failed to get store: %w", err)
 	}
 
+	inviteeAcctId := util.SanitizeAccountID(payload.InviteeAccountID, processor.configs.NEARNetwork)
+	inviterAcctId := util.SanitizeAccountID(inviter.AccountID, processor.configs.NEARNetwork)
+	accessLevelDescription, detailedExplanation := generateAccessLevelInfo(payload.AccessLevel)
+
 	acceptInvitationURL := fmt.Sprintf(
-		"http://store-hub-frontend.vercel.app/access-confirmation?store_name=%s&store_id=%d&sth_code=%s",
-		store.Name,
-		store.ID,
+		"http://store-hub-frontend.vercel.app/access-confirmation?sth_code=%s&payload=%s",
 		accessInvitationSession.Token,
+		util.EncodeToBase64([]byte(fmt.Sprintf(
+			`{
+				"store_name": "%s",
+				"store_id": %d,
+				"store_access_level": "%s",
+				"store_profile_img_url": "%s",
+				"inviter_account_id": "%s",
+				"invitee_account_id": "%s",
+				"invitee_profile_img_url": "%s",
+				"inviter_profile_img_url": "%s",
+				"message": "%s"
+			}`, 
+			store.Name, store.ID, accessLevelDescription, 
+			store.ProfileImageUrl, inviterAcctId, 
+			inviteeAcctId, inviter.ProfileImageUrl.String, 
+			payload.InviteeProfileImgUrl, detailedExplanation,
+		))),
 	)
 
-	accessLevelDescription, detailedExplanation := generateAccessLevelInfo(int(payload.AccessLevel))
 	subject := fmt.Sprintf("Invitation to Manage %s", store.Name)
-	content := fmt.Sprintf(`
-Hello %s, <br> <br>
-
-%s has invited you to join %s on StoreHub with %s privileges. %s. <br>
-
-<a href="%s">Click here</a> to accept the invitation and start managing %s. <br>
-
-If you did not expect this invitation or believe it's an error, please ignore this email or contact our support.<br><br>
-
-Best,<br>
-StoreHub Team<br>
-	`, payload.InviteeAccountID, inviter.AccountID, store.Name, accessLevelDescription, detailedExplanation, acceptInvitationURL, store.Name)
-
+	content := email_tmpl.CoOwnershipAccessTmpl(
+		inviteeAcctId, 
+		inviterAcctId, 
+		store.Name, 
+		accessLevelDescription, 
+		detailedExplanation, 
+		acceptInvitationURL,
+	)
 	to := []string{payload.InviteeEmail}
 	err = processor.mailer.SendEmail(subject, content, to, nil, nil, nil)
 	if err != nil {
@@ -146,7 +161,7 @@ StoreHub Team<br>
 	return nil
 }
 
-func generateAccessLevelInfo(accessLevel int) (accessLevelDescription, detailedExplanation string) {
+func generateAccessLevelInfo(accessLevel int32) (accessLevelDescription, detailedExplanation string) {
 	switch accessLevel {
 	case util.FULLACCESS:
 		accessLevelDescription = "Full Access"

@@ -51,9 +51,9 @@ func (s *StoreHub) createStore(w http.ResponseWriter, r *http.Request) {
 		},
 		OwnerID: authPayload.UserID,
 		AfterCreate: func(ctx context.Context, store db.Store) (err error) {
-			subaccount := fmt.Sprintf("%s.%s", util.SanitizeAccountID(reqBody.StoreAccountID, store.ID), s.configs.NEARAccountID)
+			subaccount := fmt.Sprintf("%s-%d.%s", util.SanitizeAccountID(reqBody.StoreAccountID, s.configs.NEARNetwork), store.ID, s.configs.NEARAccountID)
 			taskNEARTxPayload := &worker.PayloadNEARTx{
-				Args: []string{"create-account", subaccount, "--masterAccount", s.configs.NEARAccountID, "--initialBalance", "10"},
+				Args: []string{"create-account", subaccount, "--masterAccount", s.configs.NEARAccountID, "--initialBalance", "1"},
 			}
 
 			nearTxOpts := []asynq.Option{
