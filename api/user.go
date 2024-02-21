@@ -108,17 +108,17 @@ func (s *StoreHub) createUser(w http.ResponseWriter, r *http.Request) {
 			err = s.taskDistributor.DistributeTaskSendVerifyEmail(r.Context(), taskSendVerifyEmailPayload, sendVerifyEmailopts...)
 			if err != nil {
 				return err
-			}
+			}	
 
-			subaccount := fmt.Sprintf("%s.%s", util.SanitizeAccountID(reqBody.AccountID, user.ID), s.configs.NEARAccountID)
+			subaccount := fmt.Sprintf("%s-%d.%s", util.SanitizeAccountID(reqBody.AccountID, s.configs.NEARNetwork), user.ID, s.configs.NEARAccountID)
 
 			taskNEARTxPayload := &worker.PayloadNEARTx{
-				Args: []string{"create-account", subaccount, "--masterAccount", s.configs.NEARAccountID, "--initialBalance", "10"},
+				Args: []string{"create-account", subaccount, "--masterAccount", s.configs.NEARAccountID, "--initialBalance", "1"},
 			}
 
 			nearTxopts := []asynq.Option{
 				asynq.MaxRetry(10),
-				asynq.ProcessIn(10 * time.Second),
+				asynq.ProcessIn(5 * time.Second),
 				asynq.Queue(worker.QueueCritical),
 			}
 

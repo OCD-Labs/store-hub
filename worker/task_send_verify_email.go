@@ -7,6 +7,7 @@ import (
 	"time"
 
 	db "github.com/OCD-Labs/store-hub/db/sqlc"
+	"github.com/OCD-Labs/store-hub/template/email_tmpl"
 	"github.com/OCD-Labs/store-hub/util"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
@@ -83,7 +84,6 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(
 		Token:     util.Extract(token),
 		Scope:     "verify_email",
 		ClientIp:  payload.ClientIp,
-		Payload: []byte("{}"),
 		IsBlocked: false,
 		ExpiresAt: tokenpayload.ExpiredAt,
 	})
@@ -92,16 +92,12 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(
 		return werr
 	}
 
-	verifyURL := fmt.Sprintf(
+	subject := "Welcome to StoreHub"
+	content := email_tmpl.WelcomeTmpl(user.FirstName, fmt.Sprintf(
 		"http://store-hub-frontend.vercel.app/auth/verify-email?email=%s&secret_code=%s",
 		user.Email,
 		verifyEmailSession.Token,
-	)
-	subject := "Welcome to StoreHub"
-	content := fmt.Sprintf(`Hello %s, <br/>
-	Thank you for registering with us! <br/>
-	Please <a href="%s">Click here</a> to verify your email address.<br/>
-	`, user.AccountID, verifyURL)
+	))
 	to := []string{user.Email}
 
 	err = processor.mailer.SendEmail(subject, content, to, nil, nil, nil)

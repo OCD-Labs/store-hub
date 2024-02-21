@@ -233,7 +233,7 @@ func (s *StoreHub) sendAccessInvitation(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// check access is granted to an existing user.
+	// check access is being granted to an existing user.
 	invitee, err := s.dbStore.GetUserByAccountID(r.Context(), reqBody.AccountID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -246,11 +246,29 @@ func (s *StoreHub) sendAccessInvitation(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	accessLevels, err := s.dbStore.GetUserAccessLevelsForStore(r.Context(), db.GetUserAccessLevelsForStoreParams{
+		UserID: invitee.ID,
+		StoreID: pathVar.StoreID,
+	})
+	if err != nil && err != sql.ErrNoRows {
+		s.errorResponse(w, r, http.StatusInternalServerError, "failed to retrieve user details")
+		log.Error().Err(err).Msg("error occurred")
+		return
+	}
+
+	for _, al := range accessLevels {
+		if al == reqBody.NewAccessLevel {
+			s.errorResponse(w, r, http.StatusConflict, "Access already exists for user")
+			return
+		}
+	}
+
 	authPayload := s.contextGetMustToken(r) // authorize
 
 	taskPayload := &worker.PayloadSendAccessInvitation{
 		InviterID:        authPayload.UserID,
 		InviteeAccountID: invitee.AccountID,
+		InviteeProfileImgUrl: invitee.ProfileImageUrl.String,
 		InviteeID:        invitee.ID,
 		InviteeEmail:     invitee.Email,
 		AccessLevel:      reqBody.NewAccessLevel,
