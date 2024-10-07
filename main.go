@@ -115,8 +115,9 @@ func runDBMigrations(migrationURL string, dbSource string, configs util.Configs)
 			log.Fatal().Err(err).Msg("failed to run migrateup")
 		}
 	}
-
-	log.Info().Msg("db migrated successfully")
+	
+	v, d, err := migration.Version()
+	log.Info().Msg(fmt.Sprintf(`db migrated successfully; version=%d, dirty=%v, err=%v`, v, d, err))
 }
 
 func setupNEAR(configs util.Configs) (err error) {
