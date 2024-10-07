@@ -3,8 +3,8 @@ info:
   title: "StoreHub API"
   description: "Rediscovery e-commerce et blockchain—server."
   version: "1.0.0"
-host: "localhost:6780"
-# host: "store-hub-djxu.onrender.com"
+# host: "localhost:6780"
+host: "store-hub-djxu.onrender.com"
 basePath: "/api/v1"
 schemes:
   - "https"

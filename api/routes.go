@@ -13,6 +13,7 @@ func (s *StoreHub) setupRoutes() http.Handler {
 	fsysHandler := http.FileServer(http.FS(s.swaggerFiles))
 	mux.Handler(http.MethodGet, "/api/v1/swagger/*any", http.StripPrefix("/api/v1/swagger/", fsysHandler))
 
+	mux.HandlerFunc(http.MethodGet, "/", s.healthcheck)
 	mux.HandlerFunc(http.MethodPost, "/api/v1/ping", s.healthcheck)
 
 	// storefront
