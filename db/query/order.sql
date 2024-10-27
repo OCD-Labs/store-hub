@@ -1,6 +1,8 @@
--- name: CreateOrderFn :one
+-- name: CreateOrder :one
 INSERT INTO orders (
   item_id,
+  item_price,
+  item_currency,
   order_quantity,
   buyer_id,
   seller_id,
@@ -9,10 +11,10 @@ INSERT INTO orders (
   payment_channel,
   payment_method
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 ) RETURNING *;
 
--- name: CreateOrder :one
+-- name: CreateOrderFn :one
 SELECT * FROM create_order(
   sqlc.arg(item_id),
   sqlc.arg(order_quantity),

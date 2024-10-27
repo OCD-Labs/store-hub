@@ -82,7 +82,7 @@ func (s *StoreHub) createOrder(w http.ResponseWriter, r *http.Request) {
 
 	authPayload := s.contextGetMustToken(r)
 
-	order, err := s.dbStore.CreateOrder(r.Context(), db.CreateOrderParams{
+	order, err := s.dbStore.CreateOrderFn(r.Context(), db.CreateOrderFnParams{
 		ItemID:         reqBody.ItemID,
 		OrderQuantity:  reqBody.OrderQuantity,
 		BuyerID:        authPayload.UserID,
