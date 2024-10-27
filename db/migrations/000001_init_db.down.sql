@@ -4,6 +4,10 @@
 DROP TRIGGER IF EXISTS trigger_update_sales_overview ON sales;
 DROP TRIGGER IF EXISTS trigger_update_item_status ON items;
 DROP TRIGGER IF EXISTS trigger_distinct_access_levels ON store_owners;
+DROP FUNCTION IF EXISTS initialize_transaction(bigint, NUMERIC(18, 2), varchar, varchar, varchar);
+DROP FUNCTION IF EXISTS upsert_pending_funds(bigint, varchar, NUMERIC(18, 2));
+DROP FUNCTION IF EXISTS process_transaction_completion(varchar, varchar, NUMERIC(10, 2), jsonb);
+DROP FUNCTION IF EXISTS release_pending_funds(bigint);
 DROP FUNCTION IF EXISTS update_sales_overview();
 DROP FUNCTION IF EXISTS reduce_sales_overview(bigint, bigint, bigint);
 DROP FUNCTION IF EXISTS upsert_cart_item(bigint, bigint, bigint, int);
@@ -15,11 +19,16 @@ DROP FUNCTION IF EXISTS create_review(bigint, bigint, bigint, NUMERIC(2, 1), var
 DROP FUNCTION IF EXISTS delete_expired_sessions();
 DROP FUNCTION IF EXISTS get_stores_by_user(bigint);
 
+DROP FUNCTION IF EXISTS release_pending_funds;
+DROP FUNCTION IF EXISTS upsert_pending_funds;
+
 -- Drop the foreign key constraints
-ALTER TABLE "transactions" DROP CONSTRAINT IF EXISTS "fk_to_crypto_account";
-ALTER TABLE "transactions" DROP CONSTRAINT IF EXISTS "fk_from_crypto_account";
-ALTER TABLE "transactions" DROP CONSTRAINT IF EXISTS "fk_to_fiat_account";
-ALTER TABLE "transactions" DROP CONSTRAINT IF EXISTS "fk_from_fiat_account";
+ALTER TABLE "pending_transaction_funds" DROP CONSTRAINT IF EXISTS "valid_account_type";
+ALTER TABLE "pending_transaction_funds" DROP CONSTRAINT IF EXISTS "pending_transaction_funds_store_id_fkey";
+
+ALTER TABLE "transactions" DROP CONSTRAINT IF EXISTS "valid_transaction_status";
+ALTER TABLE "transactions" DROP CONSTRAINT IF EXISTS "valid_transaction_provider";
+ALTER TABLE "transactions" DROP CONSTRAINT IF EXISTS "transactions_customer_id_fkey";
 
 ALTER TABLE "fiat_accounts" DROP CONSTRAINT IF EXISTS "fiat_accounts_store_id_fkey";
 ALTER TABLE "crypto_accounts" DROP CONSTRAINT IF EXISTS "crypto_accounts_store_id_fkey";
@@ -39,6 +48,7 @@ ALTER TABLE "items" DROP CONSTRAINT IF EXISTS items_store_id_fkey;
 ALTER TABLE "sessions" DROP CONSTRAINT IF EXISTS sessions_user_id_fkey;
 
 -- Drop the tables
+DROP TABLE IF EXISTS "pending_transaction_funds";
 DROP TABLE IF EXISTS "transactions";
 DROP TABLE IF EXISTS "fiat_accounts";
 DROP TABLE IF EXISTS "crypto_accounts";

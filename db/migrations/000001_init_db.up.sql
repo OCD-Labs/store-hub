@@ -83,6 +83,8 @@ CREATE TABLE "orders" (
   "delivered_on" timestamptz NOT NULL DEFAULT '0001-01-01 00:00:00Z',
   "expected_delivery_date" timestamptz NOT NULL DEFAULT (now() + interval '3 days'),
   "item_id" bigint NOT NULL,
+  "item_price" NUMERIC(10, 2) NOT NULL,
+  "item_currency" varchar NOT NULL,
   "order_quantity" int NOT NULL,
   "buyer_id" bigint NOT NULL,
   "seller_id" bigint NOT NULL,
@@ -162,23 +164,42 @@ ALTER TABLE "crypto_accounts" ADD FOREIGN KEY ("store_id") REFERENCES "stores" (
 -- Transactions Table
 CREATE TABLE "transactions" (
   "id" bigserial PRIMARY KEY,
+  "order_ids" bigint[],
+  "customer_id" bigint NOT NULL,
   "amount" NUMERIC(18, 2) NOT NULL,
-  "from_account_id" bigint NOT NULL,
-  "to_account_id" bigint NOT NULL,
-  "payment_channel" varchar NOT NULL,
-  "transaction_fee" NUMERIC(10, 2) NOT NULL,
-  "conversion_fee" NUMERIC(10, 2) NOT NULL,
-  "description" TEXT NOT NULL,
-  "transaction_type" varchar NOT NULL,
-  "transaction_ref_id" varchar NOT NULL,
+  "payment_provider" varchar NOT NULL,
+  "provider_tx_ref_id" varchar NOT NULL,
+  "provider_tx_access_code" varchar,
+  "provider_tx_fee" NUMERIC(10, 2) NOT NULL,
   "status" varchar NOT NULL,
-  "account_balance_snapshot" NUMERIC(18, 2) NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT (now())
 );
-ALTER TABLE "transactions" ADD CONSTRAINT fk_from_fiat_account FOREIGN KEY (from_account_id) REFERENCES fiat_accounts(id) ON DELETE CASCADE;
-ALTER TABLE "transactions" ADD CONSTRAINT fk_to_fiat_account FOREIGN KEY (to_account_id) REFERENCES fiat_accounts(id) ON DELETE CASCADE;
-ALTER TABLE "transactions" ADD CONSTRAINT fk_from_crypto_account FOREIGN KEY (from_account_id) REFERENCES crypto_accounts(id) ON DELETE CASCADE;
-ALTER TABLE "transactions" ADD CONSTRAINT fk_to_crypto_account FOREIGN KEY (to_account_id) REFERENCES crypto_accounts(id) ON DELETE CASCADE;
+
+ALTER TABLE "transactions" ADD CONSTRAINT valid_transaction_status CHECK ("status" IN (
+  'PENDING',
+  'PROCESSING',
+  'COMPLETED',
+  'FAILED'
+));
+
+ALTER TABLE "transactions" ADD CONSTRAINT valid_transaction_provider CHECK ("payment_provider" IN (
+  'PAYSTACK', 'NEAR_WALLET'
+));
+ALTER TABLE "transactions" ADD FOREIGN KEY ("customer_id") REFERENCES "users" ("id");
+
+-- Pending Transaction Funds Table
+CREATE TABLE "pending_transaction_funds" (
+    "id" bigserial PRIMARY KEY,
+    "store_id" bigint NOT NULL,
+    "account_type" varchar NOT NULL,
+    "amount" NUMERIC(18, 2) NOT NULL,
+    "updated_at" timestamptz NOT NULL DEFAULT (now()),
+    "created_at" timestamptz NOT NULL DEFAULT (now())
+);
+ALTER TABLE "pending_transaction_funds" ADD CONSTRAINT valid_account_type CHECK ("account_type" IN (
+    'FIAT', 'CRYPTO'
+));
+ALTER TABLE "pending_transaction_funds" ADD FOREIGN KEY ("store_id") REFERENCES "stores" ("id");
 
 -- Reviews Table
 CREATE TABLE "reviews" (
@@ -389,12 +410,16 @@ DECLARE
     v_buyer_exists bool;
     v_seller_exists bool;
     v_store_exists bool;
+    v_item items%ROWTYPE;
     v_result orders%ROWTYPE;
 BEGIN
-    -- Check if item exists
-    SELECT EXISTS(SELECT 1 FROM items WHERE id = p_item_id) INTO v_item_exists;
-    IF NOT v_item_exists THEN
-        RAISE EXCEPTION 'Item with ID % does not exist', p_item_id;
+    -- Get item details
+    SELECT * INTO v_item
+    FROM items
+    WHERE id = p_item_id;
+    
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Order not found';
     END IF;
 
     -- Check if buyer exists
@@ -418,6 +443,8 @@ BEGIN
     -- If all checks pass, insert the order
     INSERT INTO orders (
         item_id,
+        item_price,
+        item_currency,
         order_quantity,
         buyer_id,
         seller_id,
@@ -426,7 +453,7 @@ BEGIN
         payment_channel,
         payment_method
     ) VALUES (
-        p_item_id, p_order_quantity, p_buyer_id, p_seller_id, p_store_id, p_delivery_fee, p_payment_channel, p_payment_method
+        p_item_id, v_item.price, v_item.currency, p_order_quantity, p_buyer_id, p_seller_id, p_store_id, p_delivery_fee, p_payment_channel, p_payment_method
     ) RETURNING * INTO v_result;
 
     RETURN v_result;
@@ -639,5 +666,299 @@ BEGIN
         -- Return the current row
         RETURN NEXT;
     END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function: initialize_transaction
+-- Description: Initialize transaction record
+CREATE OR REPLACE FUNCTION initialize_transaction(
+    p_customer_id bigint,
+    p_amount NUMERIC(18, 2),
+    p_payment_provider varchar,
+    p_provider_tx_ref_id varchar,
+    p_provider_tx_access_code varchar
+) RETURNS transactions AS $$
+DECLARE
+    v_customer_exists bool;
+    v_result transactions%ROWTYPE;
+BEGIN
+    -- Validate customer exists
+    SELECT EXISTS(
+        SELECT 1 FROM users WHERE id = p_customer_id
+    ) INTO v_customer_exists;
+    
+    IF NOT v_customer_exists THEN
+        RAISE EXCEPTION 'Customer with ID % does not exist', p_customer_id;
+    END IF;
+
+    -- Validate amount is positive
+    IF p_amount <= 0 THEN
+        RAISE EXCEPTION 'Amount must be greater than 0';
+    END IF;
+
+    -- Create initial transaction record
+    INSERT INTO transactions (
+        customer_id,
+        amount,
+        payment_provider,
+        provider_tx_ref_id,
+        provider_tx_access_code,
+        provider_tx_fee,
+        status,
+        order_ids
+    ) VALUES (
+        p_customer_id,
+        p_amount,
+        p_payment_provider,
+        p_provider_tx_ref_id,
+        NULLIF(p_provider_tx_access_code, ''),
+        0,
+        'PROCESSING',
+        '{}'::bigint[]
+    ) RETURNING * INTO v_result;
+
+    RETURN v_result;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function: upsert_pending_funds
+-- Description: A helper function to manage pending funds
+CREATE OR REPLACE FUNCTION upsert_pending_funds(
+    p_store_id bigint,
+    p_account_type varchar,
+    p_amount NUMERIC(18, 2)
+) RETURNS pending_transaction_funds AS $$
+DECLARE
+    v_result pending_transaction_funds%ROWTYPE;
+BEGIN
+    -- Try to update existing record
+    UPDATE pending_transaction_funds
+    SET 
+        amount = amount + p_amount,
+        updated_at = now()
+    WHERE store_id = p_store_id 
+    AND account_type = p_account_type
+    RETURNING * INTO v_result;
+
+    -- If no record exists, create new one
+    IF NOT FOUND THEN
+        INSERT INTO pending_transaction_funds (
+            store_id,
+            account_type,
+            amount
+        ) VALUES (
+            p_store_id,
+            p_account_type,
+            p_amount
+        ) RETURNING * INTO v_result;
+    END IF;
+
+    RETURN v_result;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function: process_transaction_completion
+-- Description: Process transaction completion for a user's cart items.
+CREATE OR REPLACE FUNCTION process_transaction_completion(
+    p_transaction_ref_id varchar,
+    p_status varchar,
+    p_provider_tx_fee NUMERIC(10, 2),
+    p_cart_items jsonb
+) RETURNS transactions AS $$
+DECLARE
+    v_transaction transactions%ROWTYPE;
+    v_order_id bigint;
+    v_order_ids bigint[] := '{}';
+    v_cart_item jsonb;
+    v_item items%ROWTYPE;
+    v_store_owner store_owners%ROWTYPE;
+    v_store_total NUMERIC(18, 2);
+    v_account_type varchar;
+BEGIN
+    -- Get transaction record
+    SELECT * INTO v_transaction
+    FROM transactions 
+    WHERE provider_tx_ref_id = p_transaction_ref_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Transaction not found';
+    END IF;
+
+    -- Update transaction status and fee
+    UPDATE transactions 
+    SET 
+        status = p_status,
+        provider_tx_fee = p_provider_tx_fee
+    WHERE provider_tx_ref_id = p_transaction_ref_id;
+
+    -- If transaction completed successfully, create orders
+    IF p_status = 'COMPLETED' THEN
+        -- Determine account type based on payment provider
+        v_account_type := CASE 
+            WHEN v_transaction.payment_provider = 'PAYSTACK' THEN 'FIAT'
+            ELSE 'CRYPTO'
+        END;
+
+        -- Initialize store totals map
+        CREATE TEMPORARY TABLE store_totals (
+            store_id bigint,
+            total_amount NUMERIC(18, 2)
+        ) ON COMMIT DROP;
+
+        -- Process each cart item
+        FOR v_cart_item IN SELECT * FROM jsonb_array_elements(p_cart_items)
+        LOOP
+            -- Get item details
+            SELECT * INTO v_item 
+            FROM items 
+            WHERE id = (v_cart_item->>'item_id')::bigint;
+
+            IF NOT FOUND THEN
+                RAISE EXCEPTION 'Item not found: %', (v_cart_item->>'item_id')::bigint;
+            END IF;
+
+            -- Get store owner details
+            SELECT * INTO v_store_owner
+            FROM store_owners
+            WHERE store_id = v_item.store_id AND is_primary = true;
+
+            IF NOT FOUND THEN
+                RAISE EXCEPTION 'Store owner not found for store: %', v_item.store_id;
+            END IF;
+
+            -- Calculate item total
+            v_store_total := v_item.price * (v_cart_item->>'quantity')::int;
+
+            -- Accumulate store totals
+            INSERT INTO store_totals (store_id, total_amount)
+            VALUES (v_item.store_id, v_store_total)
+            ON CONFLICT (store_id) DO UPDATE
+            SET total_amount = store_totals.total_amount + v_store_total;
+
+            -- Create order
+            INSERT INTO orders (
+                item_id,
+                item_price,
+                item_currency,
+                order_quantity,
+                buyer_id,
+                seller_id,
+                store_id,
+                delivery_fee,
+                payment_channel,
+                payment_method
+            ) VALUES (
+                v_item.id,
+                v_item.price,
+                v_item.currency,
+                (v_cart_item->>'quantity')::int,
+                v_transaction.customer_id,
+                v_store_owner.user_id,
+                v_item.store_id,
+                (v_cart_item->>'delivery_fee')::numeric(10,2),
+                v_account_type,
+                CASE 
+                    WHEN v_transaction.payment_provider = 'PAYSTACK' THEN 'Instant Pay'
+                    ELSE 'Web Wallet'
+                END
+            ) RETURNING id INTO v_order_id;
+
+            -- Add order ID to array
+            v_order_ids := array_append(v_order_ids, v_order_id);
+
+            -- Update item supply quantity
+            UPDATE items
+            SET supply_quantity = supply_quantity - (v_cart_item->>'quantity')::int
+            WHERE id = v_item.id;
+        END LOOP;
+
+        -- Create/update pending funds for each store
+        FOR v_store_total IN SELECT * FROM store_totals
+        LOOP
+            PERFORM upsert_pending_funds(
+                v_store_total.store_id,
+                v_account_type,
+                v_store_total.total_amount
+            );
+        END LOOP;
+
+        -- Update transaction with order IDs
+        UPDATE transactions
+        SET order_ids = v_order_ids
+        WHERE provider_tx_ref_id = p_transaction_ref_id
+        RETURNING * INTO v_transaction;
+    END IF;
+
+    RETURN v_transaction;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function: release_pending_funds
+-- Description: Releases funds for a fulfilled order to appropriate store's account
+CREATE OR REPLACE FUNCTION release_pending_funds(
+    p_order_id bigint
+) RETURNS void AS $$
+DECLARE
+    v_order orders%ROWTYPE;
+    v_pending pending_transaction_funds%ROWTYPE;
+    v_account_type varchar;
+    v_total NUMERIC(18, 2);
+BEGIN
+    -- Get order details
+    SELECT * INTO v_order
+    FROM orders
+    WHERE id = p_order_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Order not found';
+    END IF;
+
+    -- Check if order is delivered
+    IF v_order.delivery_status != 'DELIVERED' THEN
+        RAISE EXCEPTION 'Cannot release funds for undelivered order';
+    END IF;
+
+    -- Determine account type
+    v_account_type := CASE 
+        WHEN v_order.payment_channel = 'FIAT' THEN 'FIAT'
+        ELSE 'CRYPTO'
+    END;
+
+    -- Get pending funds record
+    SELECT * INTO v_pending
+    FROM pending_transaction_funds
+    WHERE store_id = v_order.store_id
+    AND account_type = v_account_type
+    FOR UPDATE;  -- Lock row for update
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'No pending funds found for store';
+    END IF;
+
+    -- Calculate order total
+    v_total := v_order.item_price * v_order.order_quantity;
+
+    -- Ensure sufficient pending funds
+    IF v_pending.amount < v_total THEN
+        RAISE EXCEPTION 'Insufficient pending funds';
+    END IF;
+
+    -- Update store account
+    IF v_account_type = 'FIAT' THEN
+        UPDATE fiat_accounts
+        SET balance = balance + v_total
+        WHERE store_id = v_order.store_id;
+    ELSE
+        UPDATE crypto_accounts
+        SET balance = balance + v_total
+        WHERE store_id = v_order.store_id;
+    END IF;
+
+    -- Reduce pending funds
+    UPDATE pending_transaction_funds
+    SET 
+        amount = amount - v_total,
+        updated_at = now()
+    WHERE id = v_pending.id;
 END;
 $$ LANGUAGE plpgsql;
