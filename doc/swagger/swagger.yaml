@@ -623,6 +623,53 @@ paths:
           description: Internal Server Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+  /stores/{store_id}:
+    get:
+      summary: Get store details
+      description: Retrieves public details of a store including average rating and owners
+      parameters:
+        - name: store_id
+          in: path
+          description: ID of the store
+          required: true
+          type: integer
+          minimum: 1
+      responses:
+        200:
+          description: Store details retrieved successfully
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                example: success
+              data:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: found store
+                  result:
+                    type: object
+                    properties:
+                      store:
+                        $ref: "#/definitions/StoreDetails"
+        400:
+          description: Invalid store ID
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        403:
+          description: Store is frozen/unavailable
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        404:
+          description: Store not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
   /stores/{id}/items:
     get:
       summary: List store items
@@ -2589,3 +2636,36 @@ definitions:
       updated_at:
         type: string
         format: date-time
+  StoreDetails:
+    type: object
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      description:
+        type: string
+      profile_image_url:
+        type: string
+      category:
+        type: string
+      is_verified:
+        type: boolean
+      is_frozen:
+        type: boolean
+      created_at:
+        type: string
+        format: date-time
+      average_rating:
+        type: number
+        format: float
+        description: Average rating of the store (0-5)
+      store_owners:
+        type: array
+        items:
+          type: object
+          properties:
+            account_id:
+              type: string
+            profile_img_url:
+              type: string

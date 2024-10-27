@@ -2,8 +2,10 @@ package api
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	db "github.com/OCD-Labs/store-hub/db/sqlc"
 	"github.com/OCD-Labs/store-hub/pagination"
@@ -231,4 +233,57 @@ func (s *StoreHub) freezeStore(w http.ResponseWriter, r *http.Request) {
 
 func (s *StoreHub) unfreezeStore(w http.ResponseWriter, r *http.Request) {
 
+}
+
+type getStoreDetailsPublicPathVar struct {
+    StoreID int64 `path:"store_id" validate:"required,min=1"`
+}
+
+type storeDetailsResponse struct {
+    ID              int64           `json:"id"`
+    Name            string          `json:"name"`
+    Description     string          `json:"description"`
+    ProfileImageUrl string          `json:"profile_image_url"`
+    Category        string          `json:"category"`
+    IsVerified      bool           `json:"is_verified"`
+    IsFrozen        bool           `json:"is_frozen"`
+    CreatedAt       time.Time       `json:"created_at"`
+    AverageRating   float64        `json:"average_rating"`
+    StoreOwners     json.RawMessage `json:"store_owners"`
+}
+
+// getStoreDetailsPublic maps to "GET /api/v1/stores/{store_id}"
+func (s *StoreHub) getStoreDetails(w http.ResponseWriter, r *http.Request) {
+    var pathVar getStoreDetailsPublicPathVar
+    if err := s.ShouldBindPathVars(w, r, &pathVar); err != nil {
+        return
+    }
+
+    store, err := s.dbStore.GetStoreDetails(r.Context(), pathVar.StoreID)
+    if err != nil {
+        switch {
+        case errors.Is(err, sql.ErrNoRows):
+            s.errorResponse(w, r, http.StatusNotFound, "store not found")
+        default:
+            s.errorResponse(w, r, http.StatusInternalServerError, "failed to fetch store details")
+        }
+        log.Error().Err(err).Msg("error occurred")
+        return
+    }
+
+    // Check if store is frozen
+    if store.IsFrozen {
+        s.errorResponse(w, r, http.StatusForbidden, "store is currently unavailable")
+        return
+    }
+
+    s.writeJSON(w, http.StatusOK, envelop{
+        "status": "success",
+        "data": envelop{
+            "message": "found store",
+            "result": envelop{
+                "store": store,
+            },
+        },
+    }, nil)
 }

@@ -46,3 +46,30 @@ RETURNING *;
 -- name: DeleteStore :exec
 DELETE FROM stores
 WHERE id = sqlc.arg(store_id);
+
+-- name: GetStoreDetails :one
+WITH store_reviews AS (
+    SELECT 
+        store_id,
+        ROUND(AVG(rating), 1) as average_rating
+    FROM reviews
+    WHERE store_id = sqlc.arg(store_id)
+    GROUP BY store_id
+)
+SELECT 
+    s.*,
+    COALESCE(sr.average_rating, 0) as average_rating,
+    json_agg(
+        json_build_object(
+            'account_id', u.account_id,
+            'profile_img_url', u.profile_image_url
+        )
+    ) FILTER (WHERE u.id IS NOT NULL) as store_owners
+FROM stores s
+LEFT JOIN store_reviews sr ON sr.store_id = s.id
+LEFT JOIN store_owners so ON s.id = so.store_id
+LEFT JOIN users u ON so.user_id = u.id
+WHERE s.id = sqlc.arg(store_id)
+GROUP BY 
+    s.id, 
+    sr.average_rating;

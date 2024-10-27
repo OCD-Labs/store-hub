@@ -18,6 +18,7 @@ func (s *StoreHub) setupRoutes() http.Handler {
 
 	// storefront
 	mux.HandlerFunc(http.MethodGet, "/api/v1/stores", http.HandlerFunc(s.discoverStores))
+	mux.HandlerFunc(http.MethodGet, "/api/v1/stores/:store_id", s.getStoreDetails)
 	mux.Handler(http.MethodGet, "/api/v1/stores/:store_id/items", s.supportUnauthenticated(s.authenticate(http.HandlerFunc(s.listStoreItems))))
 	mux.HandlerFunc(http.MethodGet, "/api/v1/stores/:store_id/items/:item_id", http.HandlerFunc(s.getStoreItems))
 	mux.Handler(http.MethodPatch, "/api/v1/stores/:store_id/items/:item_id/buy", s.authenticate(http.HandlerFunc(s.buyStoreItems)))

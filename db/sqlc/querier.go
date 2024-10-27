@@ -42,6 +42,7 @@ type Querier interface {
 	GetSale(ctx context.Context, arg GetSaleParams) (GetSaleRow, error)
 	GetSession(ctx context.Context, id uuid.UUID) (Session, error)
 	GetStoreByID(ctx context.Context, storeID int64) (GetStoreByIDRow, error)
+	GetStoreDetails(ctx context.Context, storeID int64) (GetStoreDetailsRow, error)
 	GetStoreMetrics(ctx context.Context, storeID int64) (GetStoreMetricsRow, error)
 	GetStoreOwnersByStoreID(ctx context.Context, storeID int64) ([]StoreOwner, error)
 	GetTransactionByRefID(ctx context.Context, providerTxRefID string) (Transaction, error)

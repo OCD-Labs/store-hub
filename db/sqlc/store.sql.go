@@ -118,6 +118,67 @@ func (q *Queries) GetStoreByID(ctx context.Context, storeID int64) (GetStoreByID
 	return i, err
 }
 
+const getStoreDetails = `-- name: GetStoreDetails :one
+WITH store_reviews AS (
+    SELECT 
+        store_id,
+        ROUND(AVG(rating), 1) as average_rating
+    FROM reviews
+    WHERE store_id = $1
+    GROUP BY store_id
+)
+SELECT 
+    s.id, s.name, s.description, s.store_account_id, s.profile_image_url, s.is_verified, s.category, s.is_frozen, s.created_at,
+    COALESCE(sr.average_rating, 0) as average_rating,
+    json_agg(
+        json_build_object(
+            'account_id', u.account_id,
+            'profile_img_url', u.profile_image_url
+        )
+    ) FILTER (WHERE u.id IS NOT NULL) as store_owners
+FROM stores s
+LEFT JOIN store_reviews sr ON sr.store_id = s.id
+LEFT JOIN store_owners so ON s.id = so.store_id
+LEFT JOIN users u ON so.user_id = u.id
+WHERE s.id = $1
+GROUP BY 
+    s.id, 
+    sr.average_rating
+`
+
+type GetStoreDetailsRow struct {
+	ID              int64           `json:"id"`
+	Name            string          `json:"name"`
+	Description     string          `json:"description"`
+	StoreAccountID  string          `json:"store_account_id"`
+	ProfileImageUrl string          `json:"profile_image_url"`
+	IsVerified      bool            `json:"is_verified"`
+	Category        string          `json:"category"`
+	IsFrozen        bool            `json:"is_frozen"`
+	CreatedAt       time.Time       `json:"created_at"`
+	AverageRating   string          `json:"average_rating"`
+	StoreOwners     json.RawMessage `json:"store_owners"`
+}
+
+func (q *Queries) GetStoreDetails(ctx context.Context, storeID int64) (GetStoreDetailsRow, error) {
+	row := q.db.QueryRowContext(ctx, getStoreDetails, storeID)
+	var i GetStoreDetailsRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.StoreAccountID,
+		&i.ProfileImageUrl,
+		&i.IsVerified,
+		&i.Category,
+		&i.IsFrozen,
+		&i.CreatedAt,
+		&i.AverageRating,
+		&i.StoreOwners,
+	)
+	return i, err
+}
+
 const updateStore = `-- name: UpdateStore :one
 UPDATE stores
 SET
